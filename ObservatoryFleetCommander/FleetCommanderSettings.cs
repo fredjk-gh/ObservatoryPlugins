@@ -4,6 +4,9 @@ namespace ObservatoryFleetCommander.Worker
 {
     internal class FleetCommanderSettings
     {
+        [SettingDisplayName("Notify after jump")]
+        public bool NotifyJumpComplete { get; set; }
+
         [SettingDisplayName("Notify after jump cooldown")]
         public bool NotifyJumpCooldown { get; set; }
 

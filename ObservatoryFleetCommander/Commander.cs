@@ -14,10 +14,10 @@ namespace ObservatoryFleetCommander.Worker
         ObservableCollection<object> GridCollection = new();
         private FleetCommanderSettings settings = new()
         {
+            NotifyJumpComplete = false,
             NotifyJumpCooldown = true,
             NotifyLowFuel = true,
         };
-        private bool readAllInProgress = false;
 
         private Location initialLocation = null;
         private string carrierName = null;
@@ -26,7 +26,7 @@ namespace ObservatoryFleetCommander.Worker
         private string carrierSystem = null;
         private int? carrierFuel = null;
         private string carrierBody = null;
-        private string jumpTargetBody = null;
+        private string jumpTargetSystem = null;
         private System.Timers.Timer carrierCooldownTimer;
         public string Name => "Observatory Fleet Commander";
         public string ShortName => "Commander";
@@ -38,10 +38,14 @@ namespace ObservatoryFleetCommander.Worker
             get => settings;
             set => settings = (FleetCommanderSettings)value;
         }
+
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
             switch (journal)
             {
+                case LoadGame loadGame:
+                    jumpTargetSystem = null;  // Suppress notifications from firing as a result of a jump completed while out of game.
+                    break;
                 case Docked docked:
                     if (docked.StationType == "FleetCarrier" && carrierId.HasValue && docked.StationName == carrierCallsign && carrierSystem == null)
                     {
@@ -56,21 +60,29 @@ namespace ObservatoryFleetCommander.Worker
                     {
                         MaybeUpdateCarrierLocation(location.TimestampDateTime, location.StarSystem, location.Body, true);
                     }
+                    else if (location.StarSystem == jumpTargetSystem && (location.Docked || location.OnFoot))
+                    {
+                        // So, update 11 really made a mess of things. Location no longer has StationType/StationName properties, and still no CarrierJump eventis either.
+                        // So if location is now set to jumpTargetSystem and we're docked/on-foot, it must be a carrier jump.
+                        jumpTargetSystem = null;
+                        MaybeUpdateCarrierLocation(location.TimestampDateTime, location.StarSystem, location.Body, true);
+                    }
                     else if (initialLocation == null)
                     {
                         initialLocation = location;
                     }
                     break;
                 case CarrierJumpRequest carrierJumpRequest:
-                    jumpTargetBody = carrierJumpRequest.Body;
+                    jumpTargetSystem = carrierJumpRequest.SystemName;
+                    var jumpTargetBody = (!string.IsNullOrEmpty(carrierJumpRequest.Body)) ? carrierJumpRequest.Body : carrierJumpRequest.SystemName;
                     AddToGrid(carrierJumpRequest.TimestampDateTime, carrierBody, carrierFuel, string.Format("Requested a jump to {0}", jumpTargetBody));
                     break;
                 case CarrierJump carrierJump: // these may be broken right now.
                     MaybeUpdateCarrierLocation(carrierJump.TimestampDateTime, carrierJump.StarSystem, carrierJump.Body, true);
                     break;
                 case CarrierJumpCancelled carrierJumpCancelled:
-                    AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierBody, carrierFuel, string.Format("Cancelled requested jump to {0}", jumpTargetBody));
-                    jumpTargetBody = null;
+                    AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierBody, carrierFuel, string.Format("Cancelled requested jump to {0}", jumpTargetSystem));
+                    jumpTargetSystem = null;
                     break;
                 case CarrierDepositFuel carrierDepositFuel:
                     // Make sure the Cmdr is donating to their carrier for fuel updates as this event could trigger for
@@ -82,7 +94,7 @@ namespace ObservatoryFleetCommander.Worker
                     }
                     break;
                 case CarrierStats carrierStats:
-                    if (MaybeInitiailizeCarrierInfo(carrierStats.TimestampDateTime, carrierStats.CarrierID, carrierStats.Callsign, carrierStats.Name, carrierStats.FuelLevel)) break;
+                    if (MaybeInitializeCarrierInfo(carrierStats.TimestampDateTime, carrierStats.CarrierID, carrierStats.Callsign, carrierStats.Name, carrierStats.FuelLevel)) break;
                     // Ok, no initialization was required, we always need to check/update fuel levels on this event.
                     MaybeUpdateCarrierFuel(carrierStats.TimestampDateTime, carrierStats.FuelLevel);
                     break;
@@ -97,19 +109,21 @@ namespace ObservatoryFleetCommander.Worker
                 return;
             }
             else if ((carrierSystem != null && carrierBody != null && carrierMoveEvent && carrierSystem != starSystem && carrierBody != body)
-                || carrierSystem == null && jumpTargetBody != null && jumpTargetBody == body)
+                || carrierSystem == null && jumpTargetSystem != null && jumpTargetSystem == starSystem)
             {
                 // We've moved.
                 string locationUpdateDetails = "Carrier jump complete";
                 AddToGrid(dateTime, body, carrierFuel, locationUpdateDetails);
-                // Notify if not initial values and context requests it.
-                if (notifyIfChanged && carrierSystem != null && !readAllInProgress)
+                // Notify if not initial values and context requests it and user has this notification enabled.
+                if (notifyIfChanged && carrierSystem != null && !Core.IsLogMonitorBatchReading)
                 {
-                    Core.SendNotification(new()
-                    {
-                        Title = locationUpdateDetails,
-                        Detail = "",
-                    });
+                    if (settings.NotifyJumpComplete) {
+                        Core.SendNotification(new()
+                        {
+                            Title = locationUpdateDetails,
+                            Detail = "",
+                        });
+                    }
                     if (settings.NotifyJumpCooldown)
                     {
                         carrierCooldownTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4).TotalMilliseconds);
@@ -118,11 +132,11 @@ namespace ObservatoryFleetCommander.Worker
                     }
                 }
             }
-            if (jumpTargetBody != null && body == jumpTargetBody) jumpTargetBody = null;
+            if (jumpTargetSystem != null && starSystem == jumpTargetSystem) jumpTargetSystem = null;
             carrierSystem = starSystem;
             carrierBody = body;
         }
-        private bool MaybeInitiailizeCarrierInfo(DateTime dateTime, ulong updatedCarrierId, string updatedCarrierCallsign, string updatedCarrierName, int? updatedCarrierFuel)
+        private bool MaybeInitializeCarrierInfo(DateTime dateTime, ulong updatedCarrierId, string updatedCarrierCallsign, string updatedCarrierName, int? updatedCarrierFuel)
         {
             if (!carrierId.HasValue || carrierCallsign == null || carrierName == null || !carrierFuel.HasValue)
             {
@@ -134,7 +148,7 @@ namespace ObservatoryFleetCommander.Worker
                 carrierId = updatedCarrierId;
                 carrierName = updatedCarrierName;
                 MaybeUpdateCarrierFuel(dateTime, updatedCarrierFuel);
-                if (initialLocation != null && initialLocation.StationName == updatedCarrierCallsign && initialLocation.Docked)
+                if (initialLocation != null && initialLocation.StationName == updatedCarrierCallsign && (initialLocation.Docked || initialLocation.OnFoot))
                 {
                     MaybeUpdateCarrierLocation(initialLocation.TimestampDateTime, initialLocation.StarSystem, initialLocation.Body, false /* notifyIfChanged */, false /* carrierMoveEvent */);
                 }
@@ -154,7 +168,7 @@ namespace ObservatoryFleetCommander.Worker
                     : "Fuel level has changed.";
                 AddToGrid(dateTime, carrierBody, updatedCarrierFuel, fuelDetails);
 
-                if (!readAllInProgress && lowFuel)
+                if (!Core.IsLogMonitorBatchReading && lowFuel)
                 {
                     // Only notify if fuel is running low and not reading-all.
                     Core.SendNotification(new()
@@ -178,15 +192,12 @@ namespace ObservatoryFleetCommander.Worker
             });
         }
 
-        public void ReadAllStarted()
+        public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
-            readAllInProgress = true;
-            Core.ClearGrid(this, new FleetCommanderGrid());
-        }
-
-        public void ReadAllFinished()
-        {
-            readAllInProgress = false;
+            if (LogMonitorStateChangedEventArgs.IsBatchRead(args.NewState))
+            {
+                Core.ClearGrid(this, new FleetCommanderGrid());
+            }
         }
 
         public void Load(IObservatoryCore observatoryCore)
