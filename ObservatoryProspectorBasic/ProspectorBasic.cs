@@ -35,7 +35,6 @@ namespace ObservatoryProspectorBasic
             ProspectTritium = true,
             ProspectPlatinum = true,
         };
-        private bool readAllInProgress = false;
 
         private int goodRocks = 0;
         private int prospectorsEngaged = 0;
@@ -246,7 +245,7 @@ namespace ObservatoryProspectorBasic
             }));
             Debug.WriteLine("\t--Cargo Notification update: {0}; {1}", cargoTitle, cargoDetail.Replace("\n", "; "));
 
-            if (readAllInProgress || (cargoNotification == Guid.Empty && !newNotification))
+            if (Core.IsLogMonitorBatchReading || (cargoNotification == Guid.Empty && !newNotification))
             {
                 // Read-all or this notification shouldn't spawn a new notification and that's what we'd do next -- so we're done here.
                 return;
@@ -275,7 +274,7 @@ namespace ObservatoryProspectorBasic
         {
             Debug.WriteLine("ProspectedAsteroid: {0}; {1}", args.Title, args.Detail);
 
-            if (readAllInProgress) return;
+            if (Core.IsLogMonitorBatchReading) return;
 
             // This method supports notifications with timeout OR persistent notifications.
             if (args.Timeout > 0 && prospectorNotifications[counter % 2] != Guid.Empty)
@@ -498,15 +497,12 @@ namespace ObservatoryProspectorBasic
             return displayName;
         }
 
-        public void ReadAllStarted()
+        public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
-            readAllInProgress = true;
-            Core.ClearGrid(this, new ProspectorGrid());
-        }
-
-        public void ReadAllFinished()
-        {
-            readAllInProgress = false;
+            if (LogMonitorStateChangedEventArgs.IsBatchRead(args.NewState))
+            {
+                Core.ClearGrid(this, new ProspectorGrid());
+            }
         }
 
         public void Load(IObservatoryCore observatoryCore)
