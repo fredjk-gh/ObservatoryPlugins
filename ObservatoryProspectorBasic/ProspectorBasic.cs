@@ -226,22 +226,22 @@ namespace ObservatoryProspectorBasic
                 return;
             }
 
-            string cargoTitle = cargoMax == null ? "Cargo" : string.Format("Cargo ({0} / {1})", cargoEstimate, cargoMax);
-            string cargoDetail = string.Join("\n", cargo.Where(kvp => kvp.Value > 0).Select(kvp =>
+            string cargoTitle = cargoMax == null ? "Cargo" : "Cargo ({cargoEstimate} / {cargoMax})";
+            string cargoDetail = string.Join(Environment.NewLine, cargo.Where(kvp => kvp.Value > 0).Select(kvp =>
             {
                 if (kvp.Key == LimpetDronesKey)
                 {
                     if (limpetsAbandoned > 0)
                     {
                         int totalLimpets = limpetsAbandoned + limpetsUsed;
-                        return string.Format("{0}: {1} ({2:N0}% wasted)", CargoName(kvp.Key), kvp.Value, limpetsAbandoned * 100.0 / totalLimpets);
+                        return $"{CargoName(kvp.Key)}: {kvp.Value} ({(limpetsAbandoned * 100.0 / totalLimpets):N0}% wasted)";
                     }
                     else if (limpetsSynthed > 0)
                     {
-                        return string.Format("{0}: {1} ({2} short)", CargoName(kvp.Key), kvp.Value, limpetsSynthed);
+                        return $"{CargoName(kvp.Key)}: {kvp.Value} ({limpetsSynthed} short)";
                     }
                 }
-                return string.Format("{0}: {1}", CargoName(kvp.Key), kvp.Value);
+                return $"{CargoName(kvp.Key)}: {kvp.Value}";
             }));
             Debug.WriteLine("\t--Cargo Notification update: {0}; {1}", cargoTitle, cargoDetail.Replace("\n", "; "));
 
@@ -357,7 +357,7 @@ namespace ObservatoryProspectorBasic
                 // Found a core of interest!
                 goodRocks++;
                 string name = CommodityName(prospected.MotherlodeMaterial, prospected.MotherlodeMaterial_Localised);
-                string cumulativeStats = string.Format("{2:N1}% good rocks ({0}/{1})", goodRocks, prospectorsEngaged, (goodRocks * 1000) / (prospectorsEngaged * 10.0));
+                string cumulativeStats = $"{(goodRocks * 1000) / (prospectorsEngaged * 10.0):N1}% good rocks ({goodRocks}/{prospectorsEngaged})";
                 Core.AddGridItem(this, new ProspectorGrid
                 {
                     Commodity = name,
@@ -366,8 +366,7 @@ namespace ObservatoryProspectorBasic
                 });
 
                 NotificationArgs args = makeProspectorNotificationArgs(
-                    "Core found",
-                    string.Format("Asteroid contains core of {0}{1}", name, highMaterialContent), prospectorId, NotificationRendering.All);
+                    "Core found", $"Asteroid contains core of {name}{highMaterialContent}", prospectorId, NotificationRendering.All);
                 AddOrUpdateProspectorNotification(prospectorId, args);
                 Debug.WriteLine("\t--Grid Update: {0}; {1}, {2}", name, "Core found", cumulativeStats);
                 return;
@@ -397,8 +396,8 @@ namespace ObservatoryProspectorBasic
                 string title = "";
                 string details = "";
                 string commodities = String.Join(", ", desireableCommodities.Keys);
-                string percentageString = String.Format("{0:N2}%", desireableCommoditiesPercentSum);
-                string cumulativeStats = string.Format("{2:N1}% good rocks ({0}/{1})", goodRocks, prospectorsEngaged, (goodRocks * 1000) / (prospectorsEngaged * 10.0));
+                string percentageString = $"{desireableCommoditiesPercentSum:N2}%";
+                string cumulativeStats = $"{(goodRocks * 1000) / (prospectorsEngaged * 10.0):N1}% good rocks ({goodRocks}/{prospectorsEngaged})";
 
                 Core.AddGridItem(this, new ProspectorGrid
                 {
@@ -411,12 +410,12 @@ namespace ObservatoryProspectorBasic
                 {
                     // Ooh, multiple things here!
                     title = "Good multiple commodity rock";
-                    details = string.Format("Asteroid is a combined {0:N0} percent {1}{2}", desireableCommoditiesPercentSum, commodities, highMaterialContent);
+                    details = $"Asteroid is a combined {desireableCommoditiesPercentSum:N0} percent {commodities}{highMaterialContent}";
                 }
                 else
                 {
                     title = "Good rock";
-                    details = string.Format("Asteroid is {0:N0} percent {1}{2}", desireableCommoditiesPercentSum, commodities, highMaterialContent);
+                    details = $"Asteroid is {desireableCommoditiesPercentSum:N0} percent {commodities}{highMaterialContent}";
                 }
                 AddOrUpdateProspectorNotification(prospectorId, makeProspectorNotificationArgs(title, details, prospectorId, NotificationRendering.All));
                 Debug.WriteLine("\t--Grid Update: {0}; {1}, {2}", commodities, percentageString, cumulativeStats);
@@ -432,7 +431,7 @@ namespace ObservatoryProspectorBasic
                 string details = "";
                 if (desireableCommodities.Count > 0)
                 {
-                    details = string.Format("Asteroid also contains {0:N0} percent of other desireable commodities", desireableCommoditiesPercentSum);
+                    details = $"Asteroid also contains {desireableCommoditiesPercentSum:N0} percent of other desireable commodities";
                 }
                 AddOrUpdateProspectorNotification(prospectorId, makeProspectorNotificationArgs("High raw material content", details, prospectorId, NotificationRendering.All));
             }

@@ -75,13 +75,20 @@ namespace ObservatoryFleetCommander.Worker
                 case CarrierJumpRequest carrierJumpRequest:
                     jumpTargetSystem = carrierJumpRequest.SystemName;
                     var jumpTargetBody = (!string.IsNullOrEmpty(carrierJumpRequest.Body)) ? carrierJumpRequest.Body : carrierJumpRequest.SystemName;
-                    AddToGrid(carrierJumpRequest.TimestampDateTime, carrierBody, carrierFuel, string.Format("Requested a jump to {0}", jumpTargetBody));
+                    AddToGrid(carrierJumpRequest.TimestampDateTime, carrierBody, carrierFuel, $"Requested a jump to {jumpTargetBody}");
                     break;
                 case CarrierJump carrierJump: // these may be broken right now.
                     MaybeUpdateCarrierLocation(carrierJump.TimestampDateTime, carrierJump.StarSystem, carrierJump.Body, true);
                     break;
                 case CarrierJumpCancelled carrierJumpCancelled:
-                    AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierBody, carrierFuel, string.Format("Cancelled requested jump to {0}", jumpTargetSystem));
+                    if (jumpTargetSystem != null)
+                    {
+                        AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierBody, carrierFuel, $"Cancelled requested jump to {jumpTargetSystem}");
+                    }
+                    else
+                    {
+                        AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierBody, carrierFuel, $"Cancelled requested jump");
+                    }
                     jumpTargetSystem = null;
                     break;
                 case CarrierDepositFuel carrierDepositFuel:
@@ -142,7 +149,7 @@ namespace ObservatoryFleetCommander.Worker
             {
                 if (carrierCallsign == null)
                 {
-                    AddToGrid(dateTime, carrierBody, updatedCarrierFuel, string.Format("Carrier detected: {0} {1}. Configured notifications are active.", updatedCarrierName, updatedCarrierCallsign));
+                    AddToGrid(dateTime, carrierBody, updatedCarrierFuel, $"Carrier detected: {updatedCarrierName} {updatedCarrierCallsign}. Configured notifications are active.");
                 }
                 carrierCallsign = updatedCarrierCallsign;
                 carrierId = updatedCarrierId;
@@ -164,7 +171,7 @@ namespace ObservatoryFleetCommander.Worker
             {
                 bool lowFuel = updatedCarrierFuel.Value < 135;
                 string fuelDetails = lowFuel
-                    ? string.Format("Carrier has {0} tons of tritium remaining and may require more for the next jump.", updatedCarrierFuel.Value)
+                    ? $"Carrier has {updatedCarrierFuel.Value} tons of tritium remaining and may require more for the next jump."
                     : "Fuel level has changed.";
                 AddToGrid(dateTime, carrierBody, updatedCarrierFuel, fuelDetails);
 
@@ -187,7 +194,7 @@ namespace ObservatoryFleetCommander.Worker
             {
                 Timestamp = dateTime.ToString("G"),
                 CurrentLocation = location ?? "unknown",
-                CurrentFuelLevel = fuelLevel == null ? "unknown" : string.Format("{0} T", fuelLevel.Value),
+                CurrentFuelLevel = fuelLevel == null ? "unknown" : $"{fuelLevel.Value} T",
                 Details = details,
             });
         }
