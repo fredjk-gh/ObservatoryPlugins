@@ -1,22 +1,25 @@
 # ObservatoryPlugins
 A suite of plugins for Elite ObservatoryCore (https://github.com/Xjph/ObservatoryCore).
 
-For either plugin, simply unzip the dll and drop it in the plugins/ folder in your ObservatoryCore installation.
+For all plugins, unzip the dll into the plugins/ folder in your ObservatoryCore installation.
 
 Feel free to open an issue if something doesn't work, or reach out in the ObservatoryCore discord.
 
 ## Fleet Commander
 
-### Release notes: 0.0.30.1958
+### Release notes: 0.0.92.1935-beta
 As of Odyssey Update 9 (Dec. 2021), the game is not writing "CarrierJump" events to the journal file
 (see https://issues.frontierstore.net/issue-detail/46996), resulting in slightly degraded functionality
 when jumping your carrier while not docked on it.
 
+As of Odyssey Update 11 (Mar. 2022), the game is not writing StationName/StationId properties to location
+events, further complicating matters. I've managed to work around this for the moment.
+
 ## Prospector
 
-### Release notes: No release yet
+### Release notes: 0.0.92.1935-beta
 
-There is no release for this plugin yet because it depends on code that is newer than the latest release
-of Observatory Core (Dec. 18, 2021): https://github.com/Xjph/ObservatoryCore/pull/49.
+Finally, a release! Update 11 triggered some updates which mean the bug I was blocked on is fixed in the
+latest version of Observatory Core!
 
-However, if you're running from a local debug build, it should run fine if you are caught up to latest version.
+Give these a try and let me know if you have any issues!
