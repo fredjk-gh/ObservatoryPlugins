@@ -12,7 +12,7 @@ As of Odyssey Update 9 (Dec. 2021), the game is not writing "CarrierJump" events
 (see https://issues.frontierstore.net/issue-detail/46996), resulting in slightly degraded functionality
 when jumping your carrier while not docked on it.
 
-As of Odyssey Update 11 (Mar. 2022), the game is not writing StationName/StationId properties to location
+As of Odyssey Update 11 (Mar. 2022), the game is not writing StationName/StationType properties to location
 events, further complicating matters. I've managed to work around this for the moment.
 
 ## Prospector
