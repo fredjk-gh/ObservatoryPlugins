@@ -9,50 +9,6 @@ namespace ObservatoryProspectorBasic
 {
     class ProspectorSettings
     {
-        public enum Commodities
-        {
-            // Minerals:
-            Alexandrite,
-            Bauxite,
-            Benitoite,
-            Bertrandite,
-            Bromellite,
-            Coltan,
-            Gallite,
-            Grandidierite,
-            Indite,
-            Lepidolite,
-            LithiumHydroxide,
-            LowTemperatureDiamond,
-            MethaneClathrate,
-            MethanolMonohydrateCrystals,
-            Monazite,
-            Musgravite,
-            Opal,
-            Painite,
-            Rhodplumsite,
-            Rutile,
-            Serendibite,
-            Uraninite,
-
-            // Metals:
-            Cobalt,
-            Gold,
-            Osmium,
-            Palladium,
-            Platinum,
-            Praseodymium,
-            Samarium,
-            Silver,
-            Thorium,
-
-            // Chemicals:
-            HydrogenPeroxide,
-            LiquidOxygen,
-            Tritium,
-            Water,
-        }
-
         private Dictionary<Commodities, Boolean> ProspectingFor = new();
         internal bool getFor(Commodities commodity)
         {
@@ -63,11 +19,68 @@ namespace ObservatoryProspectorBasic
             ProspectingFor[c] = value;
         }
 
-        [SettingDisplayName("Minimum Percent")]
+        [SettingDisplayName("Minimum Commodity Percent (Laser mining)")]
         [SettingNumericBounds(0.0, 66.0)]
         public int MinimumPercent { get; set; }
 
+        [SettingIgnore]
+        public RingType? MentionableRings
+        {
+            get
+            {
+                List<RingType> allDesiredRingTypes = ProspectingFor.Where(kvp => kvp.Value)
+                    .Select(kvp => kvp.Key.Details().RingType)
+                    .ToList();
+                RingType? desiredRingTypes = null;
+                foreach (RingType rt in allDesiredRingTypes)
+                {
+                    desiredRingTypes = desiredRingTypes.HasValue ? desiredRingTypes | rt : rt;
+                }
+                return desiredRingTypes;
+            }
+        }
 
+        [SettingDisplayName("Highlight ring types which may contain commodites selected below")]
+        public bool MentionPotentiallyMineableRings { get; set; }
+
+        [SettingDisplayName("Show Prospector notifications")]
+        public bool ShowProspectorNotifications { get; set; }
+
+        [SettingDisplayName("Show Cargo notification")]
+        public bool ShowCargoNotification { get; set; }
+
+        public List<Commodities> DesirableCommonditiesByRingType(RingType ringType)
+        {
+            return ProspectingFor.Where(kvp => kvp.Value && kvp.Key.Details().RingType.HasFlag(ringType))
+                .Select(kvp => kvp.Key)
+                .ToList();
+        }
+
+        //[SettingIgnore]
+        //public MiningMethod Method { get; set; }
+
+        //[SettingDisplayName("Method: Laser")]
+        //public bool MethodLaser {
+        //    get { return Method.HasFlag(MiningMethod.Laser); }
+        //    set { Method |= MiningMethod.Laser; }
+        //}
+
+        //[SettingDisplayName("Method: Core")]
+        //public bool MethodCore
+        //{
+        //    get { return Method.HasFlag(MiningMethod.Core); }
+        //    set { Method |= MiningMethod.Core; }
+        //}
+
+        //[SettingDisplayName("Method: SubSurface")]
+        //public bool MethodSubSurface
+        //{
+        //    get { return Method.HasFlag(MiningMethod.SubSurface); }
+        //    set { Method |= MiningMethod.SubSurface; }
+        //}
+
+
+        // Raw mats
         [SettingDisplayName("Prospect high material content")]
         public bool ProspectHighMaterialContent { get; set; }
 
@@ -205,7 +218,7 @@ namespace ObservatoryProspectorBasic
             get { return getFor(Commodities.Uraninite); }
             set { setFor(Commodities.Uraninite, value); }
         }
- 
+
         // Metals:
         [SettingDisplayName("Prospect Cobalt")]
         public bool ProspectCobalt
@@ -231,7 +244,7 @@ namespace ObservatoryProspectorBasic
             get { return getFor(Commodities.Palladium); }
             set { setFor(Commodities.Palladium, value); }
         }
-        [SettingDisplayName("Prospect Platinum")]
+        [SettingDisplayName("Prospect Platinum (Laser)")]
         public bool ProspectPlatinum
         {
             get { return getFor(Commodities.Platinum); }
@@ -256,7 +269,7 @@ namespace ObservatoryProspectorBasic
             set { setFor(Commodities.Silver, value); }
         }
         [SettingDisplayName("Prospect Thorium")]
- 
+
         // Chemicals:
         public bool ProspectThorium
         {
@@ -287,7 +300,158 @@ namespace ObservatoryProspectorBasic
             get { return getFor(Commodities.Water); }
             set { setFor(Commodities.Water, value); }
         }
-
-
     }
+
+    public class CommodityDetails
+    {
+        internal CommodityDetails(RingType ringType, MiningMethod method)
+        {
+            MiningMethod = method;
+            RingType = ringType;
+        }
+
+        public MiningMethod MiningMethod { get; }
+        public RingType RingType { get; }
+    }
+
+    public class RingTypeString
+    {
+        internal RingTypeString(string display, string match = "")
+        {
+            Display = display;
+            Match = string.IsNullOrEmpty(match) ? display : match;
+        }
+        public string Display { get; }
+        public string Match { get; }
+    }
+    public static class Extensions
+    {
+        private static Dictionary<Commodities, CommodityDetails> commodityDetails = new()
+        {
+            // Minerals
+            { Commodities.Alexandrite, new CommodityDetails(RingType.MetalRich | RingType.Rocky | RingType.Icy, MiningMethod.Core) },
+            { Commodities.Bauxite, new CommodityDetails(RingType.Rocky, MiningMethod.Laser) },
+            { Commodities.Benitoite, new CommodityDetails(RingType.MetalRich | RingType.Rocky, MiningMethod.Core) },
+            { Commodities.Bertrandite, new CommodityDetails(RingType.MetalRich | RingType.Metallic, MiningMethod.Laser) },
+            { Commodities.Bromellite, new CommodityDetails(RingType.Icy, MiningMethod.Core | MiningMethod.Laser | MiningMethod.SubSurface) },
+            { Commodities.Coltan, new CommodityDetails(RingType.MetalRich | RingType.Rocky, MiningMethod.Laser) },
+            { Commodities.Gallite, new CommodityDetails(RingType.MetalRich | RingType.Metallic | RingType.Rocky, MiningMethod.Laser) },
+            { Commodities.Grandidierite, new CommodityDetails(RingType.Metallic | RingType.Icy, MiningMethod.Core) },
+            { Commodities.Indite, new CommodityDetails(RingType.Metallic | RingType.MetalRich | RingType.Rocky, MiningMethod.Laser) },
+            { Commodities.Lepidolite, new CommodityDetails(RingType.MetalRich | RingType.Rocky, MiningMethod.Laser) },
+            { Commodities.LithiumHydroxide, new CommodityDetails(RingType.Icy, MiningMethod.Laser) },
+            { Commodities.LowTemperatureDiamond, new CommodityDetails(RingType.Icy, MiningMethod.Core | MiningMethod.Laser | MiningMethod.SubSurface) },
+            { Commodities.MethaneClathrate, new CommodityDetails(RingType.Icy, MiningMethod.Laser) },
+            { Commodities.MethanolMonohydrateCrystals, new CommodityDetails(RingType.Icy, MiningMethod.Laser) },
+            { Commodities.Monazite, new CommodityDetails(RingType.MetalRich | RingType.Rocky, MiningMethod.Core) },
+            { Commodities.Musgravite, new CommodityDetails(RingType.Rocky, MiningMethod.Core) },
+            { Commodities.Painite, new CommodityDetails(RingType.Metallic, MiningMethod.Core | MiningMethod.Laser | MiningMethod.SubSurface) },
+            { Commodities.Rhodplumsite, new CommodityDetails(RingType.MetalRich, MiningMethod.Core) },
+            { Commodities.Rutile, new CommodityDetails(RingType.Rocky, MiningMethod.Laser) },
+            { Commodities.Serendibite, new CommodityDetails(RingType.MetalRich | RingType.Rocky, MiningMethod.Core) },
+            { Commodities.Uraninite, new CommodityDetails(RingType.MetalRich | RingType.Rocky, MiningMethod.Laser) },
+            { Commodities.Opal, new CommodityDetails(RingType.Icy, MiningMethod.Core) },
+
+            // Metals
+            { Commodities.Cobalt, new CommodityDetails(RingType.Rocky, MiningMethod.Laser) },
+            { Commodities.Gold, new CommodityDetails(RingType.Metallic | RingType.MetalRich, MiningMethod.Laser) },
+            { Commodities.Osmium, new CommodityDetails(RingType.Metallic | RingType.MetalRich, MiningMethod.Laser) },
+            { Commodities.Palladium, new CommodityDetails(RingType.Metallic, MiningMethod.Laser) },
+            { Commodities.Platinum, new CommodityDetails(RingType.Metallic, MiningMethod.Core | MiningMethod.Laser | MiningMethod.SubSurface) },
+            { Commodities.Praseodymium, new CommodityDetails(RingType.Metallic | RingType.MetalRich, MiningMethod.Laser) },
+            { Commodities.Samarium, new CommodityDetails(RingType.Metallic | RingType.MetalRich, MiningMethod.Laser) },
+            { Commodities.Silver, new CommodityDetails(RingType.Metallic | RingType.MetalRich, MiningMethod.Laser) },
+            { Commodities.Thorium, new CommodityDetails(RingType.Metallic, MiningMethod.Laser) },
+ 
+            // Chemicals
+            { Commodities.HydrogenPeroxide, new CommodityDetails(RingType.Icy, MiningMethod.Laser) },
+            { Commodities.LiquidOxygen, new CommodityDetails(RingType.Icy, MiningMethod.Laser | MiningMethod.SubSurface) },
+            { Commodities.Tritium, new CommodityDetails(RingType.Icy, MiningMethod.Laser | MiningMethod.SubSurface) },
+            { Commodities.Water, new CommodityDetails(RingType.Icy, MiningMethod.Laser | MiningMethod.SubSurface) },
+        };
+
+        public static CommodityDetails Details(this Commodities commodities)
+        {
+            return commodityDetails[commodities];
+        }
+
+        private static Dictionary<RingType, RingTypeString> ringTypeStrings = new()
+        {
+            { RingType.Rocky, new RingTypeString("Rocky") },
+            { RingType.Metallic, new RingTypeString("Metallic", "Metalic") }, // To match Frontier's spelling
+            { RingType.MetalRich, new RingTypeString("Metal Rich", "MetalRich") },
+            { RingType.Icy, new RingTypeString("Icy") },
+        };
+        public static string MatchString(this RingType rt)
+        {
+            return ringTypeStrings[rt].Match;
+        }
+
+        public static string DisplayString(this RingType rt)
+        {
+            return ringTypeStrings[rt].Display;
+        }
+    }
+
+    [Flags]
+    public enum MiningMethod
+    {
+        Laser = 1,
+        SubSurface = 2,
+        Core = 4,
+    }
+
+    [Flags]
+    public enum RingType
+    {
+        Rocky = 1,
+        MetalRich = 2,
+        Metallic = 4,  
+        Icy = 8,
+    }
+
+    public enum Commodities
+    {
+        // Minerals:
+        Alexandrite,
+        Bauxite,
+        Benitoite,
+        Bertrandite,
+        Bromellite,
+        Coltan,
+        Gallite,
+        Grandidierite,
+        Indite,
+        Lepidolite,
+        LithiumHydroxide,
+        LowTemperatureDiamond,
+        MethaneClathrate,
+        MethanolMonohydrateCrystals,
+        Monazite,
+        Musgravite,
+        Opal,
+        Painite,
+        Rhodplumsite,
+        Rutile,
+        Serendibite,
+        Uraninite,
+
+        // Metals:
+        Cobalt,
+        Gold,
+        Osmium,
+        Palladium,
+        Platinum,
+        Praseodymium,
+        Samarium,
+        Silver,
+        Thorium,
+
+        // Chemicals:
+        HydrogenPeroxide,
+        LiquidOxygen,
+        Tritium,
+        Water,
+    }
+
 }
