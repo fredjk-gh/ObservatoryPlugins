@@ -1,7 +1,8 @@
 # ObservatoryPlugins
 A suite of plugins for Elite ObservatoryCore (https://github.com/Xjph/ObservatoryCore).
 
-For all plugins, unzip the dll into the plugins/ folder in your ObservatoryCore installation.
+For all plugins, just drop the zip/eop into the plugins/ folder in your ObservatoryCore installation.
+ObservatoryCore will correctly extract it for you on next startup.
 
 Feel free to open an issue if something doesn't work, or reach out in the ObservatoryCore discord.
 
@@ -17,9 +18,14 @@ events, further complicating matters. I've managed to work around this for the m
 
 ## Prospector
 
-### Release notes: 0.0.92.1935-beta
+### Release notes: 0.22.268.345-beta
 
-Finally, a release! Update 11 triggered some updates which mean the bug I was blocked on is fixed in the
-latest version of Observatory Core!
+Lots of updates and improvements!
+* New version numbering.
+* During FSS, calls out bodies rings of interest that meet a specified minimum "density".
+* When rings are scanned with DSS, calls out hotspots for materials of interest (configurable by setting).
+* Added location to the grid view.
+* Added options to control which notifications are enabled.
+* Misc cleanup.
 
 Give these a try and let me know if you have any issues!
