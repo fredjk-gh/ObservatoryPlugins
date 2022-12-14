@@ -525,6 +525,7 @@ namespace ObservatoryProspectorBasic
 
         private void OnRingPing(SAASignalsFound saaSignalsFound)
         {
+            if (String.IsNullOrEmpty(currentSystem)) return;
             var ringName = GetBodyName(saaSignalsFound.BodyName);
             if (saaSignalsFound.Signals == null || saaSignalsFound.Signals.Count == 0 || alreadyReportedScansSaaSignals.Contains(ringName))
                 return;
@@ -597,7 +598,8 @@ namespace ObservatoryProspectorBasic
             NotificationArgs args = new()
             {
                 Title = title,
-                Detail = detail,
+                Detail = $"[{DateTime.UtcNow.ToString("h:mm:ss")}] {detail}",
+                DetailSsml = $"<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"en - US\"><voice name=\"\">{detail}</voice></speak>",
                 Timeout = 300 * 1000, // 5 minutes
                 XPos = 1,
                 YPos = ((index % 2) + 1) * 15,
