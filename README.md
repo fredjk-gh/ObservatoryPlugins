@@ -8,7 +8,7 @@ Feel free to open an issue if something doesn't work, or reach out in the Observ
 
 ## Stat Tracker
 
-### Release notes: 0.23.44.0129-beta
+### Release notes: 0.23.44.0439-beta
 
 This new plugin (as of February 2023) monitors your discoveries to see if your discovery is near, tied with or better than a known record.
 Record data is sourced from edastro.com and updated ~weekly. Note that the plugin suggests "potential new record" because there are 
