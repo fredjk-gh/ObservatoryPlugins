@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,18 +12,20 @@ namespace ObservatoryStatScanner
     internal class CSVData
     {
         // Field indexes
-        static readonly int CSV_Type = 0;
-        static readonly int CSV_Variable = 1;
-        static readonly int CSV_MaxCount = 2;
-        static readonly int CSV_MaxValue = 3;
-        static readonly int CSV_MaxBody = 4;
-        static readonly int CSV_MinCount = 5;
-        static readonly int CSV_MinValue = 6;
-        static readonly int CSV_MinBody = 7;
-        //static readonly int CSV_Average = 8;
-        //static readonly int CSV_StandardDeviation = 9;
-        //static readonly int CSV_Count = 10;
-        static readonly int CSV_Table = 11;
+        public const int CSV_Type = 0;
+        public const int CSV_Variable = 1;
+        public const int CSV_MaxCount = 2;
+        public const int CSV_MaxValue = 3;
+        public const int CSV_MaxBody = 4;
+        public const int CSV_MinCount = 5;
+        public const int CSV_MinValue = 6;
+        public const int CSV_MinBody = 7;
+        public const int CSV_Average = 8;
+        public const int CSV_StandardDeviation = 9;
+        public const int CSV_Count = 10;
+        public const int CSV_Table = 11;
+
+        private static CultureInfo US_EN = new CultureInfo("us-EN");
 
         public CSVData(string[] csvFields)
         {
@@ -43,13 +46,13 @@ namespace ObservatoryStatScanner
                 try
                 {
                     errorContext = $"Error parsing MinCount from {csvFields[CSV_MinCount]}";
-                    MinCount = Int64.Parse(csvFields[CSV_MinCount]);
+                    MinCount = Int64.Parse(csvFields[CSV_MinCount], US_EN);
                     errorContext = $"Error parsing MinValue from {csvFields[CSV_MinValue]}";
-                    MinValue = Double.Parse(csvFields[CSV_MinValue]);
+                    MinValue = Double.Parse(csvFields[CSV_MinValue], US_EN);
                     errorContext = $"Error parsing MaxCount from {csvFields[CSV_MaxCount]}";
-                    MaxCount = Int64.Parse(csvFields[CSV_MaxCount]);
+                    MaxCount = Int64.Parse(csvFields[CSV_MaxCount], US_EN);
                     errorContext = $"Error parsing MaxValue from {csvFields[CSV_MaxValue]}";
-                    MaxValue = Double.Parse(csvFields[CSV_MaxValue]);
+                    MaxValue = Double.Parse(csvFields[CSV_MaxValue], US_EN);
                 }
                 catch (Exception ex)
                 {

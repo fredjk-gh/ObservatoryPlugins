@@ -8,7 +8,16 @@ Feel free to open an issue if something doesn't work, or reach out in the Observ
 
 ## Stat Tracker
 
-### Release notes: 0.23.46.0610-beta
+### Release notes: 0.23.46.717-beta
+
+Fix number parsing errors in locales which use ',' for decimal separator.
+
+The galactic records is written using US formatting, notably, using a period for decimal separator, not a comma. Attempting to import these values using a locale which uses a comma as decimal separator (ie. de or ru) causes lots of errors to be written to the crash log on startup.
+
+This change forces US locale when parsing the galactic records file.
+
+
+### Release notes: 0.23.46.610-beta
 
 Added a "First Discoveries only" option which shows only first discovered entries plus visited known record holders.
 
@@ -16,7 +25,7 @@ Also added some error handling better deal with parsing errors (likely due to lo
 
 Plus a bunch of refactoring and internal improvements.
 
-### Release notes: 0.23.44.0439-beta
+### Release notes: 0.23.44.439-beta
 
 This new plugin (as of February 2023) monitors your discoveries to see if your discovery is near, tied with or better than a known record.
 Record data is sourced from edastro.com and updated ~weekly. Note that the plugin suggests "potential new record" because there are 

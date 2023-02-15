@@ -8,12 +8,9 @@ namespace ObservatoryStatScanner
 
         public static IRecord CreateRecord(string[] csvFields, StatScannerSettings settings, RecordKind recordKind)
         {
-            CSVData data = new(csvFields);
-            if (!data.IsValid) return null;
-
             Type typeToCreate = null;
 
-            switch (data.Variable)
+            switch (csvFields[CSVData.CSV_Variable])
             {
                 // Stars
                 case Constants.V_SOLAR_MASSES:
@@ -57,6 +54,10 @@ namespace ObservatoryStatScanner
 
             if (typeToCreate != null)
             {
+                // Don't parse stuff if we don't need to!
+                CSVData data = new(csvFields);
+                if (!data.IsValid) return null;
+
                 object[] args = new object[] { settings, recordKind, data };
                 return (IRecord)Activator.CreateInstance(typeToCreate,args);
             }
