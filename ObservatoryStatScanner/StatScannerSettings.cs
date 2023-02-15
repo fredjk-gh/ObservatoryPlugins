@@ -29,6 +29,9 @@ namespace ObservatoryStatScanner
         [SettingNumericBounds(1000, 100000, 1000)]
         public int HighCardinalityTieSuppression { get; set; }
 
+        [SettingDisplayName("Show Records for first discovered objects only")]
+        public bool FirstDiscoveriesOnly { get; set; }
+
         // Individual record tracking controls
         //
         // Per Body records

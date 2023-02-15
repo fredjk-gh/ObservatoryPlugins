@@ -9,10 +9,11 @@ namespace ObservatoryStatScanner.Records
 {
     internal class OrbitalPeriodRecord : BodyRecord
     {
-        public OrbitalPeriodRecord(StatScannerSettings settings, RecordTable table, string journalObjectName, string eDAstroObjectName, long minCount, double minValue, string minBody, long maxCount, double maxValue, string maxBody)
-            : base(settings, table, "Orbital Period (d)", Constants.V_ORBITAL_PERIOD, journalObjectName, eDAstroObjectName, minCount, minValue, minBody, maxCount, maxValue, maxBody)
-        { }
-        public override string ValueFormat { get => "{0:0.##} d"; }
+        public OrbitalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
+            : base(settings, recordKind, data, "Orbital Period (d)")
+        {
+            format = "{0:0.##} d";
+        }
         public override bool Enabled => Settings.EnableOrbitalPeriodRecord;
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
@@ -24,8 +25,8 @@ namespace ObservatoryStatScanner.Records
 
             // convert seconds -> days
             var periodDays = scan.OrbitalPeriod / Constants.CONV_S_TO_DAYS_DIVISOR;
-            var results = CheckMax(periodDays, scan.Timestamp, scan.BodyName);
-            results.AddRange(CheckMin(periodDays, scan.Timestamp, scan.BodyName));
+            var results = CheckMax(periodDays, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
+            results.AddRange(CheckMin(periodDays, scan.Timestamp, scan.BodyName, IsUndiscovered(scan)));
 
             return results;
         }

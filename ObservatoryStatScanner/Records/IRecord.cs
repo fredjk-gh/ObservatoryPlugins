@@ -26,9 +26,17 @@ namespace ObservatoryStatScanner.Records
         PotentialNew
     }
 
+    enum RecordKind
+    {
+        Galactic,
+        Personal,
+    }
+
     internal interface IRecord
     {
         bool Enabled { get; }
+        RecordTable Table { get; }
+        string VariableName { get; }
         string DisplayName { get; }
         string EDAstroObjectName { get; }
         string JournalObjectName { get; }
@@ -38,8 +46,7 @@ namespace ObservatoryStatScanner.Records
         string MinBody { get; }
         long MinCount { get; }
         double MinValue { get; }
-        RecordTable Table { get; }
-        string VariableName { get; }
+        RecordKind RecordKind { get; }
         string ValueFormat { get; set; }
 
         List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans);

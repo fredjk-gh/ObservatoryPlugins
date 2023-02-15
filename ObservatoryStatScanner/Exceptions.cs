@@ -11,4 +11,11 @@ namespace ObservatoryStatScanner
         public RecordsCSVFormatChangedException(string message) : base(message)
         { }
     }
+
+    internal class RecordsCSVParseException : Exception
+    {
+        public RecordsCSVParseException(string message, Exception? innerException) : base(message, innerException)
+        { }
+
+    }
 }

@@ -8,6 +8,14 @@ Feel free to open an issue if something doesn't work, or reach out in the Observ
 
 ## Stat Tracker
 
+### Release notes: 0.23.46.0610-beta
+
+Added a "First Discoveries only" option which shows only first discovered entries plus visited known record holders.
+
+Also added some error handling better deal with parsing errors (likely due to locale) that I need to better understand. This *should* prevent start-up crashes.
+
+Plus a bunch of refactoring and internal improvements.
+
 ### Release notes: 0.23.44.0439-beta
 
 This new plugin (as of February 2023) monitors your discoveries to see if your discovery is near, tied with or better than a known record.

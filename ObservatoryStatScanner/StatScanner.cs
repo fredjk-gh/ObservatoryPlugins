@@ -17,6 +17,7 @@ namespace ObservatoryStatScanner
             MaxNearRecordThreshold = 0,
             MinNearRecordThreshold = 0,
             HighCardinalityTieSuppression = 50000,
+            FirstDiscoveriesOnly = false,
             EnableEarthMassesRecord = true,
             EnablePlanetaryRadiusRecord = true,
             EnableSurfaceGravityRecord = true,
@@ -54,6 +55,13 @@ namespace ObservatoryStatScanner
         {
             get => settings;
             set => settings = (StatScannerSettings)value;
+        }
+        public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
+        {
+            if (LogMonitorStateChangedEventArgs.IsBatchRead(args.NewState))
+            {
+                Core.ClearGrid(this, new StatScannerGrid());
+            }
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -275,11 +283,19 @@ namespace ObservatoryStatScanner
                     if (fields[0].Contains(" (landable)", StringComparison.InvariantCultureIgnoreCase)) continue; // Not handled.
 
                     // Hey, a potentially usable record. See if we have a handler for it and if so, add it to the book of records we're tracking.
-                    var record = RecordFactory.CreateRecord(fields, settings);
-                    if (record != null)
+                    IRecord record;
+                    try
                     {
-                        recordBook.AddRecord(record);
-                        if (settings.DevMode) Debug.WriteLine("Tracking record: {0}, {1}, {2}", record.Table, record.EDAstroObjectName, record.VariableName);
+                        record = RecordFactory.CreateRecord(fields, settings, RecordKind.Galactic);
+                        if (record != null)
+                        {
+                            recordBook.AddRecord(record);
+                            if (settings.DevMode) Debug.WriteLine("Tracking record: {0}, {1}, {2}", record.Table, record.EDAstroObjectName, record.VariableName);
+                        }
+                    }
+                    catch (RecordsCSVParseException ex)
+                    {
+                        ErrorLogger(ex, String.Format("Error while parsing record: {0}", String.Join(",", fields)));
                     }
                 }
             }
@@ -297,5 +313,7 @@ namespace ObservatoryStatScanner
         public string RecordValue { get; set; }
         public string RecordHolder { get; set; }
         public string Details { get; set; }
+        public string DiscoveryStatus { get; set; }
+        public string RecordKind { get; set; }
     }
 }
