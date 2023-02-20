@@ -8,8 +8,30 @@ namespace ObservatoryStatScanner
 {
     internal class Constants
     {
-        // Galactic Records source-of-truth
+        // Galactic Records source-of-truth -- combined and procgen only versions.
         public const string EDASTRO_GALACTIC_RECORDS_CSV_URL = "https://edastro.com/mapcharts/files/galactic-records.csv";
+        public const string EDASTRO_GALACTIC_RECORDS_PG_CSV_URL = "https://edastro.com/mapcharts/files/galactic-records-procgen.csv";
+
+        // Local filenames:
+        public const string LOCAL_GALACTIC_RECORDS_FILE = "galactic_records.csv";
+        public const string LOCAL_GALACTIC_PROCGEN_RECORDS_FILE = "galactic_records_procgen.csv";
+        public const string GOOD_BACKUP_EXT = ".good";
+
+        // CSV Files are quoted CSV format with columns:
+        public static readonly string[] ExpectedFields = new string[] {
+                "Type",
+                "Variable",
+                "Max Count",
+                "Max Value",
+                "Max Body",
+                "Min Count",
+                "Min Value",
+                "Min Body",
+                "Average",
+                "Standard Deviation",
+                "Count",
+                "Table"
+            };
 
         // Orvidius has indicated they use 12 digit precision. Matching
         // that here for more stable comparisons (particularly when applying
@@ -20,6 +42,7 @@ namespace ObservatoryStatScanner
         public const double CONV_MperS2_TO_G_DIVISOR = 9.81;
         public const double CONV_M_TO_SOLAR_RAD_DIVISOR = 696340000.0;
         public const double CONV_M_TO_KM_DIVISOR = 1000.0;
+        public const double CONV_M_TO_LS_DIVISOR = 299792458.0;
         public const double CONV_S_TO_DAYS_DIVISOR = 86400.0;
         public const double CONV_PA_TO_ATM_DIVISOR = 101325.0;
 
@@ -35,6 +58,12 @@ namespace ObservatoryStatScanner
         public const string V_SURFACE_TEMPERATURE = "surfaceTemperature";
         public const string V_ECCENTRICITY = "orbitalEccentricity";
         public const string V_ORBITAL_PERIOD = "orbitalPeriod";
+        public const string V_ROTATIONAL_PERIOD = "rotationalPeriod";
+
+        public const string V_RING_OUTER_RADIUS = "outerRadius";
+        public const string V_RING_WIDTH = "width";
+        public const string V_RING_MASS = "mass";
+        public const string V_RING_DENSITY = "density";
 
         // Some of the object class names from the list below. These are used
         // in multiple places so are pulled into constants to avoid duplication/drift.
@@ -44,6 +73,18 @@ namespace ObservatoryStatScanner
         public const string EDASTRO_METAL_RICH_BODY = "Metal-rich body";
         public const string EDASTRO_STAR_BLACK_HOLE = "Black Hole";
 
+        // Values from the Scan which are used in multiple places.
+        public const string SCAN_EARTHLIKE = "Earthlike body";
+        public const string SCAN_ICY_BODY = "Icy body";
+        public const string SCAN_HIGH_METAL_CONTENT_BODY = "High metal content body";
+        public const string SCAN_METAL_RICH_BODY = "Metal rich body";
+        public const string SCAN_ROCKY_ICE_BODY = "Rocky ice body";
+        public const string SCAN_ROCKY_BODY = "Rocky body";
+        public const string SCAN_BARYCENTRE = "Barycentre";
+
+        public const string SCAN_TYPE_NAV_BEACON = "NavBeaconDetail";
+
+        // Key: EDSM body type => Value: Journal body type.
         public static Dictionary<string, string> JournalTypeMap = new()
         {
             // RecordType: planets
@@ -53,16 +94,16 @@ namespace ObservatoryStatScanner
             { "Class III gas giant", "Sudarsky class III gas giant" },
             { "Class IV gas giant", "Sudarsky class IV gas giant" },
             { "Class V gas giant", "Sudarsky class V gas giant" },
-            { "Earth-like world ProcGen", "Earthlike body" },
+            { "Earth-like world ProcGen", SCAN_EARTHLIKE },
             { "Gas giant with ammonia-based life", "Gas giant with ammonia based life" },
             { "Gas giant with water-based life", "Gas giant with water based life" },
             { "Helium gas giant", "Helium gas giant" },
             { "Helium-rich gas giant", "Helium rich gas giant" },
-            { "High metal content world", "High metal content body" },
-            { "Icy body", "Icy body" },
-            { EDASTRO_METAL_RICH_BODY, "Metal rich body" },
-            { "Rocky Ice world", "Rocky ice body" },
-            { "Rocky body", "Rocky body" },
+            { "High metal content world", SCAN_HIGH_METAL_CONTENT_BODY },
+            { "Icy body", SCAN_ICY_BODY },
+            { EDASTRO_METAL_RICH_BODY, SCAN_METAL_RICH_BODY },
+            { "Rocky Ice world", SCAN_ROCKY_ICE_BODY },
+            { "Rocky body", SCAN_ROCKY_BODY },
             { "Water giant", "Water giant" },
             { "Water world", "Water world" },
             // RecordType: stars

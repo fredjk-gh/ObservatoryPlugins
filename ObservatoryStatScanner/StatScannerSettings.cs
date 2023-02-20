@@ -9,8 +9,13 @@ namespace ObservatoryStatScanner
 {
     class StatScannerSettings
     {
-        //[SettingDisplayName("Enable tracking personal bests (read-all after enabling)")]
-        //public bool EnablePersonalBests { get; set; }
+        public const string DEFAULT_PROCGEN_HANDLING = "Ignore ProcGen records";
+        public enum ProcGenHandlingMode
+        {
+            ProcGenIgnore,
+            ProcGenPlusGalactic,
+            ProcGenOnly,
+        }
 
         [SettingDisplayName("Near Maximum record threshold % (Caution: high values can generate lots of hits; 0 disables [default])")]
         [SettingNumericBounds(0.0, 10.0)]
@@ -29,8 +34,27 @@ namespace ObservatoryStatScanner
         [SettingNumericBounds(1000, 100000, 1000)]
         public int HighCardinalityTieSuppression { get; set; }
 
+        [SettingDisplayName("How should the experimental ProcGen-only records be used?")]
+        [SettingBackingValue("ProcGenHandling")]
+        public Dictionary<string, object> ProcGenHandlingOptions
+        {
+            get => new()
+            {
+                {DEFAULT_PROCGEN_HANDLING, ProcGenHandlingMode.ProcGenIgnore},
+                {"Use both ProcGen + Galactic records", ProcGenHandlingMode.ProcGenPlusGalactic},
+                {"Only show ProcGen records (+ visited Galactic records)", ProcGenHandlingMode.ProcGenOnly}
+            };
+        }
+
+        [SettingIgnore]
+        public string ProcGenHandling { get; set; }
+
         [SettingDisplayName("Show Records for first discovered objects only")]
         public bool FirstDiscoveriesOnly { get; set; }
+
+        [SettingDisplayName("Enable tracking personal bests (requires read-all after enabling)")]
+        public bool EnablePersonalBests { get; set; }
+
 
         // Individual record tracking controls
         //
@@ -58,6 +82,9 @@ namespace ObservatoryStatScanner
         [SettingDisplayName("Enable checking Orbital Period records")]
         public bool EnableOrbitalPeriodRecord { get; set; }
 
+        [SettingDisplayName("Enable checking Rotational Period records")]
+        public bool EnableRotationalPeriodRecord { get; set; }
+
         // Stars
         [SettingDisplayName("Enable checking Star Mass records")]
         public bool EnableSolarMassesRecord { get; set; }
@@ -65,11 +92,31 @@ namespace ObservatoryStatScanner
         [SettingDisplayName("Enable checking Star Radius records")]
         public bool EnableSolarRadiusRecord { get; set; }
 
+        // Rings
+        [SettingDisplayName("Enable Ring Outer Radius records")]
+        public bool EnableRingOuterRadiusRecord { get; set; }
+
+        [SettingDisplayName("Enable Ring Width records")]
+        public bool EnableRingWidthRecord { get; set; }
+
+        [SettingDisplayName("Enable Ring Mass records")]
+        public bool EnableRingMassRecord { get; set; }
+
+        [SettingDisplayName("Enable Ring Density records")]
+        public bool EnableRingDensityRecord { get; set; }
+
+
         [SettingDisplayName("Force Update Galactic Records")]
         [System.Text.Json.Serialization.JsonIgnore]
         public Action ForceUpdateGalacticRecords { get; internal set; }
 
         [SettingIgnore]
         public bool DevMode { get => false; }
+
+        [SettingIgnore]
+        public double DevModeMaxScaleFactor = 0.8;
+
+        [SettingIgnore]
+        public double DevModeMinScaleFactor = 1.2;
     }
 }

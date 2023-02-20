@@ -18,7 +18,7 @@ namespace ObservatoryStatScanner.Records
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {
             if (!Enabled
-                || scan.Eccentricity ==- 0.0
+                || scan.Eccentricity == 0.0
                 || (string.IsNullOrEmpty(scan.StarType) && (string.IsNullOrEmpty(scan.PlanetClass) || IsNonProcGenOrTerraformedELW(scan))))
                 return new();
 

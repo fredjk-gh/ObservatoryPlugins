@@ -25,7 +25,7 @@ namespace ObservatoryStatScanner
         public const int CSV_Count = 10;
         public const int CSV_Table = 11;
 
-        private static CultureInfo US_EN = new CultureInfo("us-EN");
+        private static readonly CultureInfo EN_US = CultureInfo.GetCultureInfo("en-US");
 
         public CSVData(string[] csvFields)
         {
@@ -46,13 +46,13 @@ namespace ObservatoryStatScanner
                 try
                 {
                     errorContext = $"Error parsing MinCount from {csvFields[CSV_MinCount]}";
-                    MinCount = Int64.Parse(csvFields[CSV_MinCount], US_EN);
+                    MinCount = Int64.Parse(csvFields[CSV_MinCount], EN_US);
                     errorContext = $"Error parsing MinValue from {csvFields[CSV_MinValue]}";
-                    MinValue = Double.Parse(csvFields[CSV_MinValue], US_EN);
+                    MinValue = Double.Parse(csvFields[CSV_MinValue], EN_US);
                     errorContext = $"Error parsing MaxCount from {csvFields[CSV_MaxCount]}";
-                    MaxCount = Int64.Parse(csvFields[CSV_MaxCount], US_EN);
+                    MaxCount = Int64.Parse(csvFields[CSV_MaxCount], EN_US);
                     errorContext = $"Error parsing MaxValue from {csvFields[CSV_MaxValue]}";
-                    MaxValue = Double.Parse(csvFields[CSV_MaxValue], US_EN);
+                    MaxValue = Double.Parse(csvFields[CSV_MaxValue], EN_US);
                 }
                 catch (Exception ex)
                 {

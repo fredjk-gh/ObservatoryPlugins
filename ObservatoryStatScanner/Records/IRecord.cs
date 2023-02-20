@@ -14,6 +14,7 @@ namespace ObservatoryStatScanner.Records
     {
         Min,
         Max,
+        Count,
         MaxCount,
         MaxSum,
     }
@@ -29,6 +30,7 @@ namespace ObservatoryStatScanner.Records
     enum RecordKind
     {
         Galactic,
+        GalacticProcGen,
         Personal,
     }
 

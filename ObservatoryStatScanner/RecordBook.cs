@@ -12,6 +12,7 @@ namespace ObservatoryStatScanner
     {
         // Root key: RecordTable (one of: stars, planets, rings)
         // Leaf key: Journal-based object name (eg. "M_RedSuperGiant" or "Ammonia world" or "eRingClass_Metalic")
+        // Values: List of IRecords which apply to the object type.
         private Dictionary<RecordTable, Dictionary<string, List<IRecord>>> RecordsByTable = new();
 
         public RecordBook()
@@ -38,6 +39,21 @@ namespace ObservatoryStatScanner
             if (RecordsByTable[table].ContainsKey(journalObjectName))
                 return RecordsByTable[table][journalObjectName];
             return new();
+        }
+
+        public int Count
+        {
+            get { return RecordsByTable.Keys.Sum(table => CountByTable(table)); }
+        }
+
+        public int CountByTable(RecordTable table)
+        {
+            return RecordsByTable[table].Values.Sum(list => list.Count);
+        }
+
+        public int CountByKind(RecordKind kind)
+        {
+            return RecordsByTable.Values.Sum(leafDict => leafDict.Values.Sum(list => list.Where(r => r.RecordKind == kind).Count()));
         }
     }
 }

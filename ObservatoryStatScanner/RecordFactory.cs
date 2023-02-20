@@ -44,10 +44,24 @@ namespace ObservatoryStatScanner
                 case Constants.V_ORBITAL_PERIOD:
                     typeToCreate = typeof(OrbitalPeriodRecord);
                     break;
+                case Constants.V_ROTATIONAL_PERIOD:
+                    typeToCreate = typeof(RotationalPeriodRecord);
+                    break;
 
 
                 // Rings
-
+                case Constants.V_RING_OUTER_RADIUS:
+                    typeToCreate = typeof(RingOuterRadiusRecord);
+                    break;
+                case Constants.V_RING_WIDTH:
+                    typeToCreate = typeof(RingWidthRecord);
+                    break;
+                case Constants.V_RING_MASS:
+                    typeToCreate = typeof(RingMassRecord);
+                    break;
+                case Constants.V_RING_DENSITY:
+                    typeToCreate = typeof(RingDensityRecord);
+                    break;
 
                 // System-wide / Aggregate
             }
@@ -57,9 +71,12 @@ namespace ObservatoryStatScanner
                 // Don't parse stuff if we don't need to!
                 CSVData data = new(csvFields);
                 if (!data.IsValid) return null;
+                // Skip records with a zero min/max. They are pointless and a waste to process.
+                if (data.MaxValue == 0.0 && data.MinValue == 0)
+                    return null;
 
                 object[] args = new object[] { settings, recordKind, data };
-                return (IRecord)Activator.CreateInstance(typeToCreate,args);
+                return (IRecord)Activator.CreateInstance(typeToCreate, args);
             }
             return null;
         }

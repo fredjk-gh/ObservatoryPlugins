@@ -12,7 +12,7 @@ namespace ObservatoryStatScanner.Records
         public SurfaceTemperatureRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
             : base(settings, recordKind, data, "Surface Temperature (K)")
         {
-            format = "{0:0} K";
+            format = "{0:0.0} K";
         }
         public override bool Enabled => Settings.EnableSurfaceTemperatureRecord;
 

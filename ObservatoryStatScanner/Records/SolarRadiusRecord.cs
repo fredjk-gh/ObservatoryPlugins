@@ -25,13 +25,7 @@ namespace ObservatoryStatScanner.Records
             // Convert m -> SR
             var radiusSR = scan.Radius / Constants.CONV_M_TO_SOLAR_RAD_DIVISOR;
             var results = CheckMax(radiusSR, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
-
-            // TODO: remove after Orvidius has finished regenerating the records with the fix!
-            // This object + variable has a data loss issue (min is 0.0001 and there's many bodies with lower value in my journals). Exclude it
-            if (!(Table == RecordTable.Stars && EDAstroObjectName == Constants.EDASTRO_STAR_BLACK_HOLE && VariableName == Constants.V_SOLAR_RADIUS))
-            {
-                results.AddRange(CheckMin(radiusSR, scan.Timestamp, scan.BodyName, IsUndiscovered(scan)));
-            }
+            results.AddRange(CheckMin(radiusSR, scan.Timestamp, scan.BodyName, IsUndiscovered(scan)));
 
             return results;
         }

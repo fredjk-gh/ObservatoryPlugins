@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static ObservatoryStatScanner.StatScannerSettings;
 
 namespace ObservatoryStatScanner.Records
 {
@@ -33,11 +34,11 @@ namespace ObservatoryStatScanner.Records
         public string EDAstroObjectName { get => data.EDAstroObjectName; }
 
         public long MinCount { get => data.MinCount; }
-        public double MinValue { get => (Settings.DevMode ? data.MinValue * 1.2 : data.MinValue); }
+        public double MinValue { get => (Settings.DevMode ? data.MinValue * Settings.DevModeMinScaleFactor : data.MinValue); }
         public string MinBody { get => data.MinBody; }
 
         public long MaxCount { get => data.MaxCount; }
-        public double MaxValue { get => (Settings.DevMode ? data.MaxValue * 0.8 : data.MaxValue); }
+        public double MaxValue { get => (Settings.DevMode ? data.MaxValue * Settings.DevModeMaxScaleFactor : data.MaxValue); }
         public string MaxBody { get => data.MaxBody; }
         public RecordKind RecordKind { get; }
 
@@ -127,7 +128,7 @@ namespace ObservatoryStatScanner.Records
             switch (outcome)
             {
                 case Outcome.PotentialNew:
-                    details = "Potential new record";
+                    details = "Potential new record" + (Settings.DevMode ? " (dev mode)" : "");
                     break;
                 case Outcome.Tie:
                     details = $"Tied record (with ~{recordTieCount} others)";
@@ -139,9 +140,14 @@ namespace ObservatoryStatScanner.Records
             // Override above if this was actually the record holder (corrects potential rounding differences)
             if (bodyName == recordHolder) details = "Record holder";
 
-            // If FDs only is enabled, still show discovered record holders.
-            if (Settings.FirstDiscoveriesOnly && !isUndiscovered && bodyName != recordHolder) return null;
-
+            // This is not a galactic record holder, and we're showing procgen only records (except for visited galactic record holders).
+            // OR: FDs only is enabled, and this is not first discovered and not a record holder.
+            var procGenHandling = (ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
+            if ((RecordKind == RecordKind.Galactic && procGenHandling == ProcGenHandlingMode.ProcGenOnly && bodyName != recordHolder)
+                    || (RecordKind == RecordKind.GalacticProcGen && procGenHandling == ProcGenHandlingMode.ProcGenIgnore)
+                    || (Settings.FirstDiscoveriesOnly && !isUndiscovered && bodyName != recordHolder))
+                return null;
+    
             StatScannerGrid gridRow = new StatScannerGrid()
             {
                 Timestamp = timestamp,
@@ -161,7 +167,7 @@ namespace ObservatoryStatScanner.Records
 
         static protected bool IsNonProcGenOrTerraformedELW(Scan scan)
         {
-            if (!string.IsNullOrEmpty(scan.PlanetClass) && scan.PlanetClass == "Earthlike body")
+            if (!string.IsNullOrEmpty(scan.PlanetClass) && scan.PlanetClass == Constants.SCAN_EARTHLIKE)
             {
                 return !RE.IsMatch(scan.BodyName) || !string.IsNullOrEmpty(scan.TerraformState);
             }
@@ -171,9 +177,9 @@ namespace ObservatoryStatScanner.Records
         static protected bool IsUndiscovered(Scan scan)
         {
             // Nav beacons scans are definitely not undiscovered.
-            if (scan.ScanType == "NavBeaconDetail") return false;
+            if (scan.ScanType == Constants.SCAN_TYPE_NAV_BEACON) return false;
             // Exclude barycentres; planetary bodies must be both undiscovered AND unmapped.
-            if (!string.IsNullOrEmpty(scan.PlanetClass) && scan.PlanetClass != "Barycentre" && !scan.WasDiscovered && !scan.WasMapped) return true;
+            if (!string.IsNullOrEmpty(scan.PlanetClass) && scan.PlanetClass != Constants.SCAN_BARYCENTRE && !scan.WasDiscovered && !scan.WasMapped) return true;
             // For stars, they just need to be undiscovered. The NavBeaconDetail takes care of the bulk of the known ones.
             if (!string.IsNullOrEmpty(scan.StarType) && !scan.WasDiscovered) return true;
             return false;

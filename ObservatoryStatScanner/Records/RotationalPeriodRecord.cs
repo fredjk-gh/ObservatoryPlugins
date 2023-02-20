@@ -7,24 +7,25 @@ using System.Threading.Tasks;
 
 namespace ObservatoryStatScanner.Records
 {
-    internal class OrbitalPeriodRecord : BodyRecord
+    internal class RotationalPeriodRecord : BodyRecord
     {
-        public OrbitalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Orbital Period (d)")
+        public RotationalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
+            : base(settings, recordKind, data, "Rotational Period (d)")
         {
-            format = "{0:0.##} d";
+            format = (MaxValue < 1.0 ? "{0:0.00000###" : "{0:0.##} d");
         }
-        public override bool Enabled => Settings.EnableOrbitalPeriodRecord;
+
+        public override bool Enabled => Settings.EnableRotationalPeriodRecord;
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {
             if (!Enabled
-                || scan.OrbitalPeriod <= 0.0  // Triton has a negative orbital period.
+                || scan.RotationPeriod <= 0.0
                 || (string.IsNullOrEmpty(scan.StarType) && (string.IsNullOrEmpty(scan.PlanetClass) || IsNonProcGenOrTerraformedELW(scan))))
                 return new();
 
             // convert seconds -> days
-            var periodDays = scan.OrbitalPeriod / Constants.CONV_S_TO_DAYS_DIVISOR;
+            var periodDays = scan.RotationPeriod / Constants.CONV_S_TO_DAYS_DIVISOR;
             var results = CheckMax(periodDays, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
             results.AddRange(CheckMin(periodDays, scan.Timestamp, scan.BodyName, IsUndiscovered(scan)));
 
