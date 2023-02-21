@@ -9,13 +9,13 @@ namespace ObservatoryStatScanner.Records
 {
     internal class PlanetaryRadiusRecord : BodyRecord
     {
-        public PlanetaryRadiusRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Planetary Radius (km)")
-        {
-            format = "{0:0} km";
-        }
+        public PlanetaryRadiusRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Planetary Radius")
+        { }
 
         public override bool Enabled => Settings.EnablePlanetaryRadiusRecord;
+
+        public override string ValueFormat { get => "{0:0} km"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

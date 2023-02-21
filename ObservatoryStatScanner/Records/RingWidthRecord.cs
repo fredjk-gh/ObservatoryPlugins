@@ -9,13 +9,13 @@ namespace ObservatoryStatScanner.Records
 {
     internal class RingWidthRecord : BodyRecord
     {
-        public RingWidthRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
+        public RingWidthRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, "Ring Width")
-        {
-            format = "{0:N0} km";
-        }
+        { }
         
         public override bool Enabled => Settings.EnableRingWidthRecord;
+
+        public override string ValueFormat { get => "{0:N0} km"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

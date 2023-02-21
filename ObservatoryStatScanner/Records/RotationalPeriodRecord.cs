@@ -9,13 +9,13 @@ namespace ObservatoryStatScanner.Records
 {
     internal class RotationalPeriodRecord : BodyRecord
     {
-        public RotationalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Rotational Period (d)")
-        {
-            format = (MaxValue < 1.0 ? "{0:0.00000###" : "{0:0.##} d");
-        }
+        public RotationalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Rotational Period")
+        { }
 
         public override bool Enabled => Settings.EnableRotationalPeriodRecord;
+
+        public override string ValueFormat { get => (MaxValue < 1.0 ? "{0:0.00000###} d" : "{0:0.##} d"); }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

@@ -9,13 +9,14 @@ namespace ObservatoryStatScanner.Records
 {
     internal class SolarRadiusRecord : BodyRecord
     {
-        public SolarRadiusRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
+        public SolarRadiusRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, "Radius")
-        {
-            // Black holes are *really* small in terms of solar radius. So add extra digits to the display format.
-            format = (EDAstroObjectName == Constants.EDASTRO_STAR_BLACK_HOLE ? "{0:0.00000000}" : "{0:0.0000} SR");
-        }
+        { }
+
         public override bool Enabled => Settings.EnableSolarRadiusRecord;
+
+        // Black holes are *really* small in terms of solar radius. So add extra digits to the display format.
+        public override string ValueFormat { get => (EDAstroObjectName == Constants.EDASTRO_STAR_BLACK_HOLE ? "{0:0.00000000}" : "{0:0.0000} SR"); }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

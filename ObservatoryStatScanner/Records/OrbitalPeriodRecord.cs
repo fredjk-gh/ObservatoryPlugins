@@ -9,12 +9,13 @@ namespace ObservatoryStatScanner.Records
 {
     internal class OrbitalPeriodRecord : BodyRecord
     {
-        public OrbitalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Orbital Period (d)")
-        {
-            format = "{0:0.##} d";
-        }
+        public OrbitalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Orbital Period")
+        { }
+
         public override bool Enabled => Settings.EnableOrbitalPeriodRecord;
+
+        public override string ValueFormat { get => "{0:0.##} d"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

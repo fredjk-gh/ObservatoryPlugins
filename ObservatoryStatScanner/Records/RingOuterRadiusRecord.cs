@@ -9,13 +9,13 @@ namespace ObservatoryStatScanner.Records
 {
     internal class RingOuterRadiusRecord : BodyRecord
     {
-        public RingOuterRadiusRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
+        public RingOuterRadiusRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, "Ring Outer Radius")
-        {
-            format = "{0:N0} km";
-        }
+        { }
 
         public override bool Enabled => Settings.EnableRingOuterRadiusRecord;
+
+        public override string ValueFormat { get => "{0:N0} km"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

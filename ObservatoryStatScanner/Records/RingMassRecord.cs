@@ -9,12 +9,13 @@ namespace ObservatoryStatScanner.Records
 {
     internal class RingMassRecord : BodyRecord
     {
-        public RingMassRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Ring mass")
-        {
-            format = "{0:N0} Mt";
-        }
+        public RingMassRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Ring Mass")
+        { }
+
         public override bool Enabled => Settings.EnableRingMassRecord;
+
+        public override string ValueFormat { get => "{0:N0} Mt"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

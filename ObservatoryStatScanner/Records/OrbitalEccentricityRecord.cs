@@ -9,7 +9,7 @@ namespace ObservatoryStatScanner.Records
 {
     internal class OrbitalEccentricityRecord : BodyRecord
     {
-        public OrbitalEccentricityRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
+        public OrbitalEccentricityRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, "Orbital Eccentricity")
         { }
 

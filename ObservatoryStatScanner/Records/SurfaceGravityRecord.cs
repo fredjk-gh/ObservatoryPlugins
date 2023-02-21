@@ -9,12 +9,14 @@ namespace ObservatoryStatScanner.Records
 {
     internal class SurfaceGravityRecord : BodyRecord
     {
-        public SurfaceGravityRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Surface Gravity (g)")
-        {
-            format = "{0:0.##} g";
-        }
+        public SurfaceGravityRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Surface Gravity")
+        { }
+
         public override bool Enabled => Settings.EnableSurfaceGravityRecord;
+
+        public override string ValueFormat { get => "{0:0.##} g"; }
+
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

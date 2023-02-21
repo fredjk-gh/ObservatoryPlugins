@@ -5,12 +5,57 @@ namespace ObservatoryStatScanner
 {
     internal class RecordFactory
     {
-
+        // CSV data-based factory.
         public static IRecord CreateRecord(string[] csvFields, StatScannerSettings settings, RecordKind recordKind)
+        {
+            bool supportedVariable = false;
+
+            switch (csvFields[Constants.CSV_Variable])
+            {
+                // Stars
+                case Constants.V_SOLAR_MASSES:
+                case Constants.V_SOLAR_RADIUS:
+
+                // Planets
+                case Constants.V_EARTH_MASSES:
+                case Constants.V_PLANETARY_RADIUS:
+                case Constants.V_SURFACE_GRAVITY:
+                case Constants.V_SURFACE_PRESSURE:
+
+                // Both Planets & Stars
+                case Constants.V_SURFACE_TEMPERATURE:
+                case Constants.V_ECCENTRICITY:
+                case Constants.V_ORBITAL_PERIOD:
+                case Constants.V_ROTATIONAL_PERIOD:
+
+                // Rings
+                case Constants.V_RING_OUTER_RADIUS:
+                case Constants.V_RING_WIDTH:
+                case Constants.V_RING_MASS:
+                case Constants.V_RING_DENSITY:
+                    supportedVariable = true;
+                    break;
+            }
+
+            if (supportedVariable)
+            {
+                // Don't parse stuff if we don't need to!
+                CSVData recordData = new(csvFields);
+                if (!recordData.IsValid) return null;
+                // Skip records with a zero min/max. They are pointless and a waste to process.
+                if (recordData.MaxValue == 0.0 && recordData.MinValue == 0) return null;
+
+                return CreateRecord(recordData, settings, recordKind);
+            }
+            return null;
+        }
+
+        // General factory; handles all kinds of records.
+        public static IRecord CreateRecord(IRecordData recordData, StatScannerSettings settings, RecordKind recordKind = RecordKind.Personal)
         {
             Type typeToCreate = null;
 
-            switch (csvFields[CSVData.CSV_Variable])
+            switch (recordData.Variable)
             {
                 // Stars
                 case Constants.V_SOLAR_MASSES:
@@ -32,6 +77,9 @@ namespace ObservatoryStatScanner
                     break;
                 case Constants.V_SURFACE_PRESSURE:
                     typeToCreate = typeof(SurfacePressureRecord);
+                    break;
+                case Constants.V_BODY_BIO_COUNT:
+                    typeToCreate = typeof(PlanetaryOdysseyBiosRecord);
                     break;
 
                 // Both Planets & Stars
@@ -64,18 +112,19 @@ namespace ObservatoryStatScanner
                     break;
 
                 // System-wide / Aggregate
+                case Constants.V_SYS_BIO_COUNT:
+                    typeToCreate = typeof(SystemOdysseyBiosRecord);
+                    break;
+                case Constants.V_SYS_BODY_COUNT:
+                    typeToCreate = typeof(SystemBodyCountRecord);
+                    break;
             }
 
             if (typeToCreate != null)
             {
-                // Don't parse stuff if we don't need to!
-                CSVData data = new(csvFields);
-                if (!data.IsValid) return null;
-                // Skip records with a zero min/max. They are pointless and a waste to process.
-                if (data.MaxValue == 0.0 && data.MinValue == 0)
-                    return null;
+                if (!recordData.IsValid) return null;
 
-                object[] args = new object[] { settings, recordKind, data };
+                object[] args = new object[] { settings, recordKind, recordData };
                 return (IRecord)Activator.CreateInstance(typeToCreate, args);
             }
             return null;

@@ -14,7 +14,6 @@ namespace ObservatoryStatScanner
     {
         private StatScannerSettings settings = new()
         {
-            EnablePersonalBests = true,
             MaxNearRecordThreshold = 0,
             MinNearRecordThreshold = 0,
             HighCardinalityTieSuppression = 50000,
@@ -46,6 +45,8 @@ namespace ObservatoryStatScanner
         private string galacticRecordsPGCSV;
 
         private RecordBook recordBook = new();
+        private PersonalBestManager manager = new();
+
         private bool IsOdyssey = false;
         private bool HasHeaderRows = false;
         // private string CurrentSystem = "";
@@ -67,6 +68,7 @@ namespace ObservatoryStatScanner
         {
             if (LogMonitorStateChangedEventArgs.IsBatchRead(args.NewState))
             {
+                recordBook.ResetPersonalBests();
                 Core.ClearGrid(this, new StatScannerGrid());
                 HasHeaderRows = false;
             }
@@ -84,17 +86,12 @@ namespace ObservatoryStatScanner
                 case Scan scan:
                     OnScan(scan);
                     break;
-                case FSSDiscoveryScan honk:
-                    // Needed? Can I get this data from FSSAllBodiesFound?
-                    break;
                 case FSSBodySignals bodySignals:
-                    if (IsOdyssey)
-                    {
-                        // TODO: Check bio counts:
-                    }
+                    OnFssBodySignals(bodySignals);
                     break;
-                case FSSAllBodiesFound:
-                    // TODO: Check System records.
+                case FSSAllBodiesFound fssAllBodies:
+                    // TODO: gather scans
+                    OnFssAllBodiesFound(fssAllBodies, new List<Scan>());
                     break;
             }
 
@@ -144,7 +141,7 @@ namespace ObservatoryStatScanner
                 switch (kind)
                 {
                     case RecordKind.Personal:
-                        details = (count == 0 ? "Not yet implemented" : (!settings.EnablePersonalBests ? "Disabled via settings" : ""));
+                        details = (count == 0 ? "Not yet implemented" : "");
                         break;
                     case RecordKind.GalacticProcGen:
                         var handlingMode = (ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling];
@@ -181,6 +178,7 @@ namespace ObservatoryStatScanner
 
         private void ResetGalacticRecords ()
         {
+            // This implicitly resets Personal bests as well, since they are tied to the galactic records.
             recordBook = new RecordBook();
             // TODO: Reset any other state needed after a galactic record refresh.
         }
@@ -253,6 +251,8 @@ namespace ObservatoryStatScanner
             {
                 if (!File.Exists(csvLocalFile)) return;
                 int recordCount = 0;
+                int pbRecordCount = 0;
+                bool shouldInitPersonalBest = (recordKind == RecordKind.Galactic);
 
                 // Open the file, parse it.
                 using (var csvParser = new TextFieldParser(csvLocalFile, System.Text.Encoding.UTF8))
@@ -296,7 +296,16 @@ namespace ObservatoryStatScanner
                             {
                                 recordCount++;
                                 recordBook.AddRecord(record);
-                                if (settings.DevMode) Debug.WriteLine($"Tracking record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
+                                if (settings.DevMode) Debug.WriteLine($"Tracking {recordKind} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
+
+                                if (shouldInitPersonalBest)
+                                {
+                                    PersonalBestData pbData = new PersonalBestData(fields);
+                                    record = RecordFactory.CreateRecord(pbData, settings);
+                                    pbRecordCount++;
+                                    recordBook.AddRecord(record);
+                                    if (settings.DevMode) Debug.WriteLine($"Tracking {RecordKind.Personal} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
+                                }
                             }
                         }
                         catch (RecordsCSVParseException ex)
@@ -305,7 +314,7 @@ namespace ObservatoryStatScanner
                         }
                     }
                 }
-                Debug.WriteLine($"Created a total of {recordCount} {recordKind} records; {recordBook.Count} are now in recordBook");
+                Debug.WriteLine($"Created a total of {recordCount} {recordKind} and {pbRecordCount} {RecordKind.Personal} records; {recordBook.Count} are now in recordBook");
             }
             catch (RecordsCSVFormatChangedException ex)
             {
@@ -324,15 +333,23 @@ namespace ObservatoryStatScanner
 
         private void LoadPersonalBestRecords()
         {
-            // TODO: Implement a database. For now, just initialize a bunch of personal records based on existing personal records.
-            int recordCount = 0;
+            // TODO: Implement a database. For now, just initialize a bunch of empty personal records.
+            int pbRecordCount = 0;
 
-            Debug.WriteLine($"Created a total of {recordCount} {RecordKind.Personal} records; {recordBook.Count} are now in recordBook");
+            foreach (var pbData in Constants.PB_DataObjects)
+            {
+                var record = RecordFactory.CreateRecord(pbData, settings);
+                pbRecordCount++;
+                recordBook.AddRecord(record);
+                if (settings.DevMode) Debug.WriteLine($"Tracking {RecordKind.Personal} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
+            }
+
+            Debug.WriteLine($"Created a total of {pbRecordCount} {RecordKind.Personal} records; {recordBook.Count} are now in recordBook");
         }
 
         private void OnScan(Scan scan)
         {
-            // Determine type of object from scan (stars, planets, rings)
+            // Determine type of object from scan (stars, planets, rings, systems)
             // Look up records for the specific variant of the object (type + variant).
             List<StatScannerGrid> results = new();
 
@@ -343,6 +360,7 @@ namespace ObservatoryStatScanner
             if (!String.IsNullOrEmpty(scan.PlanetClass) && !scan.PlanetClass.Equals("Barycentre", StringComparison.InvariantCultureIgnoreCase))
             {
                 results.AddRange(CheckScanForRecords(scan, recordBook.GetRecords(RecordTable.Planets, scan.PlanetClass)));
+                results.AddRange(CheckScanForRecords(scan, recordBook.GetRecords(RecordTable.Planets, Constants.OBJECT_TYPE_ODYSSEY_PLANET)));
             }
             if (scan.Rings != null)
             {
@@ -357,12 +375,35 @@ namespace ObservatoryStatScanner
                     }
                 }
             }
+            results.AddRange(CheckScanForRecords(scan, recordBook.GetRecords(RecordTable.Systems, Constants.OBJECT_TYPE_SYSTEM)));
 
-            foreach (var r in results)
+            AddResultsToGrid(results);
+        }
+
+        private void OnFssBodySignals(FSSBodySignals bodySignals)
+        {
+            List<StatScannerGrid> results = new();
+            foreach (var t in Constants.PB_RecordTypesForFssScans)
             {
-                Core.AddGridItem(this, r);
-                // TODO: Fire notification.
+                foreach (var record in recordBook.GetRecords(t.Item1, t.Item2))
+                {
+                    results.AddRange(record.CheckFSSBodySignals(bodySignals, IsOdyssey));
+                }
             }
+            AddResultsToGrid(results);
+        }
+
+        private void OnFssAllBodiesFound(FSSAllBodiesFound fssAllBodies, List<Scan> scans)
+        {
+            List<StatScannerGrid> results = new();
+            foreach (var t in Constants.PB_RecordTypesForFssScans)
+            {
+                foreach (var record in recordBook.GetRecords(t.Item1, t.Item2))
+                {
+                    results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, scans));
+                }
+            }
+            AddResultsToGrid(results);
         }
 
         private List<StatScannerGrid> CheckScanForRecords(Scan scan, List<IRecord> records)
@@ -371,9 +412,18 @@ namespace ObservatoryStatScanner
             foreach (var record in records)
             {
                 results.AddRange(record.CheckScan(scan));
-
             }
             return results;
         }
+
+        private void AddResultsToGrid(List<StatScannerGrid> results)
+        {
+            foreach (var r in results)
+            {
+                Core.AddGridItem(this, r);
+                // TODO: Fire notification?
+            }
+        }
+
     }
 }

@@ -9,13 +9,13 @@ namespace ObservatoryStatScanner.Records
 {
     internal class EarthMassesRecord : BodyRecord
     {
-        public EarthMassesRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Mass (EM)")
-        {
-            format = "{0:N40.00##} EM";
-        }
+        public EarthMassesRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Mass")
+        { }
 
         public override bool Enabled => Settings.EnableEarthMassesRecord;
+
+        public override string ValueFormat { get => "{0:N40.00##} EM"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

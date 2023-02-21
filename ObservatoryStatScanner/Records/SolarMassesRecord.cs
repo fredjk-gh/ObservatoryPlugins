@@ -9,17 +9,17 @@ namespace ObservatoryStatScanner.Records
 {
     internal class SolarMassesRecord : BodyRecord
     {
-        public SolarMassesRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Mass (SM)")
-        {
-            format = "{0:0.##00} SM";
-        }
+        public SolarMassesRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Mass")
+        { }
 
         public override bool Enabled => Settings.EnableSolarMassesRecord;
 
+        public override string ValueFormat { get => "{0:0.00##} SM"; }
+
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {
-            if (!Enabled || string.IsNullOrEmpty(scan.StarType))
+            if (!Enabled || string.IsNullOrEmpty(scan.StarType) && scan.StellarMass <= 0.0)
                 return new();
 
             var results = CheckMax(scan.StellarMass, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));

@@ -17,6 +17,7 @@ namespace ObservatoryStatScanner
             ProcGenOnly,
         }
 
+        // Output tuning knobs and options.
         [SettingDisplayName("Near Maximum record threshold % (Caution: high values can generate lots of hits; 0 disables [default])")]
         [SettingNumericBounds(0.0, 10.0)]
         public int MaxNearRecordThreshold { get; set; }
@@ -52,10 +53,6 @@ namespace ObservatoryStatScanner
         [SettingDisplayName("Show Records for first discovered objects only")]
         public bool FirstDiscoveriesOnly { get; set; }
 
-        [SettingDisplayName("Enable tracking personal bests (requires read-all after enabling)")]
-        public bool EnablePersonalBests { get; set; }
-
-
         // Individual record tracking controls
         //
         // Per Body records
@@ -71,6 +68,9 @@ namespace ObservatoryStatScanner
 
         [SettingDisplayName("Enable checking Surface Pressure records")]
         public bool EnableSurfacePressureRecord { get; set; }
+
+        [SettingDisplayName("Enable checking Odyssey surface bio records")]
+        public bool EnableOdysseySurfaceBioRecord { get; set; }
 
         // Planets + stars common
         [SettingDisplayName("Enable checking Surface Temperature records")]
@@ -93,23 +93,28 @@ namespace ObservatoryStatScanner
         public bool EnableSolarRadiusRecord { get; set; }
 
         // Rings
-        [SettingDisplayName("Enable Ring Outer Radius records")]
+        [SettingDisplayName("Enable checking Ring Outer Radius records")]
         public bool EnableRingOuterRadiusRecord { get; set; }
 
-        [SettingDisplayName("Enable Ring Width records")]
+        [SettingDisplayName("Enable checking Ring Width records")]
         public bool EnableRingWidthRecord { get; set; }
 
-        [SettingDisplayName("Enable Ring Mass records")]
+        [SettingDisplayName("Enable checking Ring Mass records")]
         public bool EnableRingMassRecord { get; set; }
 
-        [SettingDisplayName("Enable Ring Density records")]
+        [SettingDisplayName("Enable checking Ring Density records")]
         public bool EnableRingDensityRecord { get; set; }
 
+        // System stats
+        [SettingDisplayName("Enable checking System Body Count records")]
+        public bool EnableSystemBodyCountRecords { get; set; }
 
+        // Actions
         [SettingDisplayName("Force Update Galactic Records")]
         [System.Text.Json.Serialization.JsonIgnore]
         public Action ForceUpdateGalacticRecords { get; internal set; }
 
+        // Internal
         [SettingIgnore]
         public bool DevMode { get => false; }
 

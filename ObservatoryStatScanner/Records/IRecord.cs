@@ -7,6 +7,7 @@ namespace ObservatoryStatScanner.Records
         Stars,
         Planets,
         Rings,
+        Systems,
         Unknown,
     };
 
@@ -14,9 +15,9 @@ namespace ObservatoryStatScanner.Records
     {
         Min,
         Max,
-        Count,
-        MaxCount,
-        MaxSum,
+        MaxCount, // No Min -- would all be 0.
+        MaxSum,  // No Min -- would all be 0.
+        Count, // Currently used only for header stats.
     }
 
     enum Outcome
@@ -24,7 +25,8 @@ namespace ObservatoryStatScanner.Records
         None,
         NearRecord,
         Tie,
-        PotentialNew
+        PotentialNew,
+        PersonalNew
     }
 
     enum RecordKind
@@ -38,22 +40,28 @@ namespace ObservatoryStatScanner.Records
     {
         bool Enabled { get; }
         RecordTable Table { get; }
+        RecordKind RecordKind { get; }
+
         string VariableName { get; }
         string DisplayName { get; }
         string EDAstroObjectName { get; }
         string JournalObjectName { get; }
+        string ValueFormat { get; }
+
+        bool HasMax { get; }
         string MaxBody { get; }
         long MaxCount { get; }
         double MaxValue { get; }
+
+        bool HasMin { get; }
         string MinBody { get; }
         long MinCount { get; }
         double MinValue { get; }
-        RecordKind RecordKind { get; }
-        string ValueFormat { get; set; }
 
         List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans);
-        List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, FileHeader header);
-        List<StatScannerGrid> CheckFSSDiscoveryScan(FSSDiscoveryScan fssDiscoveryScan);
+        List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey);
         List<StatScannerGrid> CheckScan(Scan scan);
+
+        void Reset();
     }
 }

@@ -1,7 +1,9 @@
-﻿using System;
+﻿using ObservatoryStatScanner.Records;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ObservatoryStatScanner
@@ -32,6 +34,20 @@ namespace ObservatoryStatScanner
                 "Count",
                 "Table"
             };
+
+        // Field indexes
+        public const int CSV_Type = 0;
+        public const int CSV_Variable = 1;
+        public const int CSV_MaxCount = 2;
+        public const int CSV_MaxValue = 3;
+        public const int CSV_MaxBody = 4;
+        public const int CSV_MinCount = 5;
+        public const int CSV_MinValue = 6;
+        public const int CSV_MinBody = 7;
+        public const int CSV_Average = 8;
+        public const int CSV_StandardDeviation = 9;
+        public const int CSV_Count = 10;
+        public const int CSV_Table = 11;
 
         // Orvidius has indicated they use 12 digit precision. Matching
         // that here for more stable comparisons (particularly when applying
@@ -65,6 +81,10 @@ namespace ObservatoryStatScanner
         public const string V_RING_MASS = "mass";
         public const string V_RING_DENSITY = "density";
 
+        public const string V_BODY_BIO_COUNT = "bodyBioCount";
+        public const string V_SYS_BIO_COUNT = "sysBioCount";
+        public const string V_SYS_BODY_COUNT = "sysBodyCount";
+
         // Some of the object class names from the list below. These are used
         // in multiple places so are pulled into constants to avoid duplication/drift.
         // These particular ones were problematic in certain records because of bad
@@ -83,6 +103,8 @@ namespace ObservatoryStatScanner
         public const string SCAN_BARYCENTRE = "Barycentre";
 
         public const string SCAN_TYPE_NAV_BEACON = "NavBeaconDetail";
+
+        public const string FSS_BODY_SIGNAL_BIOLOGICAL = "$SAA_SignalType_Biological;";
 
         // Key: EDSM body type => Value: Journal body type.
         public static Dictionary<string, string> JournalTypeMap = new()
@@ -156,5 +178,42 @@ namespace ObservatoryStatScanner
             { "Rocky Ring", "eRingClass_Rocky" },
         };
 
+        public const string PROCGEN_NAME_RE = @"\s+[A-Z][A-Z]-[A-Z]\s+[a-z]\d+(-\d+)?";
+        public static readonly Regex RE = new Regex(PROCGEN_NAME_RE);
+
+        // Pseudo EDAstro/Journal Object type names for aggregate personal bests.
+        public const string OBJECT_TYPE_SYSTEM = "System";
+        public const string OBJECT_TYPE_ODYSSEY_PLANET = "Odyssey Landable Planet";
+
+        // Aggregate personal best data definitions (since these can't be derived from an EDAstro equivelent).
+        public static readonly PersonalBestData PB_SystemOdysseyBiosData =
+            new PersonalBestData(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BIO_COUNT);
+        public static readonly PersonalBestData PB_SystemBodyCountData =
+            new PersonalBestData(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BODY_COUNT);
+        public static readonly PersonalBestData PB_BodyBiosData =
+            new PersonalBestData(RecordTable.Planets, OBJECT_TYPE_ODYSSEY_PLANET, V_BODY_BIO_COUNT);
+
+        // An iterable list of the above data objects.
+        public static readonly List<PersonalBestData> PB_DataObjects = new()
+        {
+            { PB_SystemOdysseyBiosData },
+            { PB_SystemBodyCountData },
+            { PB_BodyBiosData },
+        };
+
+        public static readonly List<Tuple<RecordTable, string>> PB_RecordTypesForFssScans = new()
+        {
+            { Tuple.Create(RecordTable.Planets, OBJECT_TYPE_ODYSSEY_PLANET)  },
+            { Tuple.Create(RecordTable.Systems, OBJECT_TYPE_SYSTEM) },
+        };
+
+        // Some frequently used UI strings. Some (indicated by UI_FS_ prefix) are format strings!
+        public const string UI_POTENTIAL_NEW_RECORD = "Potential new record";
+        public const string UI_NEW_PERSONAL_BEST = "New personal best";
+        public const string UI_FS_TIED_RECORD_COUNT = "Tied record (with ~{0} others)";
+        public const string UI_FS_NEAR_RECORD_COUNT = "Near-record (within {0}%)";
+        public const string UI_RECORD_HOLDER_VISITED = "Visited existing record";
+        public const string UI_FIRST_DISCOVERY = "1st Discovery";
+        public const string UI_ALREADY_DISCOVERED = "Discovered";
     }
 }

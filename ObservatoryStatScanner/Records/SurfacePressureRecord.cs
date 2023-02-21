@@ -9,12 +9,13 @@ namespace ObservatoryStatScanner.Records
 {
     internal class SurfacePressureRecord : BodyRecord
     {
-        public SurfacePressureRecord(StatScannerSettings settings, RecordKind recordKind, CSVData data)
-            : base(settings, recordKind, data, "Surface Pressure (Atm)")
-        {
-            format = "{0:0.##} atm";
-        }
+        public SurfacePressureRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Surface Pressure")
+        { }
+
         public override bool Enabled => Settings.EnableSurfacePressureRecord;
+
+        public override string ValueFormat { get => "{0:0.00##} atm"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

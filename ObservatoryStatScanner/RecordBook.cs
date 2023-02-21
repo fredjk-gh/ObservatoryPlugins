@@ -10,16 +10,17 @@ namespace ObservatoryStatScanner
 {
     internal class RecordBook
     {
-        // Root key: RecordTable (one of: stars, planets, rings)
+        // Root key: RecordTable (one of: stars, planets, rings, systems)
         // Leaf key: Journal-based object name (eg. "M_RedSuperGiant" or "Ammonia world" or "eRingClass_Metalic")
         // Values: List of IRecords which apply to the object type.
         private Dictionary<RecordTable, Dictionary<string, List<IRecord>>> RecordsByTable = new();
-
+        
         public RecordBook()
         {
             RecordsByTable.Add(RecordTable.Stars, new());
             RecordsByTable.Add(RecordTable.Planets, new());
             RecordsByTable.Add(RecordTable.Rings, new());
+            RecordsByTable.Add(RecordTable.Systems, new());
         }
 
         public void AddRecord(IRecord record)
@@ -39,6 +40,20 @@ namespace ObservatoryStatScanner
             if (RecordsByTable[table].ContainsKey(journalObjectName))
                 return RecordsByTable[table][journalObjectName];
             return new();
+        }
+
+        public void ResetPersonalBests()
+        {
+            foreach (var rt in RecordsByTable.Keys)
+            {
+                foreach (var objName in RecordsByTable[rt].Keys)
+                {
+                    foreach (var r in RecordsByTable[rt][objName])
+                    {
+                        if (r.RecordKind == RecordKind.Personal) r.Reset();
+                    }
+                }
+            }
         }
 
         public int Count
