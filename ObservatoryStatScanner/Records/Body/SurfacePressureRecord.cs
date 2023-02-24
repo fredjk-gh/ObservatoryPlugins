@@ -15,7 +15,8 @@ namespace ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableSurfacePressureRecord;
 
-        public override string ValueFormat { get => "{0:0.00##} atm"; }
+        public override string ValueFormat { get => "{0:0.00##}"; }
+        public override string Units { get => "atm"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

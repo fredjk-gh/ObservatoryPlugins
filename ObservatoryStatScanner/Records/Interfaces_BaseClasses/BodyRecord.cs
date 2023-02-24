@@ -31,17 +31,17 @@ namespace ObservatoryStatScanner.Records
         public string JournalObjectName { get => Data.JournalObjectName; }
         public string EDAstroObjectName { get => Data.EDAstroObjectName; }
         public virtual string ValueFormat { get => "{0:0.0000##}"; }
-
+        public virtual string Units { get => "";  }
 
         public bool HasMax => Data.HasMax;
         public long MaxCount { get => Data.MaxCount; }
         public double MaxValue { get => (Settings.DevMode ? Data.MaxValue * Settings.DevModeMaxScaleFactor : Data.MaxValue); }
-        public string MaxBody { get => Data.MaxBody; }
+        public string MaxHolder { get => Data.MaxHolder; }
 
         public bool HasMin => Data.HasMin;
         public long MinCount { get => Data.MinCount; }
         public double MinValue { get => (Settings.DevMode ? Data.MinValue * Settings.DevModeMinScaleFactor : Data.MinValue); }
-        public string MinBody { get => Data.MinBody; }
+        public string MinHolder { get => Data.MinHolder; }
 
  
         public virtual List<StatScannerGrid> CheckScan(Scan scan)
@@ -56,6 +56,11 @@ namespace ObservatoryStatScanner.Records
         {
             return new();
         }
+        public virtual List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry)
+        {
+            return new();
+        }
+
         public void Reset()
         {
             Data.ResetMutable();
@@ -141,7 +146,7 @@ namespace ObservatoryStatScanner.Records
                     recordValueStr = (HasMin ? String.Format(ValueFormat, MinValue) : "-");
                     recordTieCount = MinCount;
                     recordTieCountStr = (HasMin ? $"{MinCount}" : "");
-                    recordHolder = (HasMin ? MinBody : "");
+                    recordHolder = (HasMin ? MinHolder : "");
                     threshold = Settings.MinNearRecordThreshold;
                     break;
                 case Function.MaxSum:
@@ -150,7 +155,7 @@ namespace ObservatoryStatScanner.Records
                     recordValueStr = (HasMax ? String.Format(ValueFormat, MaxValue) : "-");
                     recordTieCount = MaxCount;
                     recordTieCountStr = (HasMax ? $"{MaxCount}" : "");
-                    recordHolder = (HasMax ? MaxBody : "");
+                    recordHolder = (HasMax ? MaxHolder : "");
                     threshold = Settings.MaxNearRecordThreshold;
                     break;
                 default:
@@ -182,7 +187,7 @@ namespace ObservatoryStatScanner.Records
                     || (RecordKind == RecordKind.GalacticProcGen && procGenHandling == ProcGenHandlingMode.ProcGenIgnore)
                     || (Settings.FirstDiscoveriesOnly && !isUndiscovered && bodyName != recordHolder))
                 return null;
-    
+
             StatScannerGrid gridRow = new()
             {
                 Timestamp = timestamp,
@@ -190,10 +195,11 @@ namespace ObservatoryStatScanner.Records
                 ObjectClass = EDAstroObjectName,
                 Variable = DisplayName,
                 Function = function.ToString(),
-                RecordValue = recordValueStr,
                 ObservedValue = String.Format(ValueFormat, observedValue),
-                Details = details,
+                RecordValue = recordValueStr,
+                Units = Units,
                 RecordHolder = (recordTieCount > 1 ? $"{recordHolder} (and {recordTieCount - 1} more)" : recordHolder),
+                Details = details,
                 DiscoveryStatus = (isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED),
                 RecordKind = RecordKind.ToString(),
             };

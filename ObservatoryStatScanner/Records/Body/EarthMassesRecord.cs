@@ -15,7 +15,8 @@ namespace ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableEarthMassesRecord;
 
-        public override string ValueFormat { get => "{0:N40.00##} EM"; }
+        public override string ValueFormat { get => "{0:N40.00##}"; }
+        public override string Units { get => "EM"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

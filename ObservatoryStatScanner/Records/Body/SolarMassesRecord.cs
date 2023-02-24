@@ -15,7 +15,8 @@ namespace ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableSolarMassesRecord;
 
-        public override string ValueFormat { get => "{0:0.00##} SM"; }
+        public override string ValueFormat { get => "{0:0.00##}"; }
+        public override string Units { get => "SM"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

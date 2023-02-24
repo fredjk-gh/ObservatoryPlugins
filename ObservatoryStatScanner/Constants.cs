@@ -81,9 +81,14 @@ namespace ObservatoryStatScanner
         public const string V_RING_MASS = "mass";
         public const string V_RING_DENSITY = "density";
 
+        // Personal best variable names
         public const string V_BODY_BIO_COUNT = "bodyBioCount";
         public const string V_SYS_BIO_COUNT = "sysBioCount";
         public const string V_SYS_BODY_COUNT = "sysBodyCount";
+        public const string V_VISITED_REGIONS_COUNT = "visitedRegionsCount";
+        public const string V_CODEX_CATEGORY_BIO_GEO = "Codex: Biological and Geological";
+        public const string V_CODEX_CATEGORY_XENO = "Codex: Xenological";
+        public const string V_CODEX_CATEGORY_ASTRO = "Codex: Astronomical Bodies";
 
         // Some of the object class names from the list below. These are used
         // in multiple places so are pulled into constants to avoid duplication/drift.
@@ -178,28 +183,101 @@ namespace ObservatoryStatScanner
             { "Rocky Ring", "eRingClass_Rocky" },
         };
 
+        public const string REGION_DEFAULT = "Inner Orion Spur";
+        public static readonly Dictionary<string, string> RegionNamesByJournalId = new()
+        {
+            { "$Codex_RegionName_1;", "Galactic Centre" },
+            { "$Codex_RegionName_2;", "Empyrean Straits" },
+            { "$Codex_RegionName_3;", "Ryker's Hope" },
+            { "$Codex_RegionName_4;", "Odin's Hold" },
+            { "$Codex_RegionName_5;", "Norma Arm" },
+            { "$Codex_RegionName_6;", "Arcadian Stream" },
+            { "$Codex_RegionName_7;", "Izanami" },
+            { "$Codex_RegionName_8;", "Inner Orion-Perseus Conflux" },
+            { "$Codex_RegionName_9;", "Inner Scutum-Centaurus Arm" },
+            { "$Codex_RegionName_10;", "Norma Expanse" },
+            { "$Codex_RegionName_11;", "Trojan Belt" },
+            { "$Codex_RegionName_12;", "The Veils" },
+            { "$Codex_RegionName_13;", "Newton's Vault" },
+            { "$Codex_RegionName_14;", "The Conduit" },
+            { "$Codex_RegionName_15;", "Outer Orion-Perseus Conflux" },
+            { "$Codex_RegionName_16;", "Orion-Cygnus Arm" },
+            { "$Codex_RegionName_17;", "Temple" },
+            { "$Codex_RegionName_18;", REGION_DEFAULT },
+            { "$Codex_RegionName_19;", "Hawking's Gap" },
+            { "$Codex_RegionName_20;", "Dryman's Point" },
+            { "$Codex_RegionName_21;", "Sagittarius-Carina Arm" },
+            { "$Codex_RegionName_22;", "Mare Somnia" },
+            { "$Codex_RegionName_23;", "Acheron" },
+            { "$Codex_RegionName_24;", "Formorian Frontier" },
+            { "$Codex_RegionName_25;", "Hieronymus Delta" },
+            { "$Codex_RegionName_26;", "Outer Scutum-Centaurus Arm" },
+            { "$Codex_RegionName_27;", "Outer Arm" },
+            { "$Codex_RegionName_28;", "Aquila's Halo" },
+            { "$Codex_RegionName_29;", "Errant Marches" },
+            { "$Codex_RegionName_30;", "Perseus Arm" },
+            { "$Codex_RegionName_31;", "Formidine Rift" },
+            { "$Codex_RegionName_32;", "Vulcan Gate" },
+            { "$Codex_RegionName_33;", "Elysian Shore" },
+            { "$Codex_RegionName_34;", "Sanguineous Rim" },
+            { "$Codex_RegionName_35;", "Outer Orion Spur" },
+            { "$Codex_RegionName_36;", "Achilles's Altar" },
+            { "$Codex_RegionName_37;", "Xibalba" },
+            { "$Codex_RegionName_38;", "Lyra's Song" },
+            { "$Codex_RegionName_39;", "Tenebrae" },
+            { "$Codex_RegionName_40;", "The Abyss" },
+            { "$Codex_RegionName_41;", "Kepler's Crest" },
+            { "$Codex_RegionName_42;", "The Void" },
+        };
+
+        public static readonly Dictionary<string, string> CodexCategoriesByJournalId = new()
+        {
+            { "$Codex_Category_Biology;", V_CODEX_CATEGORY_BIO_GEO },
+            { "$Codex_Category_Civilisations;", V_CODEX_CATEGORY_XENO },
+            { "$Codex_Category_StellarBodies;", V_CODEX_CATEGORY_ASTRO },
+
+        };
+
         public const string PROCGEN_NAME_RE = @"\s+[A-Z][A-Z]-[A-Z]\s+[a-z]\d+(-\d+)?";
-        public static readonly Regex RE = new Regex(PROCGEN_NAME_RE);
+        public static readonly Regex RE = new(PROCGEN_NAME_RE);
 
         // Pseudo EDAstro/Journal Object type names for aggregate personal bests.
         public const string OBJECT_TYPE_SYSTEM = "System";
         public const string OBJECT_TYPE_ODYSSEY_PLANET = "Odyssey Landable Planet";
+        public const string OBJECT_TYPE_REGION = "Galactic Region";
 
         // Aggregate personal best data definitions (since these can't be derived from an EDAstro equivelent).
         public static readonly PersonalBestData PB_SystemOdysseyBiosData =
-            new PersonalBestData(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BIO_COUNT);
+            new(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BIO_COUNT);
         public static readonly PersonalBestData PB_SystemBodyCountData =
-            new PersonalBestData(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BODY_COUNT);
+            new(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BODY_COUNT);
         public static readonly PersonalBestData PB_BodyBiosData =
-            new PersonalBestData(RecordTable.Planets, OBJECT_TYPE_ODYSSEY_PLANET, V_BODY_BIO_COUNT);
+            new(RecordTable.Planets, OBJECT_TYPE_ODYSSEY_PLANET, V_BODY_BIO_COUNT);
 
-        // An iterable list of the above data objects.
-        public static readonly List<PersonalBestData> PB_DataObjects = new()
+        public static readonly PersonalBestData PB_RegionsVisited =
+            new(RecordTable.Regions, OBJECT_TYPE_REGION, V_VISITED_REGIONS_COUNT);
+
+        public static List<PersonalBestData> GeneratePersonalBestRecords()
         {
-            { PB_SystemOdysseyBiosData },
-            { PB_SystemBodyCountData },
-            { PB_BodyBiosData },
-        };
+            // A couple aggregate records:
+            List<PersonalBestData> records = new()
+            {
+                { PB_SystemOdysseyBiosData },
+                { PB_SystemBodyCountData },
+                { PB_BodyBiosData },
+                { PB_RegionsVisited },
+            };
+
+            // Generate Codex Category per region records:
+            foreach (var regionName in RegionNamesByJournalId.Values)
+            {
+                foreach (var codexCategory in CodexCategoriesByJournalId.Values)
+                {
+                    records.Add(new(RecordTable.Regions, regionName, codexCategory));
+                }
+            }
+            return records;
+        }
 
         public static readonly List<Tuple<RecordTable, string>> PB_RecordTypesForFssScans = new()
         {

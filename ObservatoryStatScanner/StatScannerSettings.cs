@@ -109,6 +109,13 @@ namespace ObservatoryStatScanner
         [SettingDisplayName("Enable checking System Body Count records")]
         public bool EnableSystemBodyCountRecords { get; set; }
 
+        // Regional stats
+        [SettingDisplayName("Enable checking Visited Region Count records")]
+        public bool EnableVisitedRegionRecords { get; set; }
+
+        [SettingDisplayName("Enable checking Region Codex Count records")]
+        public bool EnableRegionCodexCountRecords { get; set; }
+
         // Actions
         [SettingDisplayName("Force Update Galactic Records")]
         [System.Text.Json.Serialization.JsonIgnore]

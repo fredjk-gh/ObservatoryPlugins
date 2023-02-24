@@ -26,12 +26,17 @@ namespace ObservatoryStatScanner
             EnableSurfaceTemperatureRecord = true,
             EnableOrbitalEccentricityRecord = true,
             EnableOrbitalPeriodRecord = true,
+            EnableRotationalPeriodRecord = true,
             EnableSolarMassesRecord = true,
             EnableSolarRadiusRecord = true,
             EnableRingOuterRadiusRecord = true,
             EnableRingWidthRecord = true,
             EnableRingMassRecord = true,
             EnableRingDensityRecord = true,
+            EnableOdysseySurfaceBioRecord = true,
+            EnableSystemBodyCountRecords = true,
+            EnableRegionCodexCountRecords = false,
+            EnableVisitedRegionRecords = true,
         };
 
         private IObservatoryCore Core;
@@ -93,6 +98,9 @@ namespace ObservatoryStatScanner
                     // TODO: gather scans
                     OnFssAllBodiesFound(fssAllBodies, new List<Scan>());
                     break;
+                case CodexEntry codexEntry:
+                    OnCodexEntry(codexEntry);
+                    break;
             }
 
             // Intitial Limitations
@@ -128,12 +136,11 @@ namespace ObservatoryStatScanner
             var devModeWarning = (settings.DevMode ? "!!DEV mode!!" : "");
             Core.AddGridItem(this, new StatScannerGrid
             {
-                Timestamp = DateTime.Now.ToString("u"),
-                ObservedValue = $"{recordBook.Count}",
-                Variable = "Tracked Record(s)",
+                ObjectClass = "Plugin stats",
+                Variable = "Tracked Record(s): Total",
                 Function = Function.Count.ToString(),
+                ObservedValue = $"{recordBook.Count}",
                 RecordValue = devModeWarning,
-                RecordKind = "Total"
             });
             foreach (RecordKind kind in Enum.GetValues(typeof(RecordKind))) {
                 var count = recordBook.CountByKind(kind);
@@ -151,12 +158,11 @@ namespace ObservatoryStatScanner
 
                 Core.AddGridItem(this, new StatScannerGrid
                 {
-                    Timestamp = DateTime.Now.ToString("u"),
-                    ObservedValue = $"{count}",
-                    Variable = "Tracked Record(s)",
+                    ObjectClass = "Plugin stats",
+                    Variable = $"Tracked Record(s): {kind.ToString()}",
                     Function = Function.Count.ToString(),
+                    ObservedValue = $"{count}",
                     RecordValue = devModeWarning,
-                    RecordKind = kind.ToString(),
                     Details = details,
                 });
             }
@@ -336,7 +342,7 @@ namespace ObservatoryStatScanner
             // TODO: Implement a database. For now, just initialize a bunch of empty personal records.
             int pbRecordCount = 0;
 
-            foreach (var pbData in Constants.PB_DataObjects)
+            foreach (var pbData in Constants.GeneratePersonalBestRecords())
             {
                 var record = RecordFactory.CreateRecord(pbData, settings);
                 pbRecordCount++;
@@ -402,6 +408,24 @@ namespace ObservatoryStatScanner
                 {
                     results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, scans));
                 }
+            }
+            AddResultsToGrid(results);
+        }
+        private void OnCodexEntry(CodexEntry codexEntry)
+        {
+            if (!Constants.RegionNamesByJournalId.ContainsKey(codexEntry.Region)
+                || !codexEntry.IsNewEntry) return;
+
+            string regionNameByJournalValue = Constants.RegionNamesByJournalId[codexEntry.Region];
+            List<StatScannerGrid> results = new();
+
+            foreach (var record in recordBook.GetRecords(RecordTable.Regions, Constants.OBJECT_TYPE_REGION))
+            {
+                results.AddRange(record.CheckCodexEntry(codexEntry));
+            }
+            foreach (var record in recordBook.GetRecords(RecordTable.Regions, regionNameByJournalValue))
+            {
+                results.AddRange(record.CheckCodexEntry(codexEntry));
             }
             AddResultsToGrid(results);
         }

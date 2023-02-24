@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner
+namespace ObservatoryStatScanner.Records
 {
     public class IRecordData
     {
@@ -20,15 +20,18 @@ namespace ObservatoryStatScanner
 
         public virtual bool IsMutable { get => false; }
 
-        public bool HasMax { get => MaxValue > 0.0 && MaxBody?.Length > 0; }
-        public string MaxBody { get; protected set; }
+        public bool HasMax { get => MaxValue > 0.0 && MaxHolder?.Length > 0; }
+        public string MaxHolder { get; protected set; }
         public long MaxCount { get; protected set; }
         public double MaxValue { get; protected set; }
 
-        public bool HasMin { get => MinValue != 0.0 && MinBody?.Length > 0; }
-        public string MinBody { get; protected set; }
+        public bool HasMin { get => MinValue != 0.0 && MinHolder?.Length > 0; }
+        public string MinHolder { get; protected set; }
         public long MinCount { get; protected set; }
         public double MinValue { get; protected set; }
+
+        // An arbitrary string value.
+        public string ExtraData { get; set; }
 
         public void ResetMutable()
         {
@@ -36,14 +39,16 @@ namespace ObservatoryStatScanner
 
             MaxValue = 0.0;
             MaxCount = 0;
-            MaxBody = "";
+            MaxHolder = "";
 
             MinValue = 0.0;
             MinCount = 0;
-            MinBody = "";
+            MinHolder = "";
+
+            ExtraData = "";
         }
 
-        public void SetOrUpdateMax(string maxBody, double maxValue, int maxCount = 1)
+        public void SetOrUpdateMax(string maxHolder, double maxValue, int maxCount = 1, string extraData = "")
         {
             if (!IsMutable || (HasMax && maxValue < MaxValue)) return;
             if (maxValue == MaxValue)  // It's a tie, increment the counter.
@@ -52,13 +57,14 @@ namespace ObservatoryStatScanner
                 return;
             }
             MaxValue = maxValue;
-            MaxBody = maxBody;
+            MaxHolder = maxHolder;
             MaxCount = maxCount;
+            if (extraData.Length > 0) ExtraData = extraData;
 
             // TODO: Tell the Manager?
         }
 
-        public void SetOrUpdateMin(string minBody, double minValue, int minCount = 1)
+        public void SetOrUpdateMin(string minHolder, double minValue, int minCount = 1, string extraData = "")
         {
             if (!IsMutable || (HasMin && minValue > MinValue)) return;
             if (minValue == MinValue)  // It's a tie, increment the counter.
@@ -66,9 +72,10 @@ namespace ObservatoryStatScanner
                 MinCount += minCount;
                 return;
             }
-            MinBody = minBody;
+            MinHolder = minHolder;
             MinValue = minValue;
             MinCount = minCount;
+            if (extraData.Length > 0) ExtraData = extraData;
 
             // TODO: Tell the Manager?
         }

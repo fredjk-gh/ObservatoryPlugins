@@ -18,6 +18,7 @@ namespace ObservatoryStatScanner.Records
         public override bool Enabled => Settings.EnableOdysseySurfaceBioRecord;
 
         public override string ValueFormat { get => "{0}"; }
+        public override string Units { get => "bios"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {

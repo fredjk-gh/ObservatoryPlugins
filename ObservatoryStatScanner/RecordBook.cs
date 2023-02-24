@@ -21,6 +21,7 @@ namespace ObservatoryStatScanner
             RecordsByTable.Add(RecordTable.Planets, new());
             RecordsByTable.Add(RecordTable.Rings, new());
             RecordsByTable.Add(RecordTable.Systems, new());
+            RecordsByTable.Add(RecordTable.Regions, new());
         }
 
         public void AddRecord(IRecord record)

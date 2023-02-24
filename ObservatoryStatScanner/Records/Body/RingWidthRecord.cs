@@ -7,15 +7,16 @@ using System.Threading.Tasks;
 
 namespace ObservatoryStatScanner.Records
 {
-    internal class RingMassRecord : BodyRecord
+    internal class RingWidthRecord : BodyRecord
     {
-        public RingMassRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Ring Mass")
+        public RingWidthRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+            : base(settings, recordKind, data, "Ring Width")
         { }
+        
+        public override bool Enabled => Settings.EnableRingWidthRecord;
 
-        public override bool Enabled => Settings.EnableRingMassRecord;
-
-        public override string ValueFormat { get => "{0:N0} Mt"; }
+        public override string ValueFormat { get => "{0:N0}"; }
+        public override string Units { get => "km"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {
@@ -27,7 +28,8 @@ namespace ObservatoryStatScanner.Records
             // Check all rings of the specified type for this record:
             foreach (var ring in scan.Rings.Where(r => r.RingClass == JournalObjectName && r.Name.Contains("Ring")))
             {
-                results.AddRange(CheckMax(ring.MassMT, scan.Timestamp, ring.Name, IsUndiscovered(scan)));
+                var width = (ring.OuterRad - ring.InnerRad) / Constants.CONV_M_TO_KM_DIVISOR;
+                results.AddRange(CheckMax(width, scan.Timestamp, ring.Name, IsUndiscovered(scan)));
             }
             return results;
         }

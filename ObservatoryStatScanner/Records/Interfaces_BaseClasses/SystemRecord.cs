@@ -34,14 +34,15 @@ namespace ObservatoryStatScanner.Records
         public string EDAstroObjectName => Data.EDAstroObjectName;
         public string JournalObjectName => Data.JournalObjectName;
         public virtual string ValueFormat { get => "{0}"; }
+        public virtual string Units { get => ""; }
 
         public bool HasMax => Data.HasMax;
-        public string MaxBody => Data.MaxBody;
+        public string MaxHolder => Data.MaxHolder;
         public long MaxCount => Data.MaxCount;
         public double MaxValue => Data.MaxValue;
 
         public bool HasMin => Data.HasMin;
-        public string MinBody => Data.MinBody;
+        public string MinHolder => Data.MinHolder;
         public long MinCount => Data.MinCount;
         public double MinValue => Data.MinValue;
 
@@ -56,6 +57,11 @@ namespace ObservatoryStatScanner.Records
         }
 
         public virtual List<StatScannerGrid> CheckScan(Scan scan)
+        {
+            return new();
+        }
+
+        public virtual List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry)
         {
             return new();
         }
@@ -94,10 +100,11 @@ namespace ObservatoryStatScanner.Records
                         ObjectClass = EDAstroObjectName,
                         Variable = DisplayName,
                         Function = function.ToString(),
-                        RecordValue = (HasMax ? String.Format(ValueFormat, MaxValue) : "-"),
                         ObservedValue = String.Format(ValueFormat, observedValue),
+                        RecordValue = (HasMax ? String.Format(ValueFormat, MaxValue) : "-"),
+                        Units = Units,
+                        RecordHolder = (HasMax ? (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount - 1} more)" : MaxHolder) : ""),
                         Details = Constants.UI_NEW_PERSONAL_BEST,
-                        RecordHolder = (HasMax ? (MaxCount > 1 ? $"{MaxBody} (and {MaxCount - 1} more)" : MaxBody) : ""),
                         DiscoveryStatus = (isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED),
                         RecordKind = RecordKind.ToString(),
                     };

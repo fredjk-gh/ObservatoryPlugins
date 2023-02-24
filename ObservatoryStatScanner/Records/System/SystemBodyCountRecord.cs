@@ -17,6 +17,7 @@ namespace ObservatoryStatScanner.Records
         public override bool Enabled => Settings.EnableSystemBodyCountRecords;
 
         public override string ValueFormat { get => "{0}"; }
+        public override string Units { get => "bodies"; }
 
         public override List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
         {

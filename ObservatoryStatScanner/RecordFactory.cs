@@ -111,12 +111,24 @@ namespace ObservatoryStatScanner
                     typeToCreate = typeof(RingDensityRecord);
                     break;
 
-                // System-wide / Aggregate
+                // Aggregate
+                //
+                // System-wide
                 case Constants.V_SYS_BIO_COUNT:
                     typeToCreate = typeof(SystemOdysseyBiosRecord);
                     break;
                 case Constants.V_SYS_BODY_COUNT:
                     typeToCreate = typeof(SystemBodyCountRecord);
+                    break;
+
+                // Regional
+                case Constants.V_VISITED_REGIONS_COUNT:
+                    typeToCreate = typeof(RegionsVisitedRecord);
+                    break;
+                case Constants.V_CODEX_CATEGORY_BIO_GEO:
+                case Constants.V_CODEX_CATEGORY_XENO:
+                case Constants.V_CODEX_CATEGORY_ASTRO:
+                    typeToCreate = typeof(RegionCodexCountRecord);
                     break;
             }
 

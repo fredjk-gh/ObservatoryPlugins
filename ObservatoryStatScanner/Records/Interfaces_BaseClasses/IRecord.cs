@@ -8,6 +8,7 @@ namespace ObservatoryStatScanner.Records
         Planets,
         Rings,
         Systems,
+        Regions,
         Unknown,
     };
 
@@ -47,20 +48,22 @@ namespace ObservatoryStatScanner.Records
         string EDAstroObjectName { get; }
         string JournalObjectName { get; }
         string ValueFormat { get; }
+        string Units { get; }
 
         bool HasMax { get; }
-        string MaxBody { get; }
+        string MaxHolder { get; }
         long MaxCount { get; }
         double MaxValue { get; }
 
         bool HasMin { get; }
-        string MinBody { get; }
+        string MinHolder { get; }
         long MinCount { get; }
         double MinValue { get; }
 
         List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans);
         List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey);
         List<StatScannerGrid> CheckScan(Scan scan);
+        List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry);
 
         void Reset();
     }

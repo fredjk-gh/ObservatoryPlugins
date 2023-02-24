@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner
+namespace ObservatoryStatScanner.Records
 {
     public class PersonalBestData : IRecordData
     {
@@ -21,7 +21,7 @@ namespace ObservatoryStatScanner
         // Assumed to be copying from galactic record CSV field data... We copy in metadata, but omit the actual values.
         public PersonalBestData(string[] copyFrom)
         {
-            Table = IRecordData.RecordTableFromString(copyFrom[Constants.CSV_Table]);
+            Table = RecordTableFromString(copyFrom[Constants.CSV_Table]);
             EDAstroObjectName = copyFrom[Constants.CSV_Type];
             JournalObjectName = null;
             if (Constants.JournalTypeMap.ContainsKey(EDAstroObjectName))

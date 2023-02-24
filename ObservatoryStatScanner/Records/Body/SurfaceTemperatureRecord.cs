@@ -15,7 +15,8 @@ namespace ObservatoryStatScanner.Records
         
         public override bool Enabled => Settings.EnableSurfaceTemperatureRecord;
 
-        public override string ValueFormat { get => "{0:0.0} K"; }
+        public override string ValueFormat { get => "{0:0.0}"; }
+        public override string Units { get => "K"; }
 
         public override List<StatScannerGrid> CheckScan(Scan scan)
         {
