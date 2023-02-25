@@ -122,10 +122,7 @@ namespace ObservatoryStatScanner
             ErrorLogger = Core.GetPluginErrorLogger(this);
             MaybeUpdateGalacticRecords();
 
-            LoadGalacticRecords(galacticRecordsCSV, RecordKind.Galactic);
-            LoadGalacticRecords(galacticRecordsPGCSV, RecordKind.GalacticProcGen);
-            LoadPersonalBestRecords();
-
+            LoadRecords();
             settings.ForceUpdateGalacticRecords = ForceRefreshGalacticRecords;
         }
 
@@ -171,14 +168,11 @@ namespace ObservatoryStatScanner
 
         private void ForceRefreshGalacticRecords()
         {
-            if (FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, galacticRecordsCSV))
+            if (FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, galacticRecordsCSV)
+                || FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, galacticRecordsPGCSV))
             {
                 ResetGalacticRecords();
-                LoadGalacticRecords(galacticRecordsCSV, RecordKind.Galactic);
-            }
-            if (FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, galacticRecordsPGCSV))
-            {
-                LoadGalacticRecords(galacticRecordsPGCSV, RecordKind.GalacticProcGen);
+                LoadRecords();
             }
         }
 
@@ -251,6 +245,12 @@ namespace ObservatoryStatScanner
             return true;
         }
 
+        private void LoadRecords()
+        {
+            LoadGalacticRecords(galacticRecordsCSV, RecordKind.Galactic);
+            LoadGalacticRecords(galacticRecordsPGCSV, RecordKind.GalacticProcGen);
+            LoadPersonalBestRecords();
+        }
         private void LoadGalacticRecords(string csvLocalFile, RecordKind recordKind, bool retry = false)
         {
             try
