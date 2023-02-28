@@ -8,6 +8,33 @@ Feel free to open an issue if something doesn't work, or reach out in the Observ
 
 ## Stat Tracker
 
+### Release notes: 0.23.59.549-beta
+
+Major update/overhaul. Be sure to check settings to enable new records, fetch new record files from edastro.com and finally do a read-all after installing this update!
+
+New features:
+*   Allows comparison against proc-gen only systems (because many hand-placed systems have records that can never be beaten).
+    This feature is backed by a new ProcGen-only records file provided specifically for this feature by EDAstro.com (thanks Orvidius!).
+    On first launch, this new file will be automatically fetched.  If you've used the plugin before, you'll need to manually enable it.
+*   Extending the above, there is also a new option to only compare your first discoveries against either personal bests or galactic records (either variant).
+    If you're interested, enable this in settings.
+*   On launch, displays a few rows with stats/data about the records being tracked.
+*   Personal bests: For each galactic (or proc gen) record, it now also tracks the best you have seen in your travels. There are also
+    a few new personal best only records as a result. See below.
+*   The output has been updated and the units column split out from the value for better analysis outside of Observatory Core.
+    In the next release of Observatory Core, there will be a new Tab Separated value export that will make such analysis even easier.
+
+New records:
+*   Rotational period [stars, planets]
+*   Ring records (by ring type): Outer radius, Width, mass and density.
+*   [Personal best] System Body Count
+*   [Personal best] Odyssey bio count (either system total or body total)
+*   [Personal best] Counter of regions visited
+*   [Personal best] Counter of newly confirmed codex entries per category per region
+    *   This one is noisy and defaults to off for now. I may make this not per-region in the future. Your feedback welcomed.
+
+Of course, with an update this size, there are several bugfixes and tweaks included.
+
 ### Release notes: 0.23.46.717-beta
 
 Fix number parsing errors in locales which use ',' for decimal separator.

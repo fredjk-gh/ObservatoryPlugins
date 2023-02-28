@@ -82,7 +82,7 @@ namespace ObservatoryStatScanner
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
-            if (!HasHeaderRows) MaybeAddHeaderRows();
+            MaybeAddHeaderRows();
 
             switch (journal)
             {
@@ -117,13 +117,13 @@ namespace ObservatoryStatScanner
             pluginUI = new PluginUI(gridCollection);
 
             Core = observatoryCore;
-            galacticRecordsCSV = Core.PluginStorageFolder + Constants.LOCAL_GALACTIC_RECORDS_FILE;
-            galacticRecordsPGCSV = Core.PluginStorageFolder + Constants.LOCAL_GALACTIC_PROCGEN_RECORDS_FILE;
+            var storagePath = Core.PluginStorageFolder;
+            galacticRecordsCSV = storagePath + Constants.LOCAL_GALACTIC_RECORDS_FILE;
+            galacticRecordsPGCSV = storagePath + Constants.LOCAL_GALACTIC_PROCGEN_RECORDS_FILE;
 
             ErrorLogger = Core.GetPluginErrorLogger(this);
             MaybeUpdateGalacticRecords();
 
-            var storagePath = Core.PluginStorageFolder;
             manager = new PersonalBestManager(storagePath);
             recordBook = new(manager);
 
@@ -155,7 +155,7 @@ namespace ObservatoryStatScanner
                         details = (count == 0 ? "Not yet implemented" : "");
                         break;
                     case RecordKind.GalacticProcGen:
-                        var handlingMode = (ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling];
+                        var handlingMode = (ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling ?? DEFAULT_PROCGEN_HANDLING];
                         details = (handlingMode == ProcGenHandlingMode.ProcGenIgnore ? "Ignored via settings" : "");
                         break;
                 }
@@ -357,7 +357,6 @@ namespace ObservatoryStatScanner
 
         private void LoadPersonalBestRecords()
         {
-            // TODO: Implement a database. For now, just initialize a bunch of empty personal records.
             int pbRecordCount = 0;
 
             foreach (var pbData in Constants.GeneratePersonalBestRecords())
