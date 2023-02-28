@@ -21,6 +21,7 @@ namespace ObservatoryStatScanner.Records
 
         public override string ValueFormat { get => "{0}"; }
         public override string Units { get => "bios"; }
+        public override Function MaxFunction { get => Function.MaxSum; }
 
         public override List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
         {
@@ -36,7 +37,7 @@ namespace ObservatoryStatScanner.Records
             }
             BodyBioSignals.Clear();
 
-            return CheckMax(systemBioCount, allBodiesFound.Timestamp, allBodiesFound.SystemName, Function.MaxSum);
+            return CheckMax(systemBioCount, allBodiesFound.Timestamp, allBodiesFound.SystemName);
         }
 
         public override List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)

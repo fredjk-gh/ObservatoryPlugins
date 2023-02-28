@@ -1,4 +1,5 @@
-﻿using ObservatoryStatScanner.Records;
+﻿using ObservatoryStatScanner.DB;
+using ObservatoryStatScanner.Records;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,9 +15,13 @@ namespace ObservatoryStatScanner
         // Leaf key: Journal-based object name (eg. "M_RedSuperGiant" or "Ammonia world" or "eRingClass_Metalic")
         // Values: List of IRecords which apply to the object type.
         private Dictionary<RecordTable, Dictionary<string, List<IRecord>>> RecordsByTable = new();
-        
-        public RecordBook()
+
+        private PersonalBestManager manager;
+
+        public RecordBook(PersonalBestManager manager)
         {
+            this.manager = manager;
+
             RecordsByTable.Add(RecordTable.Stars, new());
             RecordsByTable.Add(RecordTable.Planets, new());
             RecordsByTable.Add(RecordTable.Rings, new());
@@ -34,6 +39,11 @@ namespace ObservatoryStatScanner
             var recordsForJournalObject = recordsForTable[record.JournalObjectName];
 
             recordsForJournalObject.Add(record);
+
+            if (record.RecordKind == RecordKind.Personal)
+            {
+                record.MaybeInitForPersonalBest(manager);
+            }
         }
 
         public List<IRecord> GetRecords(RecordTable table, string journalObjectName)
@@ -41,6 +51,22 @@ namespace ObservatoryStatScanner
             if (RecordsByTable[table].ContainsKey(journalObjectName))
                 return RecordsByTable[table][journalObjectName];
             return new();
+        }
+
+        public List<IRecord> GetPersonalBests()
+        {
+            List<IRecord> personalBests = new();
+            foreach (var rt in RecordsByTable.Keys)
+            {
+                foreach (var objName in RecordsByTable[rt].Keys)
+                {
+                    foreach (var r in RecordsByTable[rt][objName])
+                    {
+                        if (r.RecordKind == RecordKind.Personal) personalBests.Add(r);
+                    }
+                }
+            }
+            return personalBests;
         }
 
         public void ResetPersonalBests()
@@ -55,6 +81,7 @@ namespace ObservatoryStatScanner
                     }
                 }
             }
+            manager.Clear();
         }
 
         public int Count

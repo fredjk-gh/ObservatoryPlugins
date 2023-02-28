@@ -46,7 +46,7 @@ namespace ObservatoryStatScanner.Records
             visitedRegions.Add(regionName);
 
             var extraData = string.Join(SEPARATOR, visitedRegions);
-            return CheckMax(newValue, codexEntry.Timestamp, regionName, extraData);
+            return CheckMax(newValue, codexEntry.Timestamp, regionName, "First visit", extraData);
         }
 
         public override void Reset()

@@ -1,4 +1,5 @@
 ﻿using Observatory.Framework.Files.Journal;
+using ObservatoryStatScanner.DB;
 
 namespace ObservatoryStatScanner.Records
 {
@@ -54,16 +55,21 @@ namespace ObservatoryStatScanner.Records
         string MaxHolder { get; }
         long MaxCount { get; }
         double MaxValue { get; }
+        Function MaxFunction { get; }
 
         bool HasMin { get; }
         string MinHolder { get; }
         long MinCount { get; }
         double MinValue { get; }
+        Function MinFunction { get; }
 
+        List<StatScannerGrid> Summary();
         List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans);
         List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey);
         List<StatScannerGrid> CheckScan(Scan scan);
         List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry);
+
+        void MaybeInitForPersonalBest(PersonalBestManager manager);
 
         void Reset();
     }

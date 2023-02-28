@@ -1,6 +1,7 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
+using ObservatoryStatScanner.DB;
 using ObservatoryStatScanner.Records;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -49,8 +50,8 @@ namespace ObservatoryStatScanner
         private string galacticRecordsCSV;
         private string galacticRecordsPGCSV;
 
-        private RecordBook recordBook = new();
-        private PersonalBestManager manager = new();
+        private RecordBook recordBook;
+        private PersonalBestManager manager;
 
         private bool IsOdyssey = false;
         private bool HasHeaderRows = false;
@@ -71,7 +72,7 @@ namespace ObservatoryStatScanner
         }
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
-            if (LogMonitorStateChangedEventArgs.IsBatchRead(args.NewState))
+            if (args.NewState.HasFlag(LogMonitorState.Batch))
             {
                 recordBook.ResetPersonalBests();
                 Core.ClearGrid(this, new StatScannerGrid());
@@ -122,6 +123,10 @@ namespace ObservatoryStatScanner
             ErrorLogger = Core.GetPluginErrorLogger(this);
             MaybeUpdateGalacticRecords();
 
+            var storagePath = Core.PluginStorageFolder;
+            manager = new PersonalBestManager(storagePath);
+            recordBook = new(manager);
+
             LoadRecords();
             settings.ForceUpdateGalacticRecords = ForceRefreshGalacticRecords;
         }
@@ -129,9 +134,11 @@ namespace ObservatoryStatScanner
         private void MaybeAddHeaderRows()
         {
             if (HasHeaderRows) return;
+            HasHeaderRows = true;
 
             var devModeWarning = (settings.DevMode ? "!!DEV mode!!" : "");
-            Core.AddGridItem(this, new StatScannerGrid
+            var gridItems = new List<StatScannerGrid>();
+            gridItems.Add(new StatScannerGrid
             {
                 ObjectClass = "Plugin stats",
                 Variable = "Tracked Record(s): Total",
@@ -153,7 +160,7 @@ namespace ObservatoryStatScanner
                         break;
                 }
 
-                Core.AddGridItem(this, new StatScannerGrid
+                gridItems.Add(new StatScannerGrid
                 {
                     ObjectClass = "Plugin stats",
                     Variable = $"Tracked Record(s): {kind.ToString()}",
@@ -163,7 +170,18 @@ namespace ObservatoryStatScanner
                     Details = details,
                 });
             }
-            HasHeaderRows = true;
+            AddResultsToGrid(gridItems);
+        }
+
+        private void ShowPersonalBestSummary()
+        {
+            MaybeAddHeaderRows();
+            var gridItems = new List<StatScannerGrid>();
+            foreach (var best in recordBook.GetPersonalBests())
+            {
+                gridItems.AddRange(best.Summary());
+            }
+            AddResultsToGrid(gridItems);
         }
 
         private void ForceRefreshGalacticRecords()
@@ -178,9 +196,8 @@ namespace ObservatoryStatScanner
 
         private void ResetGalacticRecords ()
         {
-            // This implicitly resets Personal bests as well, since they are tied to the galactic records.
-            recordBook = new RecordBook();
-            // TODO: Reset any other state needed after a galactic record refresh.
+            manager.Clear();
+            recordBook = new RecordBook(manager);
         }
 
         private void MaybeUpdateGalacticRecords()
@@ -250,6 +267,7 @@ namespace ObservatoryStatScanner
             LoadGalacticRecords(galacticRecordsCSV, RecordKind.Galactic);
             LoadGalacticRecords(galacticRecordsPGCSV, RecordKind.GalacticProcGen);
             LoadPersonalBestRecords();
+            ShowPersonalBestSummary();
         }
         private void LoadGalacticRecords(string csvLocalFile, RecordKind recordKind, bool retry = false)
         {
@@ -383,7 +401,17 @@ namespace ObservatoryStatScanner
             }
             results.AddRange(CheckScanForRecords(scan, recordBook.GetRecords(RecordTable.Systems, Constants.OBJECT_TYPE_SYSTEM)));
 
-            AddResultsToGrid(results);
+            AddResultsToGrid(results, /* notify */ true);
+        }
+
+        private List<StatScannerGrid> CheckScanForRecords(Scan scan, List<IRecord> records)
+        {
+            List<StatScannerGrid> results = new();
+            foreach (var record in records)
+            {
+                results.AddRange(record.CheckScan(scan));
+            }
+            return results;
         }
 
         private void OnFssBodySignals(FSSBodySignals bodySignals)
@@ -396,7 +424,7 @@ namespace ObservatoryStatScanner
                     results.AddRange(record.CheckFSSBodySignals(bodySignals, IsOdyssey));
                 }
             }
-            AddResultsToGrid(results);
+            AddResultsToGrid(results, /* notify */ true);
         }
 
         private void OnFssAllBodiesFound(FSSAllBodiesFound fssAllBodies, List<Scan> scans)
@@ -409,7 +437,7 @@ namespace ObservatoryStatScanner
                     results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, scans));
                 }
             }
-            AddResultsToGrid(results);
+            AddResultsToGrid(results, /* notify */ true);
         }
         private void OnCodexEntry(CodexEntry codexEntry)
         {
@@ -427,25 +455,22 @@ namespace ObservatoryStatScanner
             {
                 results.AddRange(record.CheckCodexEntry(codexEntry));
             }
-            AddResultsToGrid(results);
+            AddResultsToGrid(results, /* notify */ true);
         }
 
-        private List<StatScannerGrid> CheckScanForRecords(Scan scan, List<IRecord> records)
+        private void AddResultsToGrid(List<StatScannerGrid> results, bool notify = false)
         {
-            List<StatScannerGrid> results = new();
-            foreach (var record in records)
-            {
-                results.AddRange(record.CheckScan(scan));
-            }
-            return results;
-        }
+            //if (!notify)
+            //{
+            //    // REQUIRES LATEST OBSERVATORY CORE!!!
+            //    Core.AddGridItems(this, results);
+            //    return;
+            //}
 
-        private void AddResultsToGrid(List<StatScannerGrid> results)
-        {
             foreach (var r in results)
             {
                 Core.AddGridItem(this, r);
-                // TODO: Fire notification?
+                // TODO: Fire notification
             }
         }
 

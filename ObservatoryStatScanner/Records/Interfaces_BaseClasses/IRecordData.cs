@@ -1,4 +1,5 @@
-﻿using ObservatoryStatScanner.Records;
+﻿using ObservatoryStatScanner.DB;
+using ObservatoryStatScanner.Records;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,30 +11,31 @@ namespace ObservatoryStatScanner.Records
 {
     public class IRecordData
     {
-        // public PersonalBestManager Manager { get; protected set; }
 
-        public RecordTable Table { get; protected set; }
-        public string Variable { get; protected set; }
-        public string EDAstroObjectName { get; protected set; }
-        public string JournalObjectName { get; protected set; }
+        public virtual RecordTable Table { get; protected set; }
+        public virtual string Variable { get; protected set; }
+        public virtual string EDAstroObjectName { get; protected set; }
+        public virtual string JournalObjectName { get; protected set; }
         public bool IsValid { get => (Table != RecordTable.Unknown && JournalObjectName != null); }
 
         public virtual bool IsMutable { get => false; }
 
         public bool HasMax { get => MaxValue > 0.0 && MaxHolder?.Length > 0; }
-        public string MaxHolder { get; protected set; }
-        public long MaxCount { get; protected set; }
-        public double MaxValue { get; protected set; }
+        public virtual string MaxHolder { get; protected set; }
+        public virtual long MaxCount { get; protected set; }
+        public virtual double MaxValue { get; protected set; }
 
         public bool HasMin { get => MinValue != 0.0 && MinHolder?.Length > 0; }
-        public string MinHolder { get; protected set; }
-        public long MinCount { get; protected set; }
-        public double MinValue { get; protected set; }
+        public virtual string MinHolder { get; protected set; }
+        public virtual long MinCount { get; protected set; }
+        public virtual double MinValue { get; protected set; }
 
         // An arbitrary string value.
-        public string ExtraData { get; set; }
+        public virtual string ExtraData { get; set; }
 
-        public void ResetMutable()
+        public virtual void Init(PersonalBestManager manager) { }
+
+        public virtual void ResetMutable()
         {
             if (!IsMutable) return;
 
@@ -48,6 +50,8 @@ namespace ObservatoryStatScanner.Records
             ExtraData = "";
         }
 
+        internal virtual void Save() { }
+
         public void SetOrUpdateMax(string maxHolder, double maxValue, int maxCount = 1, string extraData = "")
         {
             if (!IsMutable || (HasMax && maxValue < MaxValue)) return;
@@ -61,7 +65,7 @@ namespace ObservatoryStatScanner.Records
             MaxCount = maxCount;
             if (extraData.Length > 0) ExtraData = extraData;
 
-            // TODO: Tell the Manager?
+            Save();
         }
 
         public void SetOrUpdateMin(string minHolder, double minValue, int minCount = 1, string extraData = "")
@@ -77,25 +81,15 @@ namespace ObservatoryStatScanner.Records
             MinCount = minCount;
             if (extraData.Length > 0) ExtraData = extraData;
 
-            // TODO: Tell the Manager?
+            Save();
         }
 
         public static RecordTable RecordTableFromString(string str)
         {
-            switch (str)
-            {
-                case "planets":
-                    return RecordTable.Planets;
-                case "rings":
-                    return RecordTable.Rings;
-                case "stars":
-                    return RecordTable.Stars;
-                case "systems":
-                    return RecordTable.Systems;
-                default:
-                    Debug.WriteLine("Unknown table value found in galactic records csv file: " + str);
-                    break;
-            }
+            RecordTable table;
+            if (Enum.TryParse(str, true, out table)) return table;
+
+            Debug.WriteLine("Unknown table value found in galactic records csv file: " + str);
             return RecordTable.Unknown;
         }
     }

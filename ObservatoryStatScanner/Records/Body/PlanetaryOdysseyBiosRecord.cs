@@ -34,7 +34,7 @@ namespace ObservatoryStatScanner.Records
             }
 
             BodyBioSignals.Remove(scan.BodyName);
-            var results = CheckMax(bioCount, scan.Timestamp, scan.BodyName, IsUndiscovered(scan), Function.MaxCount);
+            var results = CheckMax(bioCount, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
             if (results.Count > 0)
             {
                 Data.SetOrUpdateMax(scan.BodyName, bioCount);

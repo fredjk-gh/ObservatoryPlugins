@@ -9,8 +9,15 @@ namespace ObservatoryStatScanner.Records
 {
     internal class RegionCodexCountRecord : RegionRecord
     {
+        static readonly Dictionary<string, string> CodexCategoriesDisplayNames = new()
+        {
+            { Constants.V_CODEX_CATEGORY_ASTRO, "Codex: Astronomical Bodies" },
+            { Constants.V_CODEX_CATEGORY_BIO_GEO, "Codex: Biological and Geological" },
+            { Constants.V_CODEX_CATEGORY_XENO, "Codex: Xenological" },
+        };
+
         public RegionCodexCountRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, data.Variable)
+            : base(settings, recordKind, data, CodexCategoriesDisplayNames[data.Variable])
         { }
 
         public override bool Enabled => Settings.EnableRegionCodexCountRecords;
@@ -31,7 +38,7 @@ namespace ObservatoryStatScanner.Records
             // This is a new entry.
             var newValue = (Data.HasMax? Data.MaxValue + 1 : 1);
 
-            return CheckMax(newValue, codexEntry.Timestamp, codexEntry.Name_Localised);
+            return CheckMax(newValue, codexEntry.Timestamp, codexEntry.Name_Localised, "Codex Confirmation");
         }
     }
 }

@@ -4,7 +4,6 @@
     <TargetFramework>net6.0</TargetFramework>
 	  <PublishSingleFile>true</PublishSingleFile>
 	  <SelfContained>true</SelfContained>
-	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	  <ImplicitUsings>enable</ImplicitUsings>
     <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>ObservatoryKey.snk</AssemblyOriginatorKeyFile>
@@ -20,6 +19,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="LiteDB" Version="5.0.15" />
 	  <PackageReference Include="TextFieldParserCore" Version="1.0.0" />
 	</ItemGroup>
 
@@ -30,5 +30,9 @@
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)plugins\&quot; /y" />
 		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(TargetPath)&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/&quot; -f" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)plugins\deps\&quot; /y" />
+		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/deps/&quot; -f" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)$(OutDir)TextFieldParserCore.dll&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)plugins\deps\&quot; /y" />
+		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(ProjectDir)$(OutDir)TextFieldParserCore.dll&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/deps/&quot; -f" />
 	</Target>
 </Project>

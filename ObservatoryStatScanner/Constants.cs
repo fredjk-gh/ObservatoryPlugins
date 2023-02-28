@@ -85,10 +85,10 @@ namespace ObservatoryStatScanner
         public const string V_BODY_BIO_COUNT = "bodyBioCount";
         public const string V_SYS_BIO_COUNT = "sysBioCount";
         public const string V_SYS_BODY_COUNT = "sysBodyCount";
-        public const string V_VISITED_REGIONS_COUNT = "visitedRegionsCount";
-        public const string V_CODEX_CATEGORY_BIO_GEO = "Codex: Biological and Geological";
-        public const string V_CODEX_CATEGORY_XENO = "Codex: Xenological";
-        public const string V_CODEX_CATEGORY_ASTRO = "Codex: Astronomical Bodies";
+        public const string V_VISITED_REGIONS_COUNT = "regionsVisitedCount";
+        public const string V_CODEX_CATEGORY_BIO_GEO = "regionCodexBiologicalGeological";
+        public const string V_CODEX_CATEGORY_XENO = "regionCodexXenological";
+        public const string V_CODEX_CATEGORY_ASTRO = "regionCodexAstronomicalBodies";
 
         // Some of the object class names from the list below. These are used
         // in multiple places so are pulled into constants to avoid duplication/drift.
@@ -235,7 +235,6 @@ namespace ObservatoryStatScanner
             { "$Codex_Category_Biology;", V_CODEX_CATEGORY_BIO_GEO },
             { "$Codex_Category_Civilisations;", V_CODEX_CATEGORY_XENO },
             { "$Codex_Category_StellarBodies;", V_CODEX_CATEGORY_ASTRO },
-
         };
 
         public const string PROCGEN_NAME_RE = @"\s+[A-Z][A-Z]-[A-Z]\s+[a-z]\d+(-\d+)?";
@@ -288,6 +287,7 @@ namespace ObservatoryStatScanner
         // Some frequently used UI strings. Some (indicated by UI_FS_ prefix) are format strings!
         public const string UI_POTENTIAL_NEW_RECORD = "Potential new record";
         public const string UI_NEW_PERSONAL_BEST = "New personal best";
+        public const string UI_CURRENT_PERSONAL_BEST = "Current personal best";
         public const string UI_FS_TIED_RECORD_COUNT = "Tied record (with ~{0} others)";
         public const string UI_FS_NEAR_RECORD_COUNT = "Near-record (within {0}%)";
         public const string UI_RECORD_HOLDER_VISITED = "Visited existing record";

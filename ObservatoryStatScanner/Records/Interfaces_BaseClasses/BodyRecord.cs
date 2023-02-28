@@ -1,4 +1,5 @@
 ﻿using Observatory.Framework.Files.Journal;
+using ObservatoryStatScanner.DB;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,12 +38,13 @@ namespace ObservatoryStatScanner.Records
         public long MaxCount { get => Data.MaxCount; }
         public double MaxValue { get => (Settings.DevMode ? Data.MaxValue * Settings.DevModeMaxScaleFactor : Data.MaxValue); }
         public string MaxHolder { get => Data.MaxHolder; }
+        public virtual Function MaxFunction { get => Function.Max; }
 
         public bool HasMin => Data.HasMin;
         public long MinCount { get => Data.MinCount; }
         public double MinValue { get => (Settings.DevMode ? Data.MinValue * Settings.DevModeMinScaleFactor : Data.MinValue); }
         public string MinHolder { get => Data.MinHolder; }
-
+        public virtual Function MinFunction { get => Function.Min; }
  
         public virtual List<StatScannerGrid> CheckScan(Scan scan)
         {
@@ -60,13 +62,53 @@ namespace ObservatoryStatScanner.Records
         {
             return new();
         }
+        
+        public void MaybeInitForPersonalBest(PersonalBestManager manager)
+        {
+            Data.Init(manager);
+        }
 
         public void Reset()
         {
             Data.ResetMutable();
         }
 
-        protected List<StatScannerGrid> CheckMax(double observedValue, string timestamp, string bodyName, bool isUndiscovered, Function function = Function.Max)
+        public List<StatScannerGrid> Summary()
+        {
+            var results = new List<StatScannerGrid>();
+
+            if (HasMax)
+            {
+                results.Add(new()
+                {
+                    ObjectClass = EDAstroObjectName,
+                    Variable = DisplayName,
+                    Function = MaxFunction.ToString(),
+                    RecordValue = String.Format(ValueFormat, MaxValue),
+                    Units = Units,
+                    RecordHolder = (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder),
+                    Details = Constants.UI_CURRENT_PERSONAL_BEST,
+                    RecordKind = RecordKind.ToString(),
+                });
+            }
+            if (HasMin)
+            {
+                results.Add(new()
+                {
+                    ObjectClass = EDAstroObjectName,
+                    Variable = DisplayName,
+                    Function = MinFunction.ToString(),
+                    RecordValue = String.Format(ValueFormat, MinValue),
+                    Units = Units,
+                    RecordHolder = (MinCount > 1 ? $"{MinHolder} (and {MinCount} more)" : MinHolder),
+                    Details = Constants.UI_CURRENT_PERSONAL_BEST,
+                    RecordKind = RecordKind.ToString(),
+                });
+            }
+            return results;
+        }
+
+        protected List<StatScannerGrid> CheckMax(double observedValue, string timestamp, string bodyName, bool isUndiscovered)
         {
             List<StatScannerGrid> results = new();
 
@@ -75,7 +117,7 @@ namespace ObservatoryStatScanner.Records
                 if (!FilterPersonalRecordForProcGenAndFirstDiscovered(bodyName, isUndiscovered)) return results;
                 if (Data.HasMax && observedValue > Data.MaxValue)
                 {
-                    var gridItem = MakeGridItem(Outcome.PersonalNew, function, observedValue, timestamp, bodyName, isUndiscovered);
+                    var gridItem = MakeGridItem(Outcome.PersonalNew, MaxFunction, observedValue, timestamp, bodyName, isUndiscovered);
 
                     if (gridItem != null) results.Add(gridItem);
                 }
@@ -92,13 +134,13 @@ namespace ObservatoryStatScanner.Records
 
             if (outcome != Outcome.None)
             {
-                var gridItem = MakeGridItem(outcome, function, observedValue, timestamp, bodyName, isUndiscovered);
+                var gridItem = MakeGridItem(outcome, MaxFunction, observedValue, timestamp, bodyName, isUndiscovered);
                 if (gridItem != null) results.Add(gridItem);
             }
             return results;
         }
 
-        protected List<StatScannerGrid> CheckMin(double observedValue, string timestamp, string bodyName, bool isUndiscovered, Function function = Function.Min)
+        protected List<StatScannerGrid> CheckMin(double observedValue, string timestamp, string bodyName, bool isUndiscovered)
         {
             List<StatScannerGrid> results = new();
 
@@ -107,7 +149,7 @@ namespace ObservatoryStatScanner.Records
                 if (!FilterPersonalRecordForProcGenAndFirstDiscovered(bodyName, isUndiscovered)) return results;
                 if (Data.HasMin && observedValue < Data.MinValue)
                 {
-                    var gridItem = MakeGridItem(Outcome.PersonalNew, function, observedValue, timestamp, bodyName, isUndiscovered);
+                    var gridItem = MakeGridItem(Outcome.PersonalNew, MinFunction, observedValue, timestamp, bodyName, isUndiscovered);
 
                     if (gridItem != null) results.Add(gridItem);
                 }
@@ -125,7 +167,7 @@ namespace ObservatoryStatScanner.Records
 
             if (outcome != Outcome.None)
             {
-                var gridItem = MakeGridItem(outcome, function, observedValue, timestamp, bodyName, isUndiscovered);
+                var gridItem = MakeGridItem(outcome, MinFunction, observedValue, timestamp, bodyName, isUndiscovered);
                 if (gridItem != null) results.Add(gridItem);
             }
             return results;
