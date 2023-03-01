@@ -11,26 +11,10 @@ namespace ObservatoryStatScanner.Records
     internal class RegionsVisitedRecord : RegionRecord
     {
         private const char SEPARATOR = '|';
-        private readonly HashSet<string> visitedRegions;
 
         public RegionsVisitedRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, "Visited regions")
-        {
-
-            if (string.IsNullOrEmpty(data.ExtraData)) {
-                data.ExtraData = "";
-                visitedRegions = new();
-            }
-            else
-            {
-                visitedRegions = data.ExtraData.Split(SEPARATOR).ToHashSet();
-            }
-
-            if (data.MaxValue != visitedRegions.Count)
-            {
-                Debug.WriteLine($"RegionsVisitedRecord has MaxValue ${MaxValue}, but {visitedRegions.Count} items in ExtraData: {data.ExtraData}!");
-            }
-        }
+        { }
 
         public override bool Enabled => Settings.EnableVisitedRegionRecords;
         public override string ValueFormat { get => "{0}"; }
@@ -39,21 +23,19 @@ namespace ObservatoryStatScanner.Records
         public override List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry)
         {
             var regionName = Constants.RegionNamesByJournalId[codexEntry.Region];
-            if (!Enabled || visitedRegions.Contains(regionName)) return new();
+            // We check via string.Contains here as it's presumably cheaper to do on every codex entry vs. splitting the string into substrings and creating a hashset.
+            if (!Enabled || (!string.IsNullOrEmpty(Data.ExtraData) && Data.ExtraData.Contains(regionName))) return new();
+
+            HashSet<string> visitedRegions = new();
+            if (!string.IsNullOrEmpty(Data.ExtraData)) visitedRegions = Data.ExtraData.Split(SEPARATOR).ToHashSet();
+            // Consistency check on the MaxValue vs. visitedRegions set.
+            if (Data.HasMax && Data.MaxValue != visitedRegions.Count) Debug.WriteLine($"RegionsVisitedRecord has MaxValue ${MaxValue}, but {visitedRegions.Count} items in ExtraData: {Data.ExtraData}!");
 
             // This is a new region.
             var newValue = (Data.HasMax ? Data.MaxValue + 1 : 1);
             visitedRegions.Add(regionName);
 
-            var extraData = string.Join(SEPARATOR, visitedRegions);
-            return CheckMax(newValue, codexEntry.Timestamp, regionName, "First visit", extraData);
-        }
-
-        public override void Reset()
-        {
-            base.Reset();
-
-            visitedRegions.Clear();
+            return CheckMax(newValue, codexEntry.Timestamp, regionName, "First visit", string.Join(SEPARATOR, visitedRegions));
         }
     }
 }

@@ -10,6 +10,7 @@ namespace ObservatoryStatScanner.Records
         Rings,
         Systems,
         Regions,
+        Belts,
         Unknown,
     };
 
