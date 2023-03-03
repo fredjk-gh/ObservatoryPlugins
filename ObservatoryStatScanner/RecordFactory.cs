@@ -53,6 +53,8 @@ namespace ObservatoryStatScanner
         // General factory; handles all kinds of records.
         public static IRecord CreateRecord(IRecordData recordData, StatScannerSettings settings, RecordKind recordKind = RecordKind.Personal)
         {
+            if (!settings.EnablePersonalBests && recordKind == RecordKind.Personal) return null;
+
             Type typeToCreate = null;
 
             switch (recordData.Variable)

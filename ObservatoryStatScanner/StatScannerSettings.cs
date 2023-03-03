@@ -53,6 +53,9 @@ namespace ObservatoryStatScanner
         [SettingDisplayName("Show Records for first discovered objects only")]
         public bool FirstDiscoveriesOnly { get; set; }
 
+        [SettingDisplayName("Enable Tracking Personal Bests (read-all after enabling)")]
+        public bool EnablePersonalBests { get; set; }
+
         // Individual record tracking controls
         //
         // Per Body records

@@ -13,13 +13,14 @@ namespace ObservatoryStatScanner
 {
     public class StatScanner : IObservatoryWorker
     {
-        private StatScannerSettings settings = new()
+        private static StatScannerSettings _DEFAULT = new()
         {
             MaxNearRecordThreshold = 0,
             MinNearRecordThreshold = 0,
-            HighCardinalityTieSuppression = 50000,
-            FirstDiscoveriesOnly = false,
+            HighCardinalityTieSuppression = 20000,
             ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING,
+            FirstDiscoveriesOnly = false,
+            EnablePersonalBests = true,
             EnableEarthMassesRecord = true,
             EnablePlanetaryRadiusRecord = true,
             EnableSurfaceGravityRecord = true,
@@ -39,6 +40,8 @@ namespace ObservatoryStatScanner
             EnableRegionCodexCountRecords = false,
             EnableVisitedRegionRecords = true,
         };
+
+        private StatScannerSettings settings = _DEFAULT;
 
         private IObservatoryCore Core;
         /// <summary>
@@ -110,9 +113,10 @@ namespace ObservatoryStatScanner
 
         public void Load(IObservatoryCore observatoryCore)
         {
+            MaybeFixUnsetSettings();
+
             gridCollection = new();
             StatScannerGrid uiObject = new();
-
             gridCollection.Add(uiObject);
             pluginUI = new PluginUI(gridCollection);
 
@@ -122,13 +126,21 @@ namespace ObservatoryStatScanner
             galacticRecordsPGCSV = storagePath + Constants.LOCAL_GALACTIC_PROCGEN_RECORDS_FILE;
 
             ErrorLogger = Core.GetPluginErrorLogger(this);
+
             MaybeUpdateGalacticRecords();
 
             manager = new PersonalBestManager(storagePath);
             recordBook = new(manager);
 
             LoadRecords();
+        }
+
+        private void MaybeFixUnsetSettings()
+        {
             settings.ForceUpdateGalacticRecords = ForceRefreshGalacticRecords;
+
+            if (settings.HighCardinalityTieSuppression == 0) settings.HighCardinalityTieSuppression = _DEFAULT.HighCardinalityTieSuppression;
+            if (settings.ProcGenHandling == null) settings.ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING;
         }
 
         private void MaybeAddHeaderRows()
@@ -152,10 +164,10 @@ namespace ObservatoryStatScanner
                 switch (kind)
                 {
                     case RecordKind.Personal:
-                        details = (count == 0 ? "Not yet implemented" : "");
+                        details = (count == 0 ? (!settings.EnablePersonalBests ? "Disabled via settings" : "Not yet implemented" ) : "");
                         break;
                     case RecordKind.GalacticProcGen:
-                        var handlingMode = (ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling ?? DEFAULT_PROCGEN_HANDLING];
+                        var handlingMode = (ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling];
                         details = (handlingMode == ProcGenHandlingMode.ProcGenIgnore ? "Ignored via settings" : "");
                         break;
                 }
@@ -326,9 +338,12 @@ namespace ObservatoryStatScanner
                                 {
                                     PersonalBestData pbData = new PersonalBestData(fields);
                                     record = RecordFactory.CreateRecord(pbData, settings);
-                                    pbRecordCount++;
-                                    recordBook.AddRecord(record);
-                                    if (settings.DevMode) Debug.WriteLine($"Tracking {RecordKind.Personal} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
+                                    if (record != null)
+                                    {
+                                        pbRecordCount++;
+                                        recordBook.AddRecord(record);
+                                        if (settings.DevMode) Debug.WriteLine($"Tracking {RecordKind.Personal} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
+                                    }
                                 }
                             }
                         }
@@ -362,6 +377,7 @@ namespace ObservatoryStatScanner
             foreach (var pbData in Constants.GeneratePersonalBestRecords())
             {
                 var record = RecordFactory.CreateRecord(pbData, settings);
+                if (record == null) continue;
                 pbRecordCount++;
                 recordBook.AddRecord(record);
                 if (settings.DevMode) Debug.WriteLine($"Tracking {RecordKind.Personal} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");

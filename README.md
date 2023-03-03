@@ -8,6 +8,13 @@ Feel free to open an issue if something doesn't work, or reach out in the Observ
 
 ## Stat Tracker
 
+### Release notes: 0.23.62.319-beta
+
+By request: Added an option to disable personal best tracking. After enabling the setting, run a read-all.
+
+And a bug-fix to the visited galactic regions record.
+
+
 ### Release notes: 0.23.59.549-beta
 
 Major update/overhaul. Be sure to check settings to enable new records, fetch new record files from edastro.com and finally do a read-all after installing this update!
