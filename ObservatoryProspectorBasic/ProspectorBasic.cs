@@ -13,6 +13,8 @@ namespace ObservatoryProspectorBasic
 {
     public class ProspectorBasic : IObservatoryWorker
     {
+        private bool enableDebug = false; // Not const to avoid unreachable code warnings.
+
         private const int minRingDensity = 5;  // mT/km^3
         private const string LimpetDronesKey = "drones";
         private const string LimpetDronesName = "Limpets";
@@ -97,24 +99,29 @@ namespace ObservatoryProspectorBasic
                     Reset("FSDJump");
                     MaybeUpdateCurrentSystem(fsdJump.StarSystem);
                     break;
+                case Location location:
+                    // Reset (this could be game startup or carrier jump)
+                    Reset("Location");
+                    MaybeUpdateCurrentSystem(location.StarSystem);
+                    break;
                 case MiningRefined miningRefined:
                     string miningKey = CargoKey(miningRefined.Type, miningRefined.Type_Localised);
                     if (!cargo.ContainsKey(miningKey)) cargo[miningKey] = 0;
                     cargo[miningKey] += 1;
-                    Debug.WriteLine("MiningRefined: {0} += 1", (object)miningKey);  // The (object) cast here is to force the correct overload of Debug.Writeline.
+                    if (enableDebug) Debug.WriteLine("MiningRefined: {0} += 1", (object)miningKey);  // The (object) cast here is to force the correct overload of Debug.Writeline.
                     UpdateCargoNotification();
                     break;
                 case BuyDrones buyDrones:
                     if (!cargo.ContainsKey(LimpetDronesKey)) cargo[LimpetDronesKey] = 0;
                     cargo[LimpetDronesKey] += buyDrones.Count;
-                    Debug.WriteLine("BuyDrones: Limpets += {0}", (object)buyDrones.Count);  // The (object) cast here is to force the correct overload of Debug.Writeline.
+                    if (enableDebug) Debug.WriteLine("BuyDrones: Limpets += {0}", (object)buyDrones.Count);  // The (object) cast here is to force the correct overload of Debug.Writeline.
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case CollectCargo collectCargo:
                     string collectedKey = CargoKey(collectCargo.Type, collectCargo.Type_Localised);
                     if (!cargo.ContainsKey(collectedKey)) cargo[collectedKey] = 0;
                     cargo[collectedKey] += 1;
-                    Debug.WriteLine("CollectCargo: {0} += 1", (object)collectedKey);  // The (object) cast here is to force the correct overload of Debug.Writeline.
+                    if (enableDebug) Debug.WriteLine("CollectCargo: {0} += 1", (object)collectedKey);  // The (object) cast here is to force the correct overload of Debug.Writeline.
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case Synthesis synth:
@@ -124,15 +131,15 @@ namespace ObservatoryProspectorBasic
                         var limpetsSynthedGuess = Math.Min(4, (cargoMax ?? 4) - (cargoCur ?? 0));
                         limpetsSynthed += limpetsSynthedGuess;
                         if (!cargo.ContainsKey(LimpetDronesKey)) cargo[LimpetDronesKey] = 0;
-                        cargo[LimpetDronesKey] += limpetsSynthedGuess; 
-                        Debug.WriteLine("Synthesis: Limpets += 4");
+                        cargo[LimpetDronesKey] += limpetsSynthedGuess;
+                        if (enableDebug) Debug.WriteLine("Synthesis: Limpets += 4");
                         UpdateCargoNotification(false /* newNotification */);
                     }
                     break;
                 case SellDrones sellDrones:
                     if (cargo.ContainsKey(LimpetDronesKey))
                     {
-                        Debug.WriteLine("SellDrones: Limpets -= Min( {0}, {1} )", sellDrones.Count, cargo[LimpetDronesKey]);
+                        if (enableDebug) Debug.WriteLine("SellDrones: Limpets -= Min( {0}, {1} )", sellDrones.Count, cargo[LimpetDronesKey]);
                         cargo[LimpetDronesKey] -= Math.Min(sellDrones.Count, cargo[LimpetDronesKey]);
                         UpdateCargoNotification(false /* newNotification */);
                     }
@@ -141,7 +148,7 @@ namespace ObservatoryProspectorBasic
                     string ejectedKey = CargoKey(eject.Type, eject.Type_Localised);
                     if (cargo.ContainsKey(ejectedKey))
                     {
-                        Debug.WriteLine("EjectCargo: {0} -= Min of ( {1}, {2} )", ejectedKey, eject.Count, cargo[ejectedKey]);
+                        if (enableDebug) Debug.WriteLine("EjectCargo: {0} -= Min of ( {1}, {2} )", ejectedKey, eject.Count, cargo[ejectedKey]);
                         cargo[ejectedKey] -= Math.Min(eject.Count, cargo[ejectedKey]);
                     }
                     if (ejectedKey == LimpetDronesKey) // Ditching limpets:
@@ -150,21 +157,21 @@ namespace ObservatoryProspectorBasic
                     break;
                 case LaunchDrone launchDrone:
                     // Ignore if unset (we can't subtract from a value we don't know).
-                    Debug.WriteLine("LaunchDrone: Limpets -= 1");
+                    if (enableDebug) Debug.WriteLine("LaunchDrone: Limpets -= 1");
                     if (cargo.ContainsKey(LimpetDronesKey) && cargo[LimpetDronesKey] > 0) cargo[LimpetDronesKey] -= 1;
                     limpetsUsed++;
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case Loadout loadout:
                     cargoMax = loadout.CargoCapacity;
-                    if (cargoMax > 0) Debug.WriteLine("Loadout: New cargoMax: {0}", loadout.CargoCapacity);
+                    if (cargoMax > 0 && enableDebug) Debug.WriteLine("Loadout: New cargoMax: {0}", loadout.CargoCapacity);
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case Cargo cargoEvent:
                     cargoCur = cargoEvent.Count;
                     if (cargoEvent.Inventory != null && !cargoEvent.Inventory.IsEmpty) // Usually on game load or loadout change.
                     {
-                        if (cargoCur > 0) Debug.WriteLine("Cargo w/Inventory: cargoCur: {0}", cargoCur);
+                        if (cargoCur > 0 && enableDebug) Debug.WriteLine("Cargo w/Inventory: cargoCur: {0}", cargoCur);
                         Reset("Cargo w/Inventory");
                         cargo.Clear(); // This is a cargo state reset.
                         foreach (CargoType inventoryItem in cargoEvent.Inventory)
@@ -180,7 +187,7 @@ namespace ObservatoryProspectorBasic
                         // On rare occasion we'll find that the game doesn't properly account for all launched limpets and we'll
                         // end up with limpets "stuck" in our inventory. When the cargoEvent reports 0, we have an opportunity to
                         // fix. So clear the cargo contents and effectively reset.
-                        Debug.WriteLine("Cargo event with 0 count but we think we still have {0} items... Correction!", cargo.Values.Sum());
+                        if (enableDebug) Debug.WriteLine("Cargo event with 0 count but we think we still have {0} items... Correction!", cargo.Values.Sum());
                         Reset("Cargo");
                         cargo.Clear();
                         UpdateCargoNotification(false /* newNotification */);
@@ -190,7 +197,7 @@ namespace ObservatoryProspectorBasic
                     string sellKey = CargoKey(marketSell.Type, marketSell.Type_Localised);
                     if (cargo.ContainsKey(sellKey))
                     {
-                        Debug.WriteLine("MarketSell: {0} -= Min of ( {1}, {2} )", sellKey, marketSell.Count, cargo[sellKey]);
+                        if (enableDebug) Debug.WriteLine("MarketSell: {0} -= Min of ( {1}, {2} )", sellKey, marketSell.Count, cargo[sellKey]);
                         cargo[sellKey] -= Math.Min(marketSell.Count, cargo[sellKey]);
                     }
                     UpdateCargoNotification(false /* newNotification */);
@@ -199,7 +206,7 @@ namespace ObservatoryProspectorBasic
                     string buyKey = CargoKey(marketBuy.Type, marketBuy.Type_Localised);
                     if (!cargo.ContainsKey(buyKey)) cargo[buyKey] = 0;
                     cargo[buyKey] += marketBuy.Count;
-                    Debug.WriteLine("MarketBuy: {0} += {1}", buyKey, marketBuy.Count);
+                    if (enableDebug) Debug.WriteLine("MarketBuy: {0} += {1}", buyKey, marketBuy.Count);
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case CargoTransfer transfer:
@@ -208,13 +215,13 @@ namespace ObservatoryProspectorBasic
                         string transferKey = CargoKey(transferred.Type, transferred.Type_Localised);
                         if (transferred.Direction == CargoTransferDirection.ToShip)
                         {
-                            Debug.WriteLine("CargoTransfer (to Ship): {0} += {1}", transferKey, transferred.Count);
+                            if (enableDebug) Debug.WriteLine("CargoTransfer (to Ship): {0} += {1}", transferKey, transferred.Count);
                             if (!cargo.ContainsKey(transferKey)) cargo[transferKey] = 0;
                             cargo[transferKey] += transferred.Count;
                         }
                         else if (cargo.ContainsKey(transferKey)) // tocarrier and tosrv; either way, off the ship
                         {
-                            Debug.WriteLine("CargoTransfer (off Ship): {0} -= Min of ( {1}, {2} )", transferKey, transferred.Count, cargo[transferKey]);
+                            if (enableDebug) Debug.WriteLine("CargoTransfer (off Ship): {0} -= Min of ( {1}, {2} )", transferKey, transferred.Count, cargo[transferKey]);
                             cargo[transferKey] -= Math.Min(transferred.Count, cargo[transferKey]);
                         }
                     }
@@ -223,7 +230,7 @@ namespace ObservatoryProspectorBasic
                 case CarrierDepositFuel tritiumDonation:
                     if (cargo.ContainsKey(TritiumKey))
                     {
-                        Debug.WriteLine("CarrierDepositFuel: Tritium -= Min of ( {0}, {1} )", tritiumDonation.Amount, cargo[TritiumKey]);
+                        if (enableDebug) Debug.WriteLine("CarrierDepositFuel: Tritium -= Min of ( {0}, {1} )", tritiumDonation.Amount, cargo[TritiumKey]);
                         cargo[TritiumKey] -= Math.Min(tritiumDonation.Amount, cargo[TritiumKey]);
                         UpdateCargoNotification(false /* newNotification */);
                     }
@@ -241,7 +248,7 @@ namespace ObservatoryProspectorBasic
             int cargoEstimate = cargo.Values.Sum();
             if (cargoEstimate == 0 || (cargo.Count == 1 && cargo.ContainsKey(LimpetDronesKey)))
             {
-                if (MaybeCloseCargoNotification())
+                if (MaybeCloseCargoNotification() && enableDebug)
                     Debug.WriteLine("\t--Cargo Notification closed; no cargo or only limpets remaining.");
                 return;
             }
@@ -263,7 +270,7 @@ namespace ObservatoryProspectorBasic
                 }
                 return $"{CargoName(kvp.Key)}: {kvp.Value}";
             }));
-            Debug.WriteLine("\t--Cargo Notification update: {0}; {1}", cargoTitle, cargoDetail.Replace(Environment.NewLine, "; "));
+            if (enableDebug) Debug.WriteLine("\t--Cargo Notification update: {0}; {1}", cargoTitle, cargoDetail.Replace(Environment.NewLine, "; "));
 
             if (Core.IsLogMonitorBatchReading || (cargoNotification == Guid.Empty && !newNotification))
             {
@@ -292,7 +299,7 @@ namespace ObservatoryProspectorBasic
 
         private void AddOrUpdateProspectorNotification(int counter, NotificationArgs args)
         {
-            Debug.WriteLine("ProspectedAsteroid: {0}; {1}", args.Title, args.Detail);
+            if (enableDebug) Debug.WriteLine("ProspectedAsteroid: {0}; {1}", args.Title, args.Detail);
 
             if (!settings.ShowProspectorNotifications || Core.IsLogMonitorBatchReading) return;
 
@@ -331,7 +338,7 @@ namespace ObservatoryProspectorBasic
             if (closeStaticNotificationsToo) notificationsClosed |= MaybeCloseCargoNotification();
 
             // Reset stats.
-            if (notificationsClosed || prospectorsEngaged > 0)
+            if ((notificationsClosed || prospectorsEngaged > 0) && enableDebug)
                 Debug.WriteLine("\t--{0} - Reset; Stats: prospectorsEngaged: {1}, limpetsUsed: {2}, limpetsSynthed: {3}, limpetsAbandoned: {4}, goodRocks: {5}", caller, prospectorsEngaged, limpetsUsed, limpetsSynthed, limpetsAbandoned, goodRocks);
 
             prospectorsEngaged = 0;
@@ -371,15 +378,15 @@ namespace ObservatoryProspectorBasic
                 {
                     if (mentionableRings.HasFlag(rt) && ring.RingClass.Contains(rt.MatchString()))
                     {
-                        double densityMTperkm3 = Math.Round(ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0))));
-                        if (densityMTperkm3 < minRingDensity)
+                        double densityMTperkm2 = Math.Round(ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0))));
+                        if (densityMTperkm2 < minRingDensity)
                         {
-                            Debug.WriteLine("Scan: Ignoring interesting ring with low density: {0}", densityMTperkm3);
+                            if (enableDebug) Debug.WriteLine("Scan: Ignoring interesting ring with low density: {0}", densityMTperkm2);
                             break;
                         }
                         string desiredCommodities = string.Join(", ", settings.DesirableCommonditiesByRingType(rt).Select(c => c.ToString()));
                         var tuple = new Tuple<string, string, string>(
-                            $"{rt.DisplayString()} Ring", $"[{desiredCommodities}]", $"Density: {Math.Floor(densityMTperkm3)}");
+                            $"{rt.DisplayString()} Ring", $"[{desiredCommodities}]", $"Density: {Math.Floor(densityMTperkm2)}");
                         if (!ringsOfInterest.Contains(tuple)) ringsOfInterest.Add(tuple);
                         break;
                     }
@@ -390,7 +397,7 @@ namespace ObservatoryProspectorBasic
             var shortBodyName = GetBodyName(scan.BodyName);
             var detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => $"{t.Item1} {t.Item2}, {t.Item3}"));
             var bodyDistance = $", distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
-            Debug.WriteLine("Scan: Interesting rings at body {0}: {1}", shortBodyName, detailsCommaSeparated + bodyDistance);
+            if (enableDebug) Debug.WriteLine("Scan: Interesting rings at body {0}: {1}", shortBodyName, detailsCommaSeparated + bodyDistance);
 
             // Recreate details string without density for the grid.
             detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => $"{t.Item1} {t.Item2}"));
@@ -452,7 +459,7 @@ namespace ObservatoryProspectorBasic
                 NotificationArgs args = MakeProspectorNotificationArgs(
                     "Core found", $"Asteroid contains core of {name}{highMaterialContent}", prospectorId, NotificationRendering.All);
                 AddOrUpdateProspectorNotification(prospectorId, args);
-                Debug.WriteLine("\t--Grid Update: {0}; {1}, {2}", name, "Core found", cumulativeStats);
+                if (enableDebug) Debug.WriteLine("\t--Grid Update: {0}; {1}, {2}", name, "Core found", cumulativeStats);
                 return;
             }
 
@@ -504,7 +511,7 @@ namespace ObservatoryProspectorBasic
                     details = $"Asteroid is {desireableCommoditiesPercentSum:N0} percent {commodities}{highMaterialContent}";
                 }
                 AddOrUpdateProspectorNotification(prospectorId, MakeProspectorNotificationArgs(title, details, prospectorId, NotificationRendering.All));
-                Debug.WriteLine("\t--Grid Update: {0}; {1}, {2}", commodities, percentageString, cumulativeStats);
+                if (enableDebug) Debug.WriteLine("\t--Grid Update: {0}; {1}, {2}", commodities, percentageString, cumulativeStats);
                 return;
             }
             // If we got here, we didn't find anything interesting.
@@ -527,7 +534,8 @@ namespace ObservatoryProspectorBasic
         {
             if (String.IsNullOrEmpty(currentSystem)) return;
             var ringName = GetBodyName(saaSignalsFound.BodyName);
-            if (saaSignalsFound.Signals == null || saaSignalsFound.Signals.Count == 0 || alreadyReportedScansSaaSignals.Contains(ringName))
+            if (saaSignalsFound.Signals == null || saaSignalsFound.Signals.Count == 0 || alreadyReportedScansSaaSignals.Contains(ringName)
+                    || !ringName.Contains(" Ring", StringComparison.InvariantCultureIgnoreCase))
                 return;
 
             alreadyReportedScansSaaSignals.Add(ringName);
@@ -561,7 +569,7 @@ namespace ObservatoryProspectorBasic
 
             if (notificationDetail.Count > 0)
             {
-                Debug.WriteLine("SAASignalsFound: {0}: {1} contains: {2}", "Hotspots of interest", ringName, string.Join(", ", notificationDetail));
+                if (enableDebug) Debug.WriteLine("SAASignalsFound: {0}: {1} contains: {2}", "Hotspots of interest", ringName, string.Join(", ", notificationDetail));
 
                 if (Core.IsLogMonitorBatchReading) return;
 
@@ -577,7 +585,7 @@ namespace ObservatoryProspectorBasic
         {
             if (starSystem != null && currentSystem != starSystem)
             {
-                //Debug.WriteLine("MaybeUpdateCurrentSystem: Updating to {0}, clearing grid", (object)currentSystem);
+                //if (enableDebug) Debug.WriteLine("MaybeUpdateCurrentSystem: Updating to {0}, clearing grid", (object)currentSystem);
                 currentSystem = starSystem;
                 currentLocation = null;
                 currentLocationShown = false;
@@ -588,7 +596,7 @@ namespace ObservatoryProspectorBasic
 
         private void MaybeUpdateCurrentLocation(string body)
         {
-            //if (body != currentLocation && !string.IsNullOrEmpty(body)) Debug.WriteLine("MaybeUpdateCurrentLocation: Updating to {0}", (object)body);
+            //if (body != currentLocation && !string.IsNullOrEmpty(body) && enableDebug) Debug.WriteLine("MaybeUpdateCurrentLocation: Updating to {0}", (object)body);
             currentLocation = body;
             currentLocationShown = false;
         }
