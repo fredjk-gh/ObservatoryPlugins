@@ -46,7 +46,7 @@ namespace ObservatoryStatScanner.Records
         public string MinHolder { get => Data.MinHolder; }
         public virtual Function MinFunction { get => Function.Min; }
  
-        public virtual List<StatScannerGrid> CheckScan(Scan scan)
+        public virtual List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             return new();
         }

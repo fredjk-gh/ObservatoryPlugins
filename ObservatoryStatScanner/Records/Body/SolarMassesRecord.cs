@@ -18,7 +18,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0:0.00##}"; }
         public override string Units { get => "SM"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan)
+        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled || string.IsNullOrEmpty(scan.StarType) && scan.StellarMass <= 0.0)
                 return new();

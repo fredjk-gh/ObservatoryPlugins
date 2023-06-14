@@ -20,7 +20,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0}"; }
         public override string Units { get => "bios"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan)
+        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled || !BodyBioSignals.ContainsKey(scan.BodyName)) return new();
             int bioCount = BodyBioSignals[scan.BodyName];

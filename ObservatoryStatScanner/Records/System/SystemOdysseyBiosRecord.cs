@@ -55,11 +55,11 @@ namespace ObservatoryStatScanner.Records
             return new();
         }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan)
+        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled) return new();
 
-            TrackIsSystemUndiscovered(scan);
+            TrackIsSystemUndiscovered(scan, currentSystem);
 
             // Check for atmosphere of any bodies that have bio signals.
             if (BodyBioSignals.ContainsKey(scan.BodyName)

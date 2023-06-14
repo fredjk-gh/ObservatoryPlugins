@@ -13,7 +13,7 @@ namespace ObservatoryStatScanner
 {
     public class StatScanner : IObservatoryWorker
     {
-        private static StatScannerSettings _DEFAULT = new()
+        private readonly static StatScannerSettings _DEFAULT = new()
         {
             MaxNearRecordThreshold = 0,
             MinNearRecordThreshold = 0,
@@ -58,7 +58,7 @@ namespace ObservatoryStatScanner
 
         private bool IsOdyssey = false;
         private bool HasHeaderRows = false;
-        // private string CurrentSystem = "";
+        private string CurrentSystem = "";
         // private List<Scan> SystemScans = new();
 
 
@@ -89,6 +89,10 @@ namespace ObservatoryStatScanner
 
             switch (journal)
             {
+                case FSDJump fsdJump:
+                    // Track this here because it's not present in older Scans.
+                    CurrentSystem = fsdJump.StarSystem;
+                    break;
                 case FileHeader fileHeader:
                     IsOdyssey = fileHeader.Odyssey;
                     break;
@@ -424,7 +428,7 @@ namespace ObservatoryStatScanner
             List<StatScannerGrid> results = new();
             foreach (var record in records)
             {
-                results.AddRange(record.CheckScan(scan));
+                results.AddRange(record.CheckScan(scan, CurrentSystem));
             }
             return results;
         }

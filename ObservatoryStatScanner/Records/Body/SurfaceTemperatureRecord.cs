@@ -18,7 +18,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0:0.0}"; }
         public override string Units { get => "K"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan)
+        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled || scan.SurfaceTemperature == 0.0 ||
                 (string.IsNullOrEmpty(scan.StarType) && (string.IsNullOrEmpty(scan.PlanetClass) || IsNonProcGenOrTerraformedELW(scan))))

@@ -59,7 +59,7 @@ namespace ObservatoryStatScanner.Records
             return new();
         }
 
-        public virtual List<StatScannerGrid> CheckScan(Scan scan)
+        public virtual List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             return new();
         }

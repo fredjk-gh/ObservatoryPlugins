@@ -19,7 +19,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => (EDAstroObjectName == Constants.EDASTRO_STAR_BLACK_HOLE ? "{0:0.00000000}" : "{0:0.0000}"); }
         public override string Units { get => "SR"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan)
+        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled || scan.Radius < 1.0 || string.IsNullOrEmpty(scan.StarType))
                 return new();

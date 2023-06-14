@@ -59,7 +59,7 @@ namespace ObservatoryStatScanner.Records
             return new();
         }
 
-        public virtual List<StatScannerGrid> CheckScan(Scan scan)
+        public virtual List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             return new();
         }
@@ -100,12 +100,12 @@ namespace ObservatoryStatScanner.Records
             Data.Init(manager);
         }
 
-        protected void TrackIsSystemUndiscovered(Scan scan)
+        protected void TrackIsSystemUndiscovered(Scan scan, string currentSystem)
         {
             // Check if arrival star is undiscovered.
             if (scan.DistanceFromArrivalLS == 0 && scan.PlanetClass != Constants.SCAN_BARYCENTRE)
             {
-                IsUndiscoveredSystem[scan.StarSystem] = (scan.ScanType != Constants.SCAN_TYPE_NAV_BEACON && !scan.WasDiscovered);
+                IsUndiscoveredSystem[currentSystem] = (scan.ScanType != Constants.SCAN_TYPE_NAV_BEACON && !scan.WasDiscovered);
             }
         }
 

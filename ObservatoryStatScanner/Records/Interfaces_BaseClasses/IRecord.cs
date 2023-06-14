@@ -67,7 +67,7 @@ namespace ObservatoryStatScanner.Records
         List<StatScannerGrid> Summary();
         List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans);
         List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey);
-        List<StatScannerGrid> CheckScan(Scan scan);
+        List<StatScannerGrid> CheckScan(Scan scan, string currentSystem);
         List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry);
 
         void MaybeInitForPersonalBest(PersonalBestManager manager);

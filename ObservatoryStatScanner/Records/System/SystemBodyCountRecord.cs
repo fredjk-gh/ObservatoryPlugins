@@ -26,11 +26,11 @@ namespace ObservatoryStatScanner.Records
             return CheckMax(allBodiesFound.Count, allBodiesFound.Timestamp, allBodiesFound.SystemName);
         }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan)
+        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled) return new();
 
-            TrackIsSystemUndiscovered(scan);
+            TrackIsSystemUndiscovered(scan, currentSystem);
 
             return new();
         }

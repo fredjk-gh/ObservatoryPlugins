@@ -19,6 +19,7 @@ namespace ObservatoryHelm
         private HelmSettings settings = HelmSettings.DEFAULT;
         private TrackedData data = new();
 
+        private static int MAX_FUEL = 99;
 
         public string Name => "Observatory Helm";
         public string ShortName => "Helm";
@@ -73,7 +74,7 @@ namespace ObservatoryHelm
                 case LoadGame loadGame:
                     data.SessionReset(loadGame.Odyssey, loadGame.FuelCapacity, loadGame.FuelLevel);
                     //if (!Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
-                        Core.ClearGrid(this, new HelmGrid());
+                    Core.ClearGrid(this, new HelmGrid());
                     break;
                 case Location location:
                     data.CurrentSystem = location.StarSystem;
@@ -82,7 +83,9 @@ namespace ObservatoryHelm
                     var fsdModule = findFSD(loadOut.Modules);
                     if (fsdModule != null && Constants.MaxFuelPerJumpByFSDSizeClass.ContainsKey(fsdModule.Item))
                         data.MaxFuelPerJump = Constants.MaxFuelPerJumpByFSDSizeClass[fsdModule.Item];
-                    data.FuelCapacity = loadOut.FuelCapacity.Main;
+                    // TODO: If FuelCapacity is null, it's probably an old journal that had a different format: "FuelCapacity":2.000000
+                    // Consider parsing this out.
+                    data.FuelCapacity = (loadOut.FuelCapacity != null ?  loadOut.FuelCapacity.Main : MAX_FUEL);
                     break;
                 case FuelScoop fuelScoop:
                     data.FuelRemaining = Math.Min(data.FuelCapacity, data.FuelRemaining + fuelScoop.Scooped);
@@ -93,14 +96,16 @@ namespace ObservatoryHelm
                 case FSDJump jump:
                     data.SystemReset(jump.StarSystem, jump.FuelLevel, jump.JumpDist);
                     Core.AddGridItem(this, MakeGridItem(jump.Timestamp, (data.JumpsRemainingInRoute == 0 ? "(no route)" : "")));
-                    //if (data.FuelRemaining < (data.MaxFuelPerJump * FuelWarningLevelFactor))
-                    //{
-                    //    Core.SendNotification(new()
-                    //    {
-                    //        Title = "Warning! Low fuel",
-                    //        Detail = "Refuel soon!",
-                    //    });
-                    //}
+                    // This check is essential when travelling through areas where scans don't trigger (ie. known space).
+                    if (data.FuelWarningNotifiedSystem != jump.StarSystem && data.FuelRemaining < (data.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
+                    {
+                        Core.SendNotification(new()
+                        {
+                            Title = "Warning! Low fuel",
+                            Detail = "Refuel soon!",
+                        });
+                        data.FuelWarningNotifiedSystem = jump.StarSystem;
+                    }
                     break;
                 case FSDTarget target:
                     data.JumpsRemainingInRoute = target.RemainingJumpsInRoute;
@@ -124,36 +129,36 @@ namespace ObservatoryHelm
                     {
                         if (Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance)
                         {
-                            Core.AddGridItem(this, MakeGridItem(scan.Timestamp, $"Warning! Low Fuel! Scoopable star: {BodyShortName(scan.BodyName, scan.StarSystem)}, {scan.DistanceFromArrivalLS:0.0} Ls"));
+                            Core.AddGridItem(this, MakeGridItem(scan.Timestamp, $"Warning! Low Fuel! Scoopable star: {BodyShortName(scan.BodyName, data.CurrentSystem /*scan.StarSystem*/)}, {scan.DistanceFromArrivalLS:0.0} Ls"));
                             Core.SendNotification(new()
                             {
                                 Title = "Warning! Low fuel",
                                 Detail = $"There is a scoopable star in this system!",
                             });
-                            data.FuelWarningNotifiedSystem = scan.StarSystem;
+                            data.FuelWarningNotifiedSystem = data.CurrentSystem; // scan.StarSystem;
                         }
                     }
 
-                    if (scan.StarType == "N" && scan.DistanceFromArrivalLS == 0) data.NeutronPrimarySystem = scan.StarSystem;
+                    if (scan.StarType == "N" && scan.DistanceFromArrivalLS == 0) data.NeutronPrimarySystem = data.CurrentSystem; // scan.StarSystem;
 
-                    if (data.NeutronPrimarySystem == null || data.NeutronPrimarySystem != scan.StarSystem) break;
+                    if (data.NeutronPrimarySystem == null || data.NeutronPrimarySystem != data.CurrentSystem /*scan.StarSystem*/) break;
 
-                    if ((Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance && data.ScoopableSecondaryCandidateScan?.StarSystem != scan.StarSystem)
-                        || (data.ScoopableSecondaryCandidateScan?.StarSystem == scan.StarSystem && scan.DistanceFromArrivalLS < data.ScoopableSecondaryCandidateScan.DistanceFromArrivalLS))
+                    if ((Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance && data.ScoopableSecondaryCandidateScan?.StarSystem != data.CurrentSystem /*scan.StarSystem*/)
+                        || (data.ScoopableSecondaryCandidateScan?.StarSystem == data.CurrentSystem /*scan.StarSystem*/ && scan.DistanceFromArrivalLS < data.ScoopableSecondaryCandidateScan.DistanceFromArrivalLS))
                     {
                         data.ScoopableSecondaryCandidateScan = scan;
                     }
 
-                    if (data.NeutronPrimarySystem == scan.StarSystem && data.ScoopableSecondaryCandidateScan?.StarSystem == scan.StarSystem
-                        && data.NeutronPrimarySystemNotified != scan.StarSystem)
+                    if (data.NeutronPrimarySystem == scan.StarSystem && data.ScoopableSecondaryCandidateScan?.StarSystem == data.CurrentSystem /*scan.StarSystem*/
+                        && data.NeutronPrimarySystemNotified != data.CurrentSystem /*scan.StarSystem*/)
                     {
-                        data.NeutronPrimarySystemNotified = scan.StarSystem;
+                        data.NeutronPrimarySystemNotified = data.CurrentSystem; // scan.StarSystem;
                         Core.AddGridItem(this,
                             MakeGridItem(scan.Timestamp, $"Nearby scoopable secondary star; Type: {data.ScoopableSecondaryCandidateScan?.StarType}, {Math.Round(data.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls"));
                         Core.SendNotification(new()
                         {
                             Title = "Nearby scoopable secondary star",
-                            Detail = $"Body {BodyShortName(scan.BodyName, scan.StarSystem)}{Environment.NewLine}Type: {data.ScoopableSecondaryCandidateScan?.StarType}{Environment.NewLine}{Math.Round(data.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls",
+                            Detail = $"Body {BodyShortName(scan.BodyName, data.CurrentSystem /*scan.StarSystem*/)}{Environment.NewLine}Type: {data.ScoopableSecondaryCandidateScan?.StarType}{Environment.NewLine}{Math.Round(data.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls",
                         });
                     }
                     break;
@@ -173,7 +178,7 @@ namespace ObservatoryHelm
                     if (settings.GravityAdvisoryThresholdx10 <= 0) break; // disabled
                     if (!data.Scans.TryGetValue(approachBody.Body, out s)) break;
 
-                    string bodyShortName = BodyShortName(s.BodyName, s.StarSystem);
+                    string bodyShortName = BodyShortName(approachBody.Body, approachBody.StarSystem);
                     var gravityG = s.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
                     if (gravityG >= settings.GravityWarningThresholdx10 / 10)
                     {
