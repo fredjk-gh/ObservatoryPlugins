@@ -479,18 +479,12 @@ namespace ObservatoryStatScanner
 
         private void AddResultsToGrid(List<StatScannerGrid> results, bool notify = false)
         {
-            //if (!notify)
-            //{
-            //    // REQUIRES LATEST OBSERVATORY CORE!!!
-            //    Core.AddGridItems(this, results);
-            //    return;
-            //}
-
-            foreach (var r in results)
+            if (!notify)
             {
-                Core.AddGridItem(this, r);
-                // TODO: Fire notification
+                Core.AddGridItems(this, results);
+                return;
             }
+            // TODO: Fire notification
         }
 
     }
