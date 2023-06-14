@@ -6,14 +6,18 @@ ObservatoryCore will correctly extract it for you on next startup.
 
 Feel free to open an issue if something doesn't work, or reach out in the ObservatoryCore discord.
 
-## Stat Tracker
+## Stat Scanner
+
+### Release notes: 0.23.165.2200-beta
+
+Bugfixes to address errors thrown by older Journal entries (see https://github.com/fredjk-gh/ObservatoryPlugins/issues/2).
+If you were affected by these errors, you will want to perform a read-all to ensure the scans that previously errored out are processed.
 
 ### Release notes: 0.23.62.319-beta
 
 By request: Added an option to disable personal best tracking. After enabling the setting, run a read-all.
 
 And a bug-fix to the visited galactic regions record.
-
 
 ### Release notes: 0.23.59.549-beta
 
@@ -103,9 +107,7 @@ Let me know if you any issues either via the tracker or via the Observatory Core
 
 ## Fleet Commander
 
-### Release notes: 0.22.348.0241-beta
-
-Update to .net 6.0 to support latest version of ObsCore.
+A companion for fleet carrier owners. Probably my favourite feature is that 
 
 As of Odyssey Update 9 (Dec. 2021), the game is not writing "CarrierJump" events to the journal file
 (see https://issues.frontierstore.net/issue-detail/46996), resulting in slightly degraded functionality
@@ -113,6 +115,27 @@ when jumping your carrier while not docked on it.
 
 As of Odyssey Update 11 (Mar. 2022), the game is not writing StationName/StationType properties to location
 events, further complicating matters. I've managed to work around this for the moment.
+
+As of Odyssey Update 14 (May 2023), the game is reportedly writing CarrierJump events again, however, I have not yet moved my carrier to 
+verify everything is working as it should.
+
+### Release notes: 0.22.348.0241-beta
+
+Update to .net 6.0 to support latest version of ObsCore.
+
+## Helm
+
+This plugin is a work in progress!! Currently testing the following features:
+
+- Session statistics (# of jumps made, Ly travelled, jumps remaining in route)
+- Low fuel warnings and advising of scoopable stars (or lack thereof)
+- High gravity heads-up when approaching a relatively high gravity planet.
+
+Suggestions welcome.
+
+### Release notes
+
+No releases yet!
 
 ## Prospector
 
