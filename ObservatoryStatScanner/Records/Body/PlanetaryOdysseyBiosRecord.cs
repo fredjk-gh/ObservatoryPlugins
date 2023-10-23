@@ -20,7 +20,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0}"; }
         public override string Units { get => "bios"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
+        public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled || !BodyBioSignals.ContainsKey(scan.BodyName)) return new();
             int bioCount = BodyBioSignals[scan.BodyName];
@@ -42,7 +42,7 @@ namespace ObservatoryStatScanner.Records
             return results;
         }
 
-        public override List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
+        public override List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
         {
             if (!Enabled || !isOdyssey) return new();
 
@@ -56,7 +56,7 @@ namespace ObservatoryStatScanner.Records
 
             return new();
         }
-        public override List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
+        public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
         {
             BodyBioSignals.Clear();
 

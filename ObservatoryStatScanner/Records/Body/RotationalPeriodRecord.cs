@@ -18,7 +18,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => (MaxValue < 1.0 ? "{0:0.00000###}" : "{0:0.##}"); }
         public override string Units { get => "d"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
+        public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled
                 || scan.RotationPeriod <= 0.0

@@ -85,6 +85,8 @@ namespace ObservatoryStatScanner
         public const string V_BODY_BIO_COUNT = "bodyBioCount";
         public const string V_SYS_BIO_COUNT = "sysBioCount";
         public const string V_SYS_BODY_COUNT = "sysBodyCount";
+        public const string V_SYS_UNDISCOVERED_COUNT = "sysUndiscoveredCount";
+
         public const string V_VISITED_REGIONS_COUNT = "regionsVisitedCount";
         public const string V_CODEX_CATEGORY_BIO_GEO = "regionCodexBiologicalGeological";
         public const string V_CODEX_CATEGORY_XENO = "regionCodexXenological";
@@ -250,6 +252,8 @@ namespace ObservatoryStatScanner
             new(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BIO_COUNT);
         public static readonly PersonalBestData PB_SystemBodyCountData =
             new(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BODY_COUNT);
+        public static readonly PersonalBestData PB_UndiscoveredSystemTallyData =
+            new(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_UNDISCOVERED_COUNT);
         public static readonly PersonalBestData PB_BodyBiosData =
             new(RecordTable.Planets, OBJECT_TYPE_ODYSSEY_PLANET, V_BODY_BIO_COUNT);
 
@@ -263,6 +267,7 @@ namespace ObservatoryStatScanner
             {
                 { PB_SystemOdysseyBiosData },
                 { PB_SystemBodyCountData },
+                { PB_UndiscoveredSystemTallyData },
                 { PB_BodyBiosData },
                 { PB_RegionsVisited },
             };
@@ -291,7 +296,9 @@ namespace ObservatoryStatScanner
         public const string UI_FS_TIED_RECORD_COUNT = "Tied record (with ~{0} others)";
         public const string UI_FS_NEAR_RECORD_COUNT = "Near-record (within {0}%)";
         public const string UI_RECORD_HOLDER_VISITED = "Visited existing record";
+        public const string UI_CODEX_CONFIRMATION = "Codex Confirmation";
         public const string UI_FIRST_DISCOVERY = "1st Discovery";
+        public const string UI_FIRST_VISIT = "First visit";
         public const string UI_ALREADY_DISCOVERED = "Discovered";
     }
 }

@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace ObservatoryStatScanner.Records
 {
-    internal class RegionsVisitedRecord : RegionRecord
+    internal class RegionsVisitedTally : RegionRecord
     {
         private const char SEPARATOR = '|';
 
-        public RegionsVisitedRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+        public RegionsVisitedTally(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, "Visited regions")
         { }
 
@@ -20,7 +20,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0}"; }
         public override string Units { get => "visited"; }
 
-        public override List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry)
+        public override List<Result> CheckCodexEntry(CodexEntry codexEntry)
         {
             var regionName = Constants.RegionNamesByJournalId[codexEntry.Region];
             // We check via string.Contains here as it's presumably cheaper to do on every codex entry vs. splitting the string into substrings and creating a hashset.
@@ -35,7 +35,7 @@ namespace ObservatoryStatScanner.Records
             var newValue = (Data.HasMax ? Data.MaxValue + 1 : 1);
             visitedRegions.Add(regionName);
 
-            return CheckMax(newValue, codexEntry.Timestamp, regionName, "First visit", string.Join(SEPARATOR, visitedRegions));
+            return CheckMax(NotificationClass.Tally, newValue, codexEntry.Timestamp, regionName, Constants.UI_FIRST_VISIT, string.Join(SEPARATOR, visitedRegions));
         }
     }
 }

@@ -18,9 +18,9 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0:N0}"; }
         public override string Units { get => "Mt"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
+        public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            List<StatScannerGrid> results = new();
+            List<Result> results = new();
 
             if (!Enabled || scan.Rings?.Count == 0)
                 return results;

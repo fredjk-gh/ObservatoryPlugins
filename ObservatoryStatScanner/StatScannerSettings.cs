@@ -10,6 +10,7 @@ namespace ObservatoryStatScanner
     class StatScannerSettings
     {
         public const string DEFAULT_PROCGEN_HANDLING = "Ignore ProcGen records";
+        
         public enum ProcGenHandlingMode
         {
             ProcGenIgnore,
@@ -53,8 +54,35 @@ namespace ObservatoryStatScanner
         [SettingDisplayName("Show Records for first discovered objects only")]
         public bool FirstDiscoveriesOnly { get; set; }
 
-        [SettingDisplayName("Enable Tracking Personal Bests (read-all after enabling)")]
+        [SettingDisplayName("Enable Tracking Personal Bests, Tallies and New Codex Entries")]
         public bool EnablePersonalBests { get; set; }
+
+        // Notification settings
+        //
+        [SettingDisplayName("Notify possible new Galactic records")]
+        public bool NotifyPossibleNewGalacticRecords { get; set; }
+
+        [SettingDisplayName("Notify matched Galactic records")]
+        public bool NotifyMatchedGalacticRecords { get; set; }
+
+        [SettingDisplayName("Notify Visited Galactic records")]
+        public bool NotifyVisitedGalacticRecords { get; set; }
+
+        [SettingDisplayName("Notify almost matched Galactic records")]
+        public bool NotifyNearGalacticRecords { get; set; }
+
+        [SettingDisplayName("Notify new Personal bests")]
+        public bool NotifyNewPersonalBests { get; set; }
+
+        [SettingDisplayName("Notify new Region Codex entries")]
+        public bool NotifyNewCodexEntries { get; set; }
+
+        [SettingDisplayName("Notify Tallies")]
+        public bool NotifyTallies { get; set; }
+
+        [SettingDisplayName("Silently notify (no voice/popup) anything disabled above")]
+        public bool NotifySilentFallback { get; set; }
+
 
         // Individual record tracking controls
         //
@@ -112,11 +140,14 @@ namespace ObservatoryStatScanner
         [SettingDisplayName("Enable checking System Body Count records")]
         public bool EnableSystemBodyCountRecords { get; set; }
 
+        [SettingDisplayName("Enable tallying Undiscovered Systems")]
+        public bool EnableUndiscoveredSystemCountRecord { get; set; }
+
         // Regional stats
-        [SettingDisplayName("Enable checking Visited Region Count records")]
+        [SettingDisplayName("Enable tallying Visited Regions")]
         public bool EnableVisitedRegionRecords { get; set; }
 
-        [SettingDisplayName("Enable checking Region Codex Count records")]
+        [SettingDisplayName("Enable tracking new Region Codex entries")]
         public bool EnableRegionCodexCountRecords { get; set; }
 
         // Actions

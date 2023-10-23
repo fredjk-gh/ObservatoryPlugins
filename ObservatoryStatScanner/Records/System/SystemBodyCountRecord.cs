@@ -19,14 +19,14 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0}"; }
         public override string Units { get => "bodies"; }
 
-        public override List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
+        public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
         {
             if (!Enabled) return new();
 
-            return CheckMax(allBodiesFound.Count, allBodiesFound.Timestamp, allBodiesFound.SystemName);
+            return CheckMax(NotificationClass.PersonalBest, allBodiesFound.Count, allBodiesFound.Timestamp, allBodiesFound.SystemName);
         }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
+        public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled) return new();
 

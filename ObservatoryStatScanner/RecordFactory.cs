@@ -122,15 +122,18 @@ namespace ObservatoryStatScanner
                 case Constants.V_SYS_BODY_COUNT:
                     typeToCreate = typeof(SystemBodyCountRecord);
                     break;
+                case Constants.V_SYS_UNDISCOVERED_COUNT:
+                    typeToCreate = typeof(UndiscoveredSystemTally);
+                    break;
 
                 // Regional
                 case Constants.V_VISITED_REGIONS_COUNT:
-                    typeToCreate = typeof(RegionsVisitedRecord);
+                    typeToCreate = typeof(RegionsVisitedTally);
                     break;
                 case Constants.V_CODEX_CATEGORY_BIO_GEO:
                 case Constants.V_CODEX_CATEGORY_XENO:
                 case Constants.V_CODEX_CATEGORY_ASTRO:
-                    typeToCreate = typeof(RegionCodexCountRecord);
+                    typeToCreate = typeof(RegionCodexCount);
                     break;
             }
 

@@ -18,7 +18,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0:N40.00##}"; }
         public override string Units { get => "EM"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
+        public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled || scan.PlanetClass?.Length > 0 || IsNonProcGenOrTerraformedELW(scan))
                 return new();

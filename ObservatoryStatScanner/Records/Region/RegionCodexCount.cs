@@ -1,4 +1,5 @@
-﻿using Observatory.Framework.Files.Journal;
+﻿using Observatory.Framework;
+using Observatory.Framework.Files.Journal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ObservatoryStatScanner.Records
 {
-    internal class RegionCodexCountRecord : RegionRecord
+    internal class RegionCodexCount : RegionRecord
     {
         static readonly Dictionary<string, string> CodexCategoriesDisplayNames = new()
         {
@@ -16,15 +17,17 @@ namespace ObservatoryStatScanner.Records
             { Constants.V_CODEX_CATEGORY_XENO, "Codex: Xenological" },
         };
 
-        public RegionCodexCountRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+        public RegionCodexCount(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, CodexCategoriesDisplayNames[data.Variable])
-        { }
+        {
+            _disallowedStates = new() { LogMonitorState.PreRead };
+        }
 
         public override bool Enabled => Settings.EnableRegionCodexCountRecords;
         public override string ValueFormat { get => "{0}"; }
         public override string Units { get => "entries"; }
 
-        public override List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry)
+        public override List<Result> CheckCodexEntry(CodexEntry codexEntry)
         {
 
             if (!Enabled || !codexEntry.IsNewEntry
@@ -38,7 +41,7 @@ namespace ObservatoryStatScanner.Records
             // This is a new entry.
             var newValue = (Data.HasMax? Data.MaxValue + 1 : 1);
 
-            return CheckMax(newValue, codexEntry.Timestamp, codexEntry.Name_Localised, "Codex Confirmation");
+            return CheckMax(NotificationClass.NewCodex, newValue, codexEntry.Timestamp, codexEntry.Name_Localised, Constants.UI_CODEX_CONFIRMATION);
         }
     }
 }

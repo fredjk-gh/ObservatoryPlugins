@@ -18,7 +18,7 @@ namespace ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0:0.00##}"; }
         public override string Units { get => "atm"; }
 
-        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
+        public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled || string.IsNullOrEmpty(scan.PlanetClass) || IsNonProcGenOrTerraformedELW(scan))
                 return new();

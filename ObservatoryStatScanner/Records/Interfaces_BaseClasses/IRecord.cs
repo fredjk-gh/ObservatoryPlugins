@@ -1,4 +1,5 @@
-﻿using Observatory.Framework.Files.Journal;
+﻿using Observatory.Framework;
+using Observatory.Framework.Files.Journal;
 using ObservatoryStatScanner.DB;
 
 namespace ObservatoryStatScanner.Records
@@ -16,11 +17,10 @@ namespace ObservatoryStatScanner.Records
 
     enum Function
     {
-        Min,
-        Max,
-        MaxCount, // No Min -- would all be 0.
-        MaxSum,  // No Min -- would all be 0.
-        Count, // Currently used only for header stats.
+        Minimum,
+        Maximum,
+        Sum,  // No Min -- would always be 0.
+        Count, // No Min -- would always be 0.
     }
 
     enum Outcome
@@ -44,6 +44,7 @@ namespace ObservatoryStatScanner.Records
         bool Enabled { get; }
         RecordTable Table { get; }
         RecordKind RecordKind { get; }
+        List<LogMonitorState> DisallowedLogMonitorStates { get; }
 
         string VariableName { get; }
         string DisplayName { get; }
@@ -64,11 +65,11 @@ namespace ObservatoryStatScanner.Records
         double MinValue { get; }
         Function MinFunction { get; }
 
-        List<StatScannerGrid> Summary();
-        List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans);
-        List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey);
-        List<StatScannerGrid> CheckScan(Scan scan, string currentSystem);
-        List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry);
+        List<Result> Summary();
+        List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans);
+        List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey);
+        List<Result> CheckScan(Scan scan, string currentSystem);
+        List<Result> CheckCodexEntry(CodexEntry codexEntry);
 
         void MaybeInitForPersonalBest(PersonalBestManager manager);
 

@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace ObservatoryStatScanner
 {
-    public class StatScannerGrid
+    internal class StatScannerGrid
     {
         public string Timestamp { get; set; }
         public string ObjectClass { get; set; }
         public string Variable { get; set; } // From DisplayName
         public string Function { get; set; }
-        public string Body { get; set; }
+        public string BodyOrItem { get; set; }
         public string ObservedValue { get; set; }
         public string Units { get; set; }
         public string RecordValue { get; set; }

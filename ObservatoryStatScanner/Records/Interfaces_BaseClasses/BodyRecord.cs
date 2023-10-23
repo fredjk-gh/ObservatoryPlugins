@@ -1,4 +1,5 @@
-﻿using Observatory.Framework.Files.Journal;
+﻿using Observatory.Framework;
+using Observatory.Framework.Files.Journal;
 using ObservatoryStatScanner.DB;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ namespace ObservatoryStatScanner.Records
     {
         protected StatScannerSettings Settings;
         protected IRecordData Data;
+        protected List<LogMonitorState> _disallowedStates = new();
 
         protected BodyRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData csvData, string displayName)
         {
@@ -26,7 +28,8 @@ namespace ObservatoryStatScanner.Records
 
         public RecordTable Table { get => Data.Table; }
         public RecordKind RecordKind { get; }
-        
+        public List<LogMonitorState> DisallowedLogMonitorStates => _disallowedStates;
+
         public string VariableName { get => Data.Variable; }
         public string DisplayName { get; }
         public string JournalObjectName { get => Data.JournalObjectName; }
@@ -38,27 +41,27 @@ namespace ObservatoryStatScanner.Records
         public long MaxCount { get => Data.MaxCount; }
         public double MaxValue { get => (Settings.DevMode ? Data.MaxValue * Settings.DevModeMaxScaleFactor : Data.MaxValue); }
         public string MaxHolder { get => Data.MaxHolder; }
-        public virtual Function MaxFunction { get => Function.Max; }
+        public virtual Function MaxFunction { get => Function.Maximum; }
 
         public bool HasMin => Data.HasMin;
         public long MinCount { get => Data.MinCount; }
         public double MinValue { get => (Settings.DevMode ? Data.MinValue * Settings.DevModeMinScaleFactor : Data.MinValue); }
         public string MinHolder { get => Data.MinHolder; }
-        public virtual Function MinFunction { get => Function.Min; }
+        public virtual Function MinFunction { get => Function.Minimum; }
  
-        public virtual List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
+        public virtual List<Result> CheckScan(Scan scan, string currentSystem)
         {
             return new();
         }
-        public virtual List<StatScannerGrid> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
+        public virtual List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
         {
             return new();
         }
-        public virtual List<StatScannerGrid> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
+        public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
         {
             return new();
         }
-        public virtual List<StatScannerGrid> CheckCodexEntry(CodexEntry codexEntry)
+        public virtual List<Result> CheckCodexEntry(CodexEntry codexEntry)
         {
             return new();
         }
@@ -73,49 +76,55 @@ namespace ObservatoryStatScanner.Records
             Data.ResetMutable();
         }
 
-        public List<StatScannerGrid> Summary()
+        public List<Result> Summary()
         {
-            var results = new List<StatScannerGrid>();
+            var results = new List<Result>();
 
             if (HasMax)
             {
-                results.Add(new()
-                {
-                    ObjectClass = EDAstroObjectName,
-                    Variable = DisplayName,
-                    Function = MaxFunction.ToString(),
-                    RecordValue = String.Format(ValueFormat, MaxValue),
-                    Units = Units,
-                    RecordHolder = (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder),
-                    Details = Constants.UI_CURRENT_PERSONAL_BEST,
-                    RecordKind = RecordKind.ToString(),
-                });
+                results.Add(
+                    new(NotificationClass.None,
+                        new()
+                        {
+                            Timestamp = "Summary",
+                            ObjectClass = EDAstroObjectName,
+                            Variable = DisplayName,
+                            Function = MaxFunction.ToString(),
+                            RecordValue = String.Format(ValueFormat, MaxValue),
+                            Units = Units,
+                            RecordHolder = (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder),
+                            Details = Constants.UI_CURRENT_PERSONAL_BEST,
+                            RecordKind = RecordKind.ToString(),
+                        }));
             }
             if (HasMin)
             {
-                results.Add(new()
-                {
-                    ObjectClass = EDAstroObjectName,
-                    Variable = DisplayName,
-                    Function = MinFunction.ToString(),
-                    RecordValue = String.Format(ValueFormat, MinValue),
-                    Units = Units,
-                    RecordHolder = (MinCount > 1 ? $"{MinHolder} (and {MinCount} more)" : MinHolder),
-                    Details = Constants.UI_CURRENT_PERSONAL_BEST,
-                    RecordKind = RecordKind.ToString(),
-                });
+                results.Add(
+                    new(NotificationClass.None,
+                        new()
+                        {
+                            Timestamp = "Summary",
+                            ObjectClass = EDAstroObjectName,
+                            Variable = DisplayName,
+                            Function = MinFunction.ToString(),
+                            RecordValue = String.Format(ValueFormat, MinValue),
+                            Units = Units,
+                            RecordHolder = (MinCount > 1 ? $"{MinHolder} (and {MinCount} more)" : MinHolder),
+                            Details = Constants.UI_CURRENT_PERSONAL_BEST,
+                            RecordKind = RecordKind.ToString(),
+                        }));
             }
             return results;
         }
 
-        protected List<StatScannerGrid> CheckMax(double observedValue, string timestamp, string bodyName, bool isUndiscovered)
+        protected List<Result> CheckMax(double observedValue, string timestamp, string bodyName, bool isUndiscovered)
         {
-            List<StatScannerGrid> results = new();
+            List<Result> results = new();
 
             if (RecordKind == RecordKind.Personal)
             {
                 if (!FilterPersonalRecordForProcGenAndFirstDiscovered(bodyName, isUndiscovered)) return results;
-                if (Data.HasMax && observedValue > Data.MaxValue)
+                if (!Data.HasMax || observedValue > Data.MaxValue)
                 {
                     var gridItem = MakeGridItem(Outcome.PersonalNew, MaxFunction, observedValue, timestamp, bodyName, isUndiscovered);
 
@@ -140,14 +149,14 @@ namespace ObservatoryStatScanner.Records
             return results;
         }
 
-        protected List<StatScannerGrid> CheckMin(double observedValue, string timestamp, string bodyName, bool isUndiscovered)
+        protected List<Result> CheckMin(double observedValue, string timestamp, string bodyName, bool isUndiscovered)
         {
-            List<StatScannerGrid> results = new();
+            List<Result> results = new();
 
             if (RecordKind == RecordKind.Personal)
             {
                 if (!FilterPersonalRecordForProcGenAndFirstDiscovered(bodyName, isUndiscovered)) return results;
-                if (Data.HasMin && observedValue < Data.MinValue)
+                if (!Data.HasMin || observedValue < Data.MinValue)
                 {
                     var gridItem = MakeGridItem(Outcome.PersonalNew, MinFunction, observedValue, timestamp, bodyName, isUndiscovered);
 
@@ -173,7 +182,7 @@ namespace ObservatoryStatScanner.Records
             return results;
         }
 
-        protected StatScannerGrid MakeGridItem(
+        protected Result MakeGridItem(
             Outcome outcome, Function function, double observedValue, string timestamp, string bodyName, bool isUndiscovered)
         {
             string recordValueStr;
@@ -184,16 +193,16 @@ namespace ObservatoryStatScanner.Records
 
             switch (function)
             {
-                case Function.Min:
+                case Function.Minimum:
                     recordValueStr = (HasMin ? String.Format(ValueFormat, MinValue) : "-");
                     recordTieCount = MinCount;
                     recordTieCountStr = (HasMin ? $"{MinCount}" : "");
                     recordHolder = (HasMin ? MinHolder : "");
                     threshold = Settings.MinNearRecordThreshold;
                     break;
-                case Function.MaxSum:
-                case Function.MaxCount:
-                case Function.Max:
+                case Function.Sum:
+                case Function.Count:
+                case Function.Maximum:
                     recordValueStr = (HasMax ? String.Format(ValueFormat, MaxValue) : "-");
                     recordTieCount = MaxCount;
                     recordTieCountStr = (HasMax ? $"{MaxCount}" : "");
@@ -204,23 +213,32 @@ namespace ObservatoryStatScanner.Records
                     return null; // Should never happen
             }
             var details = "";
+            NotificationClass notificationClass = NotificationClass.None;
             switch (outcome)
             {
                 case Outcome.PersonalNew:
                     details = Constants.UI_NEW_PERSONAL_BEST;
+                    notificationClass = NotificationClass.PersonalBest;
                     break;
                 case Outcome.PotentialNew:
                     details = Constants.UI_POTENTIAL_NEW_RECORD + (Settings.DevMode ? " (dev mode)" : "");
+                    notificationClass = NotificationClass.PossibleNewGalacticRecord;
                     break;
                 case Outcome.Tie:
                     details = string.Format(Constants.UI_FS_TIED_RECORD_COUNT, recordTieCountStr);
+                    notificationClass = NotificationClass.MatchedGalacticRecord;
                     break;
                 case Outcome.NearRecord:
                     details = string.Format(Constants.UI_FS_NEAR_RECORD_COUNT, threshold);
+                    notificationClass = NotificationClass.NearGalacticRecord;
                     break;
             }
             // Override above if this was actually the record holder (corrects potential rounding differences)
-            if (bodyName == recordHolder && recordHolder.Length > 0) details = Constants.UI_RECORD_HOLDER_VISITED;
+            if (bodyName == recordHolder && recordHolder.Length > 0)
+            {
+                details = Constants.UI_RECORD_HOLDER_VISITED;
+                notificationClass = NotificationClass.VisitedGalacticRecord;
+            }
 
             // This is not a galactic record holder, and we're showing procgen only records (except for visited galactic record holders).
             // OR: FDs only is enabled, and this is not first discovered and not a record holder.
@@ -233,7 +251,7 @@ namespace ObservatoryStatScanner.Records
             StatScannerGrid gridRow = new()
             {
                 Timestamp = timestamp,
-                Body = bodyName,
+                BodyOrItem = bodyName,
                 ObjectClass = EDAstroObjectName,
                 Variable = DisplayName,
                 Function = function.ToString(),
@@ -245,7 +263,7 @@ namespace ObservatoryStatScanner.Records
                 DiscoveryStatus = (isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED),
                 RecordKind = RecordKind.ToString(),
             };
-            return gridRow;
+            return new(notificationClass, gridRow);
         }
 
         private bool FilterPersonalRecordForProcGenAndFirstDiscovered(string bodyName, bool isUndiscovered)

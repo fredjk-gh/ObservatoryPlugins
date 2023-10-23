@@ -15,7 +15,7 @@ namespace ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableOrbitalEccentricityRecord;
 
-        public override List<StatScannerGrid> CheckScan(Scan scan, string currentSystem)
+        public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
             if (!Enabled
                 || scan.Eccentricity == 0.0
