@@ -286,6 +286,9 @@ namespace ObservatoryProspectorBasic
                 XPos = 83,
                 YPos = 15,
                 Rendering = NotificationRendering.NativeVisual,
+#if EXTENDED_EVENT_ARGS
+                Sender = this,
+#endif
             };
             if (cargoNotification == Guid.Empty)
             {
@@ -412,6 +415,10 @@ namespace ObservatoryProspectorBasic
                 {
                     Title = $"Body {shortBodyName}",
                     Detail = string.Join(Environment.NewLine, string.Join(", ", ringsOfInterest.Select(t => t.Item1))),
+#if EXTENDED_EVENT_ARGS
+                    ExtendedDetails = detailsCommaSeparated + bodyDistance,
+                    Sender = this,
+#endif
                 });
             }
         }
@@ -484,8 +491,8 @@ namespace ObservatoryProspectorBasic
             if (desireableCommodities.Count > 0 && desireableCommoditiesPercentSum > settings.MinimumPercent)
             {
                 goodRocks++;
-                string title = "";
-                string details = "";
+                string title;
+                string details;
                 string commodities = String.Join(", ", desireableCommodities.Keys);
                 string percentageString = $"{desireableCommoditiesPercentSum:N2}%";
                 string cumulativeStats = $"{(goodRocks * 1000) / (prospectorsEngaged * 10.0):N1}% good rocks ({goodRocks}/{prospectorsEngaged})";
@@ -577,6 +584,9 @@ namespace ObservatoryProspectorBasic
                 {
                     Title = "Hotspots of interest",
                     Detail = $"{ringName} contains:{Environment.NewLine}{string.Join(Environment.NewLine, notificationDetail)}",
+#if EXTENDED_EVENT_ARGS
+                    Sender = this,
+#endif
                 });
             }
         }
@@ -601,7 +611,7 @@ namespace ObservatoryProspectorBasic
             currentLocationShown = false;
         }
 
-        private static NotificationArgs MakeProspectorNotificationArgs(string title, string detail, int index, NotificationRendering rendering)
+        private NotificationArgs MakeProspectorNotificationArgs(string title, string detail, int index, NotificationRendering rendering)
         {
             NotificationArgs args = new()
             {
@@ -612,6 +622,9 @@ namespace ObservatoryProspectorBasic
                 XPos = 1,
                 YPos = ((index % 2) + 1) * 15,
                 Rendering = rendering,
+#if EXTENDED_EVENT_ARGS
+                Sender = this,
+#endif
             };
             return args;
         }
