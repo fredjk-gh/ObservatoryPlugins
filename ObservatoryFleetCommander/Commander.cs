@@ -19,6 +19,8 @@ namespace ObservatoryFleetCommander.Worker
             NotifyLowFuel = true,
         };
 
+        private CarrierJumpRequest lastCarrierJumpRequest = null;
+        private bool cooldownNotifyScheduled = false;
         private Location initialLocation = null;
         private string carrierName = null;
         private ulong? carrierId = null;
@@ -26,7 +28,6 @@ namespace ObservatoryFleetCommander.Worker
         private string carrierSystem = null;
         private int? carrierFuel = null;
         private string carrierBody = null;
-        private string jumpTargetSystem = null;
         private System.Timers.Timer carrierCooldownTimer;
         public string Name => "Observatory Fleet Commander";
         public string ShortName => "Commander";
@@ -43,9 +44,7 @@ namespace ObservatoryFleetCommander.Worker
         {
             switch (journal)
             {
-                case LoadGame loadGame:
-                    jumpTargetSystem = null;  // Suppress notifications from firing as a result of a jump completed while out of game.
-                    break;
+
                 case Docked docked:
                     if (docked.StationType == "FleetCarrier" && carrierId.HasValue && docked.StationName == carrierCallsign && carrierSystem == null)
                     {
@@ -60,36 +59,43 @@ namespace ObservatoryFleetCommander.Worker
                     {
                         MaybeUpdateCarrierLocation(location.TimestampDateTime, location.StarSystem, location.Body, true);
                     }
-                    else if (location.StarSystem == jumpTargetSystem && (location.Docked || location.OnFoot))
-                    {
-                        // So, update 11 really made a mess of things. Location no longer has StationType/StationName properties, and still no CarrierJump eventis either.
-                        // So if location is now set to jumpTargetSystem and we're docked/on-foot, it must be a carrier jump.
-                        jumpTargetSystem = null;
-                        MaybeUpdateCarrierLocation(location.TimestampDateTime, location.StarSystem, location.Body, true);
-                    }
                     else if (initialLocation == null)
                     {
                         initialLocation = location;
                     }
                     break;
                 case CarrierJumpRequest carrierJumpRequest:
-                    jumpTargetSystem = carrierJumpRequest.SystemName;
+                    lastCarrierJumpRequest = carrierJumpRequest;
                     var jumpTargetBody = (!string.IsNullOrEmpty(carrierJumpRequest.Body)) ? carrierJumpRequest.Body : carrierJumpRequest.SystemName;
-                    AddToGrid(carrierJumpRequest.TimestampDateTime, carrierBody, carrierFuel, $"Requested a jump to {jumpTargetBody}");
+                    string departureTime = "";
+                    if (!String.IsNullOrEmpty(carrierJumpRequest.DepartureTime))
+                    {
+                        // TODO: Update to use this once a new framework is released: lastCarrierJumpRequest.DepartureTimeDateTime
+                        DateTime carrierDepartureTime = DateTime.ParseExact(lastCarrierJumpRequest.DepartureTime, "yyyy-MM-ddTHH:mm:ssZ", null, System.Globalization.DateTimeStyles.AssumeUniversal);
+                        double departureTimeMinutes = carrierDepartureTime.Subtract(DateTime.Now).TotalMinutes;
+                        if (departureTimeMinutes > 0) {
+                            departureTime = $" Jump in {departureTimeMinutes:#.0} minutes (@ {carrierDepartureTime.ToShortTimeString()}).";
+
+                            // Force timer update for new cooldown time.
+                            cooldownNotifyScheduled = false;
+                            MaybeScheduleCooldownNotification();
+                        }
+                    }
+                    AddToGrid(carrierJumpRequest.TimestampDateTime, carrierBody, carrierFuel, $"Requested a jump to {jumpTargetBody}.{departureTime}");
                     break;
                 case CarrierJump carrierJump: // these may be broken right now.
                     MaybeUpdateCarrierLocation(carrierJump.TimestampDateTime, carrierJump.StarSystem, carrierJump.Body, true);
                     break;
                 case CarrierJumpCancelled carrierJumpCancelled:
-                    if (jumpTargetSystem != null)
+                    if (lastCarrierJumpRequest != null)
                     {
-                        AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierBody, carrierFuel, $"Cancelled requested jump to {jumpTargetSystem}");
+                        AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierBody, carrierFuel, $"Cancelled requested jump to {lastCarrierJumpRequest.SystemName}");
                     }
                     else
                     {
                         AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierBody, carrierFuel, $"Cancelled requested jump");
                     }
-                    jumpTargetSystem = null;
+                    CancelCarrierJump();
                     break;
                 case CarrierDepositFuel carrierDepositFuel:
                     // Make sure the Cmdr is donating to their carrier for fuel updates as this event could trigger for
@@ -101,8 +107,10 @@ namespace ObservatoryFleetCommander.Worker
                     }
                     break;
                 case CarrierStats carrierStats:
-                    if (MaybeInitializeCarrierInfo(carrierStats.TimestampDateTime, carrierStats.CarrierID, carrierStats.Callsign, carrierStats.Name, carrierStats.FuelLevel)) break;
-                    // Ok, no initialization was required, we always need to check/update fuel levels on this event.
+                    if (MaybeInitializeCarrierInfo(carrierStats.TimestampDateTime, carrierStats.CarrierID, carrierStats.Callsign, carrierStats.Name, carrierStats.FuelLevel))
+                        // Initialization also checks fuel levels. Don't duplicate efforts.
+                        break;
+
                     MaybeUpdateCarrierFuel(carrierStats.TimestampDateTime, carrierStats.FuelLevel);
                     break;
             }
@@ -116,7 +124,7 @@ namespace ObservatoryFleetCommander.Worker
                 return;
             }
             else if ((carrierSystem != null && carrierBody != null && carrierMoveEvent && carrierSystem != starSystem && carrierBody != body)
-                || carrierSystem == null && jumpTargetSystem != null && jumpTargetSystem == starSystem)
+                || carrierSystem == null && lastCarrierJumpRequest != null && lastCarrierJumpRequest.SystemName == starSystem)
             {
                 // We've moved.
                 string locationUpdateDetails = "Carrier jump complete";
@@ -129,20 +137,43 @@ namespace ObservatoryFleetCommander.Worker
                         {
                             Title = locationUpdateDetails,
                             Detail = "",
+#if EXTENDED_EVENT_ARGS
+                            Sender = this,
+#endif
                         });
                     }
-                    if (settings.NotifyJumpCooldown)
-                    {
-                        carrierCooldownTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4).TotalMilliseconds);
-                        carrierCooldownTimer.Elapsed += CarrierCooldownTimer_Elapsed;
-                        carrierCooldownTimer.Start();
-                    }
+
+                    MaybeScheduleCooldownNotification();
                 }
+                lastCarrierJumpRequest = null;
             }
-            if (jumpTargetSystem != null && starSystem == jumpTargetSystem) jumpTargetSystem = null;
             carrierSystem = starSystem;
             carrierBody = body;
         }
+
+        private void MaybeScheduleCooldownNotification()
+        {
+            // Don't start a countdown if the cooldown is already over.
+            // TODO: Update to use this once a new framework is released: lastCarrierJumpRequest.DepartureTimeDateTime
+            DateTime carrierDepartureTime = DateTime.ParseExact(lastCarrierJumpRequest.DepartureTime, "yyyy-MM-ddTHH:mm:ssZ", null, System.Globalization.DateTimeStyles.AssumeUniversal);
+            DateTime carrierJumpCooldownTime = carrierDepartureTime.AddMinutes(5);
+            if (settings.NotifyJumpCooldown && !cooldownNotifyScheduled && DateTime.Now < carrierJumpCooldownTime)
+            {
+                carrierCooldownTimer = new System.Timers.Timer(carrierJumpCooldownTime.Subtract(DateTime.Now).TotalMilliseconds);
+                carrierCooldownTimer.Elapsed += CarrierCooldownTimer_Elapsed;
+                carrierCooldownTimer.Start();
+                cooldownNotifyScheduled = true;
+            }
+        }
+
+        private void CancelCarrierJump()
+        {
+            lastCarrierJumpRequest = null;
+            cooldownNotifyScheduled = false;
+            if (carrierCooldownTimer != null) carrierCooldownTimer.Stop();
+            carrierCooldownTimer = null;
+        }
+
         private bool MaybeInitializeCarrierInfo(DateTime dateTime, ulong updatedCarrierId, string updatedCarrierCallsign, string updatedCarrierName, int? updatedCarrierFuel)
         {
             if (!carrierId.HasValue || carrierCallsign == null || carrierName == null || !carrierFuel.HasValue)
@@ -171,9 +202,11 @@ namespace ObservatoryFleetCommander.Worker
             {
                 bool lowFuel = updatedCarrierFuel.Value < 135;
                 string fuelDetails = lowFuel
-                    ? $"Carrier has {updatedCarrierFuel.Value} tons of tritium remaining and may require more for the next jump."
+                    ? $"Carrier has {updatedCarrierFuel.Value} tons of tritium remaining and may require more soon."
                     : "Fuel level has changed.";
-                AddToGrid(dateTime, carrierBody, updatedCarrierFuel, fuelDetails);
+                // Only add "Fuel level has changed" output if we have a value for it already. At startup, the carrier detected line includes it and thus,
+                // this line appears redundant.
+                if (carrierFuel.HasValue) AddToGrid(dateTime, carrierBody, updatedCarrierFuel, fuelDetails);
 
                 if (!Core.IsLogMonitorBatchReading && lowFuel)
                 {
@@ -182,6 +215,9 @@ namespace ObservatoryFleetCommander.Worker
                     {
                         Title = "Low Fuel",
                         Detail = fuelDetails,
+#if EXTENDED_EVENT_ARGS
+                        Sender = this,
+#endif
                     });
                 }
             }
@@ -225,8 +261,11 @@ namespace ObservatoryFleetCommander.Worker
             {
                 Title = "Carrier jump cooldown has ended",
                 Detail = "You may now schedule a new jump.",
+#if EXTENDED_EVENT_ARGS
+                Sender = this,
+#endif
             });
-            carrierCooldownTimer.Stop();
+            CancelCarrierJump();
         }
     }
 
