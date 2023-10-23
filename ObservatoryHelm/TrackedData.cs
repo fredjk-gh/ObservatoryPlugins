@@ -25,6 +25,7 @@ namespace ObservatoryHelm
         public Scan? ScoopableSecondaryCandidateScan { get; set; }
         public string? NeutronPrimarySystemNotified { get; set; }
         public string? FuelWarningNotifiedSystem { get; set; }
+        public bool IsDockedOnCarrier { get; set; }
         public Dictionary<string, Scan> Scans { get; private set; }
 
         public void SystemReset(string systemName, double fuelLevel, double jumpDist)
@@ -33,6 +34,13 @@ namespace ObservatoryHelm
             CurrentSystem = systemName;
             FuelRemaining = fuelLevel;
             DistanceTravelled += jumpDist;
+        }
+
+        public void SystemResetDockedOnCarrier(string systemName)
+        {
+            Scans.Clear();
+            CurrentSystem = systemName;
+            IsDockedOnCarrier = true;
         }
 
         public void SessionReset(bool isOdyssey, double fuelCapacity, double fuelLevel)
