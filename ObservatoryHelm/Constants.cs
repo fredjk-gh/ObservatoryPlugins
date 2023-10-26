@@ -44,6 +44,9 @@ namespace ObservatoryHelm
             { "int_hyperdrive_size7_class4", 10.6 },
             { "int_hyperdrive_size7_class5", 12.8 },
         };
-        public static readonly HashSet<string> Scoopables = new() { "O", "B", "A", "F", "G", "K", "M", };
+        public static readonly HashSet<string> Scoopables = new() {
+            "O", "B", "A", "F", "G", "K", "M",
+            "A_BlueWhiteSuperGiant", "B_BlueWhiteSuperGiant", "F_WhiteSuperGiant",
+            "G_WhiteSuperGiant", "K_OrangeGiant", "M_RedSuperGiant", "M_RedGiant" };
     }
 }

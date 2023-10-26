@@ -93,6 +93,13 @@ namespace ObservatoryHelm
                 case NavRouteClear clear:
                     data.JumpsRemainingInRoute = 0;
                     break;
+                case StartJump startJump:
+                    data.LastStartJumpEvent = null;
+                    if (startJump.JumpType == "Hyperspace")
+                    {
+                        data.LastStartJumpEvent = startJump;
+                    }
+                    break;
                 case FSDJump jump:
                     if (jump is CarrierJump carrierJump && carrierJump.Docked)
                     {
@@ -104,12 +111,16 @@ namespace ObservatoryHelm
                     {
                         data.SystemReset(jump.StarSystem, jump.FuelLevel, jump.JumpDist);
                         Core.AddGridItem(this, MakeGridItem(jump.Timestamp, (data.JumpsRemainingInRoute == 0 ? "(no route)" : "")));
+                        string arrivalStarScoopableStr = (data.LastStartJumpEvent != null && !Constants.Scoopables.Contains(data.LastStartJumpEvent.StarClass))
+                                ? $"Arrival star (type: {data.LastStartJumpEvent.StarClass}) is NOT scoopable!"
+                                : "";
                         Core.SendNotification(new()
                         {
                             Title = "Route Progress",
                             Detail = $"Jumps left: {data.JumpsRemainingInRoute}",
 #if EXTENDED_EVENT_ARGS
                             Sender = this,
+                            ExtendedDetails = arrivalStarScoopableStr,
                             Rendering = NotificationRendering.PluginNotifier,
 #endif
                         });
@@ -119,7 +130,7 @@ namespace ObservatoryHelm
                             Core.SendNotification(new()
                             {
                                 Title = "Warning! Low fuel",
-                                Detail = "Refuel soon!",
+                                Detail = $"Refuel soon! {arrivalStarScoopableStr}",
 #if EXTENDED_EVENT_ARGS
                                 Sender = this,
 #endif
@@ -224,7 +235,7 @@ namespace ObservatoryHelm
 
                     string bodyShortName = BodyShortName(approachBody.Body, approachBody.StarSystem);
                     var gravityG = s.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
-                    if (gravityG >= settings.GravityWarningThresholdx10 / 10)
+                    if (gravityG >= settings.GravityWarningThresholdx10 / 10.0)
                     {
                         Core.SendNotification(new()
                         {
@@ -235,7 +246,7 @@ namespace ObservatoryHelm
 #endif
                         });
                     }
-                    else if (gravityG > settings.GravityAdvisoryThresholdx10 / 10)
+                    else if (gravityG > settings.GravityAdvisoryThresholdx10 / 10.0)
                     {
                         Core.SendNotification(new()
                         {
@@ -262,7 +273,7 @@ namespace ObservatoryHelm
                 Timestamp = timestamp,
                 System = data.CurrentSystem ?? "",
                 Fuel = data.IsDockedOnCarrier ? "" : $"{(100 * data.FuelRemaining / data.FuelCapacity):0}% ({Math.Round(data.FuelRemaining, 2)} T)",
-                DistanceTravelled = data.IsDockedOnCarrier ? "" : $"{data.DistanceTravelled:0.#} ly",
+                DistanceTravelled = data.IsDockedOnCarrier ? "" : $"{data.DistanceTravelled:0.#} ly ({data.JumpsCompleted} jumps)",
                 JumpsRemaining = data.IsDockedOnCarrier ? "" : (data.JumpsRemainingInRoute > 0 ? $"{data.JumpsRemainingInRoute}" : ""),
                 Details = $"{details}",
             };
