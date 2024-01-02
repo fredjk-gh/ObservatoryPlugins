@@ -1,9 +1,9 @@
 [
-{"PluginName":"ObservatoryAggregator" "Version":"0.0.0.0" "BetaVersion":"0.0.0.0" "DownloadURL":"" "BetaDownloadURL":""},
-{"PluginName":"ObservatoryArchivist" "Version":"0.0.0.0" "BetaVersion":"0.0.0.0" "DownloadURL":"" "BetaDownloadURL":""},
-{"PluginName":"ObservatoryFleetCommander" "Version":"0.0.0.0" "BetaVersion":"0.22.348.0241" "DownloadURL":"" "BetaDownloadURL":"https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.22.348.0241-beta/ObservatoryFleetCommander.0.22.348.0241-beta.eop"},
-{"PluginName":"ObservatoryHelm" "Version":"0.0.0.0" "BetaVersion":"0.0.0.0" "DownloadURL":"" "BetaDownloadURL":""},
-{"PluginName":"ObservatoryPluginAutoUpdater" "Version":"0.0.0.0" "BetaVersion":"0.0.0.0" "DownloadURL":"" "BetaDownloadURL":""},
-{"PluginName":"ObservatoryProspectorBasic" "Version":"0.0.0.0" "BetaVersion":"0.22.348.0223" "DownloadURL":"" "BetaDownloadURL":"https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.22.348.0241-beta/ObservatoryProspectorBasic.0.22.348.0223-beta.eop"},
-{"PluginName":"ObservatoryStatScanner" "Version":"0.0.0.0" "BetaVersion":"0.23.165.2200" "DownloadURL":"" "BetaDownloadURL":"https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.23.165.2200-beta/ObservatoryStatScanner-0.23.165.2200-beta.eop"},
+{"PluginName":"ObservatoryAggregator", "Version":"0.0.0.0", "BetaVersion":"0.0.0.0", "DownloadURL":"", "BetaDownloadURL":""},
+{"PluginName":"ObservatoryArchivist", "Version":"0.0.0.0", "BetaVersion":"0.0.0.0", "DownloadURL":"", "BetaDownloadURL":""},
+{"PluginName":"ObservatoryFleetCommander", "Version":"0.0.0.0", "BetaVersion":"0.22.348.0241", "DownloadURL":"", "BetaDownloadURL":"https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.22.348.0241-beta/ObservatoryFleetCommander.0.22.348.0241-beta.eop"},
+{"PluginName":"ObservatoryHelm", "Version":"0.0.0.0", "BetaVersion":"0.0.0.0", "DownloadURL":"", "BetaDownloadURL":""},
+{"PluginName":"ObservatoryPluginAutoUpdater", "Version":"0.0.0.0", "BetaVersion":"0.0.0.0", "DownloadURL":"", "BetaDownloadURL":""},
+{"PluginName":"ObservatoryProspectorBasic", "Version":"0.0.0.0", "BetaVersion":"0.22.348.0223", "DownloadURL":"", "BetaDownloadURL":"https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.22.348.0241-beta/ObservatoryProspectorBasic.0.22.348.0223-beta.eop"},
+{"PluginName":"ObservatoryStatScanner", "Version":"0.0.0.0", "BetaVersion":"0.23.165.2200", "DownloadURL":"", "BetaDownloadURL":"https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.23.165.2200-beta/ObservatoryStatScanner-0.23.165.2200-beta.eop"}
 ]
