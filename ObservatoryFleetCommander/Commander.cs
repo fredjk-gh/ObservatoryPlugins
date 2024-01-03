@@ -5,7 +5,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 
-namespace ObservatoryFleetCommander.Worker
+namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
     public class Commander : IObservatoryWorker
     {

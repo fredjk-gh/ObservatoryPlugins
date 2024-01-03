@@ -1,6 +1,6 @@
 ﻿using Observatory.Framework;
 
-namespace ObservatoryFleetCommander.Worker
+namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
     internal class FleetCommanderSettings
     {
