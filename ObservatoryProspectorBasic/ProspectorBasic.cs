@@ -5,11 +5,10 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using static ObservatoryProspectorBasic.ProspectorSettings;
 using Observatory.Framework.Files.ParameterTypes;
 using System.Diagnostics;
 
-namespace ObservatoryProspectorBasic
+namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
     public class ProspectorBasic : IObservatoryWorker
     {
@@ -389,7 +388,7 @@ namespace ObservatoryProspectorBasic
                         }
                         string desiredCommodities = string.Join(", ", settings.DesirableCommonditiesByRingType(rt).Select(c => c.ToString()));
                         var tuple = new Tuple<string, string, string>(
-                            $"{rt.DisplayString()} Ring", $"[{desiredCommodities}]", $"Density: {Math.Floor(densityMTperkm2)}");
+                            $"{rt.DisplayString()} Ring", $"[{desiredCommodities}]", $"Density: {densityMTperkm2:N1} mT/km^2");
                         if (!ringsOfInterest.Contains(tuple)) ringsOfInterest.Add(tuple);
                         break;
                     }
@@ -397,13 +396,11 @@ namespace ObservatoryProspectorBasic
             }
             if (ringsOfInterest.Count == 0) return;
 
-            var shortBodyName = GetBodyName(scan.BodyName);
+            var shortBodyName = GetShortBodyName(scan.BodyName);
             var detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => $"{t.Item1} {t.Item2}, {t.Item3}"));
             var bodyDistance = $", distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
             if (enableDebug) Debug.WriteLine("Scan: Interesting rings at body {0}: {1}", shortBodyName, detailsCommaSeparated + bodyDistance);
 
-            // Recreate details string without density for the grid.
-            detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => $"{t.Item1} {t.Item2}"));
             Core.AddGridItem(this, new ProspectorGrid()
             {
                 Location = scan.BodyName,
@@ -540,7 +537,7 @@ namespace ObservatoryProspectorBasic
         private void OnRingPing(SAASignalsFound saaSignalsFound)
         {
             if (String.IsNullOrEmpty(currentSystem)) return;
-            var ringName = GetBodyName(saaSignalsFound.BodyName);
+            var ringName = GetShortBodyName(saaSignalsFound.BodyName);
             if (saaSignalsFound.Signals == null || saaSignalsFound.Signals.Count == 0 || alreadyReportedScansSaaSignals.Contains(ringName)
                     || !ringName.Contains(" Ring", StringComparison.InvariantCultureIgnoreCase))
                 return;
@@ -629,9 +626,19 @@ namespace ObservatoryProspectorBasic
             return args;
         }
 
-        private string GetBodyName(string bodyName, string baseName = "")
+        // TODO: Extract these to shared library or move into IObservatoryCore?
+        private string GetShortBodyName(string bodyName, string baseName = "")
         {
             return string.IsNullOrEmpty(baseName) ? bodyName.Replace(currentSystem, "").Trim() : bodyName.Replace(baseName, "").Trim();
+        }
+
+        private string GetBodyTitle(string bodyName)
+        {
+            if (bodyName.Length == 0)
+            {
+                return "Primary Star";
+            }
+            return $"Body {bodyName}";
         }
 
         private string CargoKey(string name, string localizedName = "")

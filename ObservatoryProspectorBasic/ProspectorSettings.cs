@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryProspectorBasic
+namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
     class ProspectorSettings
     {
