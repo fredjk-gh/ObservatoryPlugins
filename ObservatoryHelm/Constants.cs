@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryHelm
+namespace com.github.fredjk_gh.ObservatoryHelm
 {
     internal class Constants
     {

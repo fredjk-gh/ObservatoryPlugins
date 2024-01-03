@@ -1,11 +1,12 @@
 ﻿using Observatory.Framework;
+using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 
-namespace ObservatoryHelm
+namespace com.github.fredjk_gh.ObservatoryHelm
 {
     public class Helm : IObservatoryWorker
     {
@@ -18,6 +19,7 @@ namespace ObservatoryHelm
         ObservableCollection<object> gridCollection = new();
         private HelmSettings settings = HelmSettings.DEFAULT;
         private TrackedData data = new();
+        private HashSet<string> incompleteSystemsNotified = new();
 
         private static readonly int MAX_FUEL = 99;
 
@@ -47,6 +49,11 @@ namespace ObservatoryHelm
                 Core.ClearGrid(this, new HelmGrid());
                 data = new();
             }
+            else if (args.PreviousState.HasFlag(LogMonitorState.Batch))
+            {
+                // Exiting read-all: Spit out summary of most recent session:
+                MaybeMakeGridItemForSummary(data.LastJumpEvent?.Timestamp ?? "");
+            }
         }
 
         public void Load(IObservatoryCore observatoryCore)
@@ -60,7 +67,6 @@ namespace ObservatoryHelm
             pluginUI = new PluginUI(gridCollection);
         }
 
-
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
             switch (journal)
@@ -72,9 +78,13 @@ namespace ObservatoryHelm
                 // Consider alerting only if gravity exceeds a certain threshold (1g?)
                 // Other?
                 case LoadGame loadGame:
+                    if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
+                    {
+                        // Summarize the last session:
+                        MaybeMakeGridItemForSummary(data.LastJumpEvent?.Timestamp ?? "");
+
+                    }
                     data.SessionReset(loadGame.Odyssey, loadGame.FuelCapacity, loadGame.FuelLevel);
-                    //if (!Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
-                    Core.ClearGrid(this, new HelmGrid());
                     break;
                 case Location location:
                     data.CurrentSystem = location.StarSystem;
@@ -94,23 +104,43 @@ namespace ObservatoryHelm
                     data.JumpsRemainingInRoute = 0;
                     break;
                 case StartJump startJump:
-                    data.LastStartJumpEvent = null;
+                    // data.LastStartJumpEvent = null;
                     if (startJump.JumpType == "Hyperspace")
                     {
                         data.LastStartJumpEvent = startJump;
                     }
                     break;
                 case FSDJump jump:
-                    if (jump is CarrierJump carrierJump && carrierJump.Docked)
+                    incompleteSystemsNotified.Clear();
+                    if (jump is CarrierJump carrierJump && carrierJump.Docked) // (carrierJump.Docked || carrierJump.OnFoot))
                     {
                         // Do nothing else. We're missing fuel level, etc. here.
-                        data.SystemResetDockedOnCarrier(carrierJump.StarSystem);
-                        Core.AddGridItem(this, MakeGridItem(jump.Timestamp, "(docked on carrier)"));
+                        if (data.LastJumpEvent != null)
+                        {
+                            double distance = Id64.Id64CoordHelper.Distance(carrierJump.StarPos, data.LastJumpEvent.StarPos);
+
+                            //double distance = Id64CoordHelper.Distance((long) carrierJump.SystemAddress, (long)data.LastJumpEvent.SystemAddress);
+                            data.SystemResetDockedOnCarrier(carrierJump.StarSystem, distance);
+                        }
+                        else
+                        {
+                            data.SystemResetDockedOnCarrier(carrierJump.StarSystem);
+                        }
+                        data.LastJumpEvent = jump;
+                        data.LastStartJumpEvent = null;
+                        MakeGridItem(jump.Timestamp, "(docked on carrier)");
                     }
                     else
                     {
                         data.SystemReset(jump.StarSystem, jump.FuelLevel, jump.JumpDist);
-                        Core.AddGridItem(this, MakeGridItem(jump.Timestamp, (data.JumpsRemainingInRoute == 0 ? "(no route)" : "")));
+                        data.LastJumpEvent = jump;
+                        if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
+                        {
+                            // Don't output anything further during read-all. LoadGame handler spits out session summaries.
+                            break;
+                        }
+
+                        MakeGridItem(jump.Timestamp, (data.JumpsRemainingInRoute == 0 ? "(no route)" : ""));
                         string arrivalStarScoopableStr = (data.LastStartJumpEvent != null && !Constants.Scoopables.Contains(data.LastStartJumpEvent.StarClass))
                                 ? $"Arrival star (type: {data.LastStartJumpEvent.StarClass}) is NOT scoopable!"
                                 : "";
@@ -165,13 +195,17 @@ namespace ObservatoryHelm
                     }
                     break;
                 case Scan scan:
+                    if (scan.ScanType != "NavBeaconDetail" && scan.PlanetClass != "Barycentre" && !scan.WasDiscovered && scan.DistanceFromArrivalLS == 0)
+                    {
+                        data.UndiscoveredSystem = true;
+                    }
                     data.Scans[scan.BodyName] = scan;
                     if (data.FuelRemaining < (data.MaxFuelPerJump * Constants.FuelWarningLevelFactor) && data.FuelWarningNotifiedSystem != scan.StarSystem)
                     {
                         if (Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance)
                         {
                             string extendedDetails = $"Warning! Low Fuel! Scoopable star: {BodyShortName(scan.BodyName, data.CurrentSystem /*scan.StarSystem*/)}, {scan.DistanceFromArrivalLS:0.0} Ls";
-                            Core.AddGridItem(this, MakeGridItem(scan.Timestamp, extendedDetails));
+                            MakeGridItem(scan.Timestamp, extendedDetails);
                             Core.SendNotification(new()
                             {
                                 Title = "Warning! Low fuel",
@@ -200,7 +234,7 @@ namespace ObservatoryHelm
                     {
                         data.NeutronPrimarySystemNotified = data.CurrentSystem; // scan.StarSystem;
                         string extendedDetails = $"Nearby scoopable secondary star; Type: {data.ScoopableSecondaryCandidateScan?.StarType}, {Math.Round(data.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls";
-                        Core.AddGridItem(this, MakeGridItem(scan.Timestamp, extendedDetails));
+                        MakeGridItem(scan.Timestamp, extendedDetails);
                         Core.SendNotification(new()
                         {
                             Title = "Nearby scoopable secondary star",
@@ -213,10 +247,12 @@ namespace ObservatoryHelm
                     }
                     break;
                 case FSSAllBodiesFound allFound:
-                    if (data.FuelRemaining < (data.MaxFuelPerJump * Constants.FuelWarningLevelFactor) && data.FuelWarningNotifiedSystem != allFound.SystemName)
+                    if (data.FuelWarningNotifiedSystem == allFound.SystemName) break;
+
+                    if (data.FuelRemaining < (data.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
                     {
                         string extendedDetails = $"Warning! Low Fuel and no scoopable star! Be sure to jump to a system with a scoopable star!";
-                        Core.AddGridItem(this, MakeGridItem(allFound.Timestamp, extendedDetails));
+                        MakeGridItem(allFound.Timestamp, extendedDetails);
                         Core.SendNotification(new()
                         {
                             Title = "Warning! Low fuel!",
@@ -227,6 +263,19 @@ namespace ObservatoryHelm
 #endif
                         });
                     }
+                    if (!data.AllBodiesFound)
+                    {
+                        Core.SendNotification(new()
+                        {
+                            Title = "FSS completed",
+                            Detail = $"All {allFound.Count} bodies found",
+                            Rendering = NotificationRendering.PluginNotifier,
+#if EXTENDED_EVENT_ARGS
+                            Sender = this,
+#endif
+                        });
+                    }
+                    data.AllBodiesFound = true;
                     break;
                 case ApproachBody approachBody:
                     Scan s;
@@ -261,25 +310,71 @@ namespace ObservatoryHelm
             }
         }
 
-        private static string BodyShortName(string bodyName, string systemName)
+        public void StatusChange(Status status)
         {
-            return bodyName.Replace(systemName, "").Trim();
+            // Update fuel level with latest, greatest data.
+            if (status.Fuel != null) 
+                data.FuelRemaining = status.Fuel.FuelMain;
+
+            // TODO: Add a setting for this.
+            if (status.Flags2.HasFlag(StatusFlags2.FsdHyperdriveCharging)
+                && !data.AllBodiesFound && data.UndiscoveredSystem && !incompleteSystemsNotified.Contains(data.CurrentSystem))
+            {
+                incompleteSystemsNotified.Add(data.CurrentSystem);
+                Core.SendNotification(new()
+                {
+                    Title = "Incomplete system scan!",
+                    Detail = $"Heads up! The undiscovered system you are about to leave is not fully scanned!",
+#if EXTENDED_EVENT_ARGS
+                    Sender = this,
+#endif
+                });
+            }
         }
 
-        private HelmGrid MakeGridItem(string timestamp, string details = "")
+        private static string BodyShortName(string bodyName, string systemName)
         {
+            string shortName = bodyName.Replace(systemName, "").Trim();
+
+            return (string.IsNullOrEmpty(shortName) ? "Primary star" : shortName);
+        }
+
+        private void MakeGridItem(string timestamp, string details = "")
+        {
+            if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch)) return;
+
             HelmGrid gridItem = new()
             {
                 Timestamp = timestamp,
                 System = data.CurrentSystem ?? "",
-                Fuel = data.IsDockedOnCarrier ? "" : $"{(100 * data.FuelRemaining / data.FuelCapacity):0}% ({Math.Round(data.FuelRemaining, 2)} T)",
-                DistanceTravelled = data.IsDockedOnCarrier ? "" : $"{data.DistanceTravelled:0.#} ly ({data.JumpsCompleted} jumps)",
+                Fuel = (data.IsDockedOnCarrier ? "" : $"{(100 * data.FuelRemaining / data.FuelCapacity):0}% ({Math.Round(data.FuelRemaining, 2)} T)"),
+                DistanceTravelled = $"{data.DistanceTravelled:n1} ly ({data.JumpsCompleted} jumps" + (data.DockedCarrierJumpsCompleted > 0 ? $", {data.DockedCarrierJumpsCompleted} jumps on a carrier)" : ")"),
                 JumpsRemaining = data.IsDockedOnCarrier ? "" : (data.JumpsRemainingInRoute > 0 ? $"{data.JumpsRemainingInRoute}" : ""),
                 Details = $"{details}",
             };
-            return gridItem;
+            Core.AddGridItem(this, gridItem);
         }
 
+        private void MaybeMakeGridItemForSummary(string timestamp)
+        {
+            if (data.JumpsCompleted == 0)
+            {
+                // Do nothing.
+                return;
+            }
+
+            HelmGrid gridItem = new()
+            {
+                Timestamp = timestamp,
+                System = data.CurrentSystem ?? "",
+                Fuel = "",
+                DistanceTravelled = $"{data.DistanceTravelled:n1} ly ({data.JumpsCompleted} jumps" + (data.DockedCarrierJumpsCompleted > 0 ? $", {data.DockedCarrierJumpsCompleted} jumps on a carrier)" : ")"),
+                JumpsRemaining = data.IsDockedOnCarrier ? "" : (data.JumpsRemainingInRoute > 0 ? $"{data.JumpsRemainingInRoute}" : ""),
+                Details = "Previous session summary",
+            };
+
+            Core.AddGridItem(this, gridItem);
+        }
 
         private static Modules? findFSD(ImmutableList<Modules> modules)
         {
