@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class SurfacePressureRecord : BodyRecord
     {
@@ -15,7 +15,7 @@ namespace ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableSurfacePressureRecord;
 
-        public override string ValueFormat { get => "{0:0.00##}"; }
+        public override string ValueFormat { get => "{0:n3}"; }
         public override string Units { get => "atm"; }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)

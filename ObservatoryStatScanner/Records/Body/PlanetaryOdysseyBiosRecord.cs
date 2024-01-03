@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class PlanetaryOdysseyBiosRecord : BodyRecord
     {
@@ -22,7 +22,8 @@ namespace ObservatoryStatScanner.Records
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            if (!Enabled || !BodyBioSignals.ContainsKey(scan.BodyName)) return new();
+            if (!Enabled || !BodyBioSignals.ContainsKey(scan.BodyName))
+                return new();
             int bioCount = BodyBioSignals[scan.BodyName];
             if (!scan.Landable
                 || scan.AtmosphereType?.Length == 0
@@ -34,12 +35,7 @@ namespace ObservatoryStatScanner.Records
             }
 
             BodyBioSignals.Remove(scan.BodyName);
-            var results = CheckMax(bioCount, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
-            if (results.Count > 0)
-            {
-                Data.SetOrUpdateMax(scan.BodyName, bioCount);
-            }
-            return results;
+            return CheckMax(bioCount, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
         }
 
         public override List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)

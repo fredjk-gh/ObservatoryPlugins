@@ -5,16 +5,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static ObservatoryStatScanner.StatScannerSettings;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class SystemOdysseyBiosRecord : SystemRecord, IRecord
     {
         private readonly Dictionary<string, int> BodyBioSignals = new();
 
         public SystemOdysseyBiosRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Odyssey Bio count (System)")
+            : base(settings, recordKind, data, "Odyssey Bio count")
         { }
 
         public override bool Enabled => Settings.EnableOdysseySurfaceBioRecord;

@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static ObservatoryStatScanner.StatScannerSettings;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class SystemBodyCountRecord : SystemRecord
     {

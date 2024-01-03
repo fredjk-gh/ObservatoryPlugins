@@ -1,56 +1,17 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
-using ObservatoryStatScanner.DB;
-using ObservatoryStatScanner.Records;
+using com.github.fredjk_gh.ObservatoryStatScanner.DB;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using TextFieldParserCore;
-using static ObservatoryStatScanner.Records.BodyRecord;
-using static ObservatoryStatScanner.StatScannerSettings;
 
-namespace ObservatoryStatScanner
+namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     public class StatScanner : IObservatoryWorker
     {
-        private readonly static StatScannerSettings _DEFAULT = new()
-        {
-            MaxNearRecordThreshold = 0,
-            MinNearRecordThreshold = 0,
-            HighCardinalityTieSuppression = 20000,
-            ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING,
-            FirstDiscoveriesOnly = false,
-            EnablePersonalBests = true,
-            NotifyPossibleNewGalacticRecords = true,
-            NotifyMatchedGalacticRecords = true,
-            NotifyVisitedGalacticRecords = true,
-            NotifyNearGalacticRecords = false,
-            NotifyNewPersonalBests = true,
-            NotifyNewCodexEntries = false,
-            NotifyTallies = false,
-            NotifySilentFallback = true,
-            EnableEarthMassesRecord = true,
-            EnablePlanetaryRadiusRecord = true,
-            EnableSurfaceGravityRecord = true,
-            EnableSurfacePressureRecord = true,
-            EnableSurfaceTemperatureRecord = true,
-            EnableOrbitalEccentricityRecord = true,
-            EnableOrbitalPeriodRecord = true,
-            EnableRotationalPeriodRecord = true,
-            EnableSolarMassesRecord = true,
-            EnableSolarRadiusRecord = true,
-            EnableRingOuterRadiusRecord = true,
-            EnableRingWidthRecord = true,
-            EnableRingMassRecord = true,
-            EnableRingDensityRecord = true,
-            EnableOdysseySurfaceBioRecord = true,
-            EnableSystemBodyCountRecords = true,
-            EnableRegionCodexCountRecords = false,
-            EnableVisitedRegionRecords = true,
-            EnableUndiscoveredSystemCountRecord = true,
-        };
-
-        private StatScannerSettings settings = _DEFAULT;
+        private StatScannerSettings settings = StatScannerSettings.DEFAULT;
 
         private IObservatoryCore Core;
         /// <summary>
@@ -68,7 +29,8 @@ namespace ObservatoryStatScanner
         private bool IsOdyssey = false;
         private bool HasHeaderRows = false;
         private string CurrentSystem = "";
-
+        private Statistics lastStats = null;
+        private LoadGame lastLoadGame = null;
 
         public string Name => "Observatory Stat Scanner";
         public string ShortName => "Stat Scanner";
@@ -81,6 +43,7 @@ namespace ObservatoryStatScanner
             get => settings;
             set => settings = (StatScannerSettings)value;
         }
+
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
             // * -> ReadAll
@@ -91,7 +54,7 @@ namespace ObservatoryStatScanner
                 HasHeaderRows = false;
             }
             // ReadAll -> *
-            else if (args.PreviousState.HasFlag(LogMonitorState.Batch))
+            else if (args.PreviousState.HasFlag(LogMonitorState.Batch) || args.PreviousState.HasFlag(LogMonitorState.PreRead))
             {
                 ShowPersonalBestSummary();
             }
@@ -99,8 +62,6 @@ namespace ObservatoryStatScanner
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
-            MaybeAddHeaderRows();
-
             switch (journal)
             {
                 case FSDJump fsdJump:
@@ -122,6 +83,17 @@ namespace ObservatoryStatScanner
                     break;
                 case CodexEntry codexEntry:
                     OnCodexEntry(codexEntry);
+                    break;
+                case LoadGame loadGame:
+                    lastLoadGame = loadGame;
+                    break;
+                case Statistics statistics:
+                    // TODO: do more with this?
+                    lastStats = statistics;
+                    if (!Core.IsLogMonitorBatchReading)
+                    {
+                        AddResultsToGrid(MaybeAddStats());
+                    }
                     break;
             }
         }
@@ -154,17 +126,16 @@ namespace ObservatoryStatScanner
         {
             settings.ForceUpdateGalacticRecords = ForceRefreshGalacticRecords;
 
-            if (settings.HighCardinalityTieSuppression == 0) settings.HighCardinalityTieSuppression = _DEFAULT.HighCardinalityTieSuppression;
+            if (settings.HighCardinalityTieSuppression == 0) settings.HighCardinalityTieSuppression = StatScannerSettings.DEFAULT.HighCardinalityTieSuppression;
             if (settings.ProcGenHandling == null) settings.ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING;
         }
 
         private void MaybeAddHeaderRows()
         {
-            if (HasHeaderRows) return;
-            HasHeaderRows = true;
+            if (Core.IsLogMonitorBatchReading || HasHeaderRows) return;
 
             var devModeWarning = (settings.DevMode ? "!!DEV mode!!" : "");
-            var handlingMode = (ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling];
+            var handlingMode = (StatScannerSettings.ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling];
             var gridItems = new List<Result>
             {
                 new (NotificationClass.None,
@@ -185,8 +156,9 @@ namespace ObservatoryStatScanner
                     new StatScannerGrid
                     {
                         ObjectClass = "Plugin stats",
-                        Variable = "Tracked Record(s): Total",
+                        Variable = "Tracked Record(s)",
                         Function = Function.Count.ToString(),
+                        BodyOrItem = "Total",
                         ObservedValue = $"{recordBook.Count}",
                         RecordValue = devModeWarning,
                     }),
@@ -200,10 +172,10 @@ namespace ObservatoryStatScanner
                         details = (count == 0 ? (!settings.EnablePersonalBests ? "Disabled via settings" : "Not yet implemented") : "");
                         break;
                     case RecordKind.GalacticProcGen:
-                        details = (handlingMode == ProcGenHandlingMode.ProcGenIgnore ? "Ignored via settings" : "");
+                        details = (handlingMode == StatScannerSettings.ProcGenHandlingMode.ProcGenIgnore ? "Ignored via settings" : "");
                         break;
                     case RecordKind.Galactic:
-                        details = (handlingMode == ProcGenHandlingMode.ProcGenOnly ? "Ignored except for identifying known record-holders" : "");
+                        details = (handlingMode == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly ? "Ignored except for identifying known record-holders" : "");
                         break;
                 }
 
@@ -212,23 +184,62 @@ namespace ObservatoryStatScanner
                         new StatScannerGrid
                         {
                             ObjectClass = "Plugin stats",
-                            Variable = $"Tracked Record(s): {kind}",
+                            Variable = $"Tracked Record(s)",
                             Function = Function.Count.ToString(),
+                            BodyOrItem = $"{kind}",
                             ObservedValue = $"{count}",
                             RecordValue = devModeWarning,
                             Details = details,
                         }));
             }
+            gridItems.AddRange(MaybeAddStats());
             AddResultsToGrid(gridItems);
+            HasHeaderRows = true;
+        }
+
+        private List<Result> MaybeAddStats()
+        {
+            var gridItems = new List<Result>();
+            if (lastStats != null && lastLoadGame != null)
+            {
+                gridItems.Add(
+                    new(
+                        NotificationClass.None,
+                        new StatScannerGrid
+                        {
+                            Timestamp = lastStats.Timestamp,
+                            ObjectClass = "Game stats",
+                            Variable = "Time played",
+                            BodyOrItem = lastLoadGame.Commander,
+                            Function = Function.Count.ToString(),
+                            ObservedValue = $"{(lastStats.Exploration.TimePlayed / Constants.CONV_S_TO_HOURS_DIVISOR):N0}",
+                            Units = "hr",
+                        }));
+            }
+            return gridItems;
         }
 
         private void ShowPersonalBestSummary()
         {
             MaybeAddHeaderRows();
-            var gridItems = new List<Result>();
-            foreach (var best in recordBook.GetPersonalBests())
+            List<RecordTable> tableOrder  = new()
             {
-                gridItems.AddRange(best.Summary());
+                RecordTable.Regions,
+                RecordTable.Systems,
+                RecordTable.Stars,
+                // RecordTable.Belts,
+                RecordTable.Planets,
+                RecordTable.Rings,
+                RecordTable.Codex,
+            };
+
+            var gridItems = new List<Result>();
+            foreach ( var rt in tableOrder )
+            {
+                foreach (var best in recordBook.GetPersonalBests(rt))
+                {
+                    gridItems.AddRange(best.Summary());
+                }
             }
             AddResultsToGrid(gridItems);
         }
@@ -316,8 +327,8 @@ namespace ObservatoryStatScanner
             LoadGalacticRecords(galacticRecordsCSV, RecordKind.Galactic);
             LoadGalacticRecords(galacticRecordsPGCSV, RecordKind.GalacticProcGen);
             LoadPersonalBestRecords();
-            ShowPersonalBestSummary();
         }
+
         private void LoadGalacticRecords(string csvLocalFile, RecordKind recordKind, bool retry = false)
         {
             try
@@ -520,6 +531,22 @@ namespace ObservatoryStatScanner
             AddResultsToGrid(results, /* notify */ true);
         }
 
+        // TODO: Extract these to shared library or move into IObservatoryCore?
+        private string GetShortBodyName(string bodyName, string baseName = "")
+        {
+            return string.IsNullOrEmpty(baseName) ? bodyName.Replace(CurrentSystem, "").Trim() : bodyName.Replace(baseName, "").Trim();
+        }
+
+        private string GetBodyTitle(string bodyName)
+        {
+            if (bodyName.Length == 0)
+            {
+                return "Primary Star";
+            }
+            return $"Body {bodyName}";
+        }
+
+
         private void AddResultsToGrid(List<Result> results, bool maybeNotify = false)
         {
             Core.AddGridItems(this, results.Select(r => r.ResultItem));
@@ -533,10 +560,20 @@ namespace ObservatoryStatScanner
                 {
                     firstDiscoveryStatus = $" ({r.ResultItem.DiscoveryStatus})";
                 }
+                string title = "";
+                if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION)
+                {
+                    title = r.ResultItem.ObjectClass;
+                }
+                else
+                {
+                    title = GetBodyTitle(GetShortBodyName(r.ResultItem.BodyOrItem));
+                }
+
                 Core.SendNotification(new()
                 {
-                    Title = r.ResultItem.Details,
-                    Detail = $"{r.ResultItem.ObjectClass}; {r.ResultItem.Variable}; {r.ResultItem.Function}",
+                    Title = title,
+                    Detail = $"{r.ResultItem.Details}: {r.ResultItem.ObjectClass}; {r.ResultItem.Variable}; {r.ResultItem.Function}",
                     Rendering = GetNotificationRendering(r),
 #if EXTENDED_EVENT_ARGS
                     ExtendedDetails = $"{r.ResultItem.ObservedValue} {r.ResultItem.Units} @ {r.ResultItem.BodyOrItem}{firstDiscoveryStatus}. Previous value: {r.ResultItem.RecordValue} {r.ResultItem.Units}",

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class RingDensityRecord : BodyRecord
     {
@@ -15,7 +15,7 @@ namespace ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableRingDensityRecord;
 
-        public override string ValueFormat { get => "{0:0.000000####}"; }
+        public override string ValueFormat { get => "{0:n4}"; }
         public override string Units { get => "Mt/km^3"; }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)

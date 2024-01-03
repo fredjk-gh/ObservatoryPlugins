@@ -1,18 +1,18 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
-using ObservatoryStatScanner.DB;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     public enum RecordTable
     {
+        Unknown,
         Stars,
         Planets,
         Rings,
         Systems,
         Regions,
-        Belts,
-        Unknown,
+        // Belts,
+        Codex,
     };
 
     enum Function
@@ -71,7 +71,7 @@ namespace ObservatoryStatScanner.Records
         List<Result> CheckScan(Scan scan, string currentSystem);
         List<Result> CheckCodexEntry(CodexEntry codexEntry);
 
-        void MaybeInitForPersonalBest(PersonalBestManager manager);
+        void MaybeInitForPersonalBest(DB.PersonalBestManager manager);
 
         void Reset();
     }

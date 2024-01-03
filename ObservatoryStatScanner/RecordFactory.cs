@@ -1,12 +1,13 @@
-﻿using ObservatoryStatScanner.Records;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records;
 using System.Diagnostics;
 
-namespace ObservatoryStatScanner
+namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     internal class RecordFactory
     {
         // CSV data-based factory.
-        public static IRecord CreateRecord(string[] csvFields, StatScannerSettings settings, RecordKind recordKind)
+        public static IRecord CreateRecord(
+            string[] csvFields, StatScannerSettings settings, RecordKind recordKind)
         {
             bool supportedVariable = false;
 

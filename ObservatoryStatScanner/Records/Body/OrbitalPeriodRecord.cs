@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class OrbitalPeriodRecord : BodyRecord
     {
@@ -15,7 +15,7 @@ namespace ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableOrbitalPeriodRecord;
 
-        public override string ValueFormat { get => "{0:0.##}"; }
+        public override string ValueFormat { get => "{0:n}"; }
         public override string Units { get => "d"; }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)

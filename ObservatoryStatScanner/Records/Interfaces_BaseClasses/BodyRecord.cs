@@ -1,14 +1,12 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
-using ObservatoryStatScanner.DB;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static ObservatoryStatScanner.StatScannerSettings;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal abstract class BodyRecord : IRecord
     {
@@ -66,7 +64,7 @@ namespace ObservatoryStatScanner.Records
             return new();
         }
         
-        public void MaybeInitForPersonalBest(PersonalBestManager manager)
+        public void MaybeInitForPersonalBest(DB.PersonalBestManager manager)
         {
             Data.Init(manager);
         }
@@ -242,9 +240,9 @@ namespace ObservatoryStatScanner.Records
 
             // This is not a galactic record holder, and we're showing procgen only records (except for visited galactic record holders).
             // OR: FDs only is enabled, and this is not first discovered and not a record holder.
-            var procGenHandling = (ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
-            if ((RecordKind == RecordKind.Galactic && procGenHandling == ProcGenHandlingMode.ProcGenOnly && bodyName != recordHolder)
-                    || (RecordKind == RecordKind.GalacticProcGen && procGenHandling == ProcGenHandlingMode.ProcGenIgnore)
+            var procGenHandling = (StatScannerSettings.ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
+            if ((RecordKind == RecordKind.Galactic && procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly && bodyName != recordHolder)
+                    || (RecordKind == RecordKind.GalacticProcGen && procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenIgnore)
                     || (Settings.FirstDiscoveriesOnly && !isUndiscovered && bodyName != recordHolder))
                 return null;
 
@@ -268,8 +266,8 @@ namespace ObservatoryStatScanner.Records
 
         private bool FilterPersonalRecordForProcGenAndFirstDiscovered(string bodyName, bool isUndiscovered)
         {
-            var procGenHandling = (ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
-            if ((procGenHandling == ProcGenHandlingMode.ProcGenOnly && !Constants.RE.IsMatch(bodyName))
+            var procGenHandling = (StatScannerSettings.ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
+            if ((procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly && !Constants.RE.IsMatch(bodyName))
                     || (Settings.FirstDiscoveriesOnly && !isUndiscovered))
                 return false;
             return true;

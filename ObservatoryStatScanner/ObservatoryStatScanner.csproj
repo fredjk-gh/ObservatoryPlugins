@@ -1,13 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-	  <PublishSingleFile>true</PublishSingleFile>
-	  <SelfContained>true</SelfContained>
-	  <ImplicitUsings>enable</ImplicitUsings>
-    <SignAssembly>false</SignAssembly>
-    <AssemblyOriginatorKeyFile>ObservatoryKey.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<SignAssembly>false</SignAssembly>
+		<AssemblyOriginatorKeyFile>ObservatoryKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
 
 	<PropertyGroup>
 		<VersionSuffix>0.$([System.DateTime]::UtcNow.Year.ToString().Substring(2)).$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0")).$([System.DateTime]::UtcNow.ToString(HHmm))</VersionSuffix>
@@ -16,6 +14,7 @@
 		<Version Condition=" '$(VersionSuffix)' == '' ">0.0.1.0</Version>
 		<Version Condition=" '$(VersionSuffix)' != '' ">$(VersionSuffix)</Version>
 		<PlatformTarget>AnyCPU</PlatformTarget>
+		<RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -23,9 +22,9 @@
 	  <PackageReference Include="TextFieldParserCore" Version="1.0.0" />
 	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\ObservatoryCore\ObservatoryFramework\ObservatoryFramework.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\ObservatoryCore\ObservatoryFramework\ObservatoryFramework.csproj" />
+	</ItemGroup>
 	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)plugins\&quot; /y" />
@@ -35,4 +34,12 @@
 		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)$(OutDir)TextFieldParserCore.dll&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)plugins\deps\&quot; /y" />
 		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(ProjectDir)$(OutDir)TextFieldParserCore.dll&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/deps/&quot; -f" />
 	</Target>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DefineConstants>$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DefineConstants>$(DefineConstants);EXTENDED_EVENT_ARGS</DefineConstants>
+	</PropertyGroup>
 </Project>

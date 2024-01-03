@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner
+namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     internal class RecordsCSVFormatChangedException : Exception
     {

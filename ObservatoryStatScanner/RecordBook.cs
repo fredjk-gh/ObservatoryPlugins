@@ -1,5 +1,5 @@
-﻿using ObservatoryStatScanner.DB;
-using ObservatoryStatScanner.Records;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.DB;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,14 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner
+namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     internal class RecordBook
     {
         // Root key: RecordTable (one of: stars, planets, rings, systems)
         // Leaf key: Journal-based object name (eg. "M_RedSuperGiant" or "Ammonia world" or "eRingClass_Metalic")
         // Values: List of IRecords which apply to the object type.
-        private Dictionary<RecordTable, Dictionary<string, List<IRecord>>> RecordsByTable = new();
+        private Dictionary<Records.RecordTable, Dictionary<string, List<Records.IRecord>>> RecordsByTable = new();
 
         private PersonalBestManager manager;
 
@@ -27,6 +27,7 @@ namespace ObservatoryStatScanner
             RecordsByTable.Add(RecordTable.Rings, new());
             RecordsByTable.Add(RecordTable.Systems, new());
             RecordsByTable.Add(RecordTable.Regions, new());
+            RecordsByTable.Add(RecordTable.Codex, new());
         }
 
         public void AddRecord(IRecord record)
@@ -64,6 +65,19 @@ namespace ObservatoryStatScanner
                     {
                         if (r.RecordKind == RecordKind.Personal) personalBests.Add(r);
                     }
+                }
+            }
+            return personalBests;
+        }
+
+        public List<IRecord> GetPersonalBests(RecordTable rt)
+        {
+            List<IRecord> personalBests = new();
+            foreach (var objName in RecordsByTable[rt].Keys)
+            {
+                foreach (var r in RecordsByTable[rt][objName])
+                {
+                    if (r.RecordKind == RecordKind.Personal) personalBests.Add(r);
                 }
             }
             return personalBests;

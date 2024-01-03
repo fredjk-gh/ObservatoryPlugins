@@ -1,13 +1,11 @@
-﻿using ObservatoryStatScanner.DB;
-using ObservatoryStatScanner.Records;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     public class IRecordData
     {
@@ -33,7 +31,7 @@ namespace ObservatoryStatScanner.Records
         // An arbitrary string value.
         public virtual string ExtraData { get; set; }
 
-        public virtual void Init(PersonalBestManager manager) { }
+        public virtual void Init(DB.PersonalBestManager manager) { }
 
         public virtual void ResetMutable()
         {

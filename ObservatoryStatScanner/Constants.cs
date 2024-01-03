@@ -1,4 +1,4 @@
-﻿using ObservatoryStatScanner.Records;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner
+namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     internal class Constants
     {
@@ -60,6 +60,7 @@ namespace ObservatoryStatScanner
         public const double CONV_M_TO_KM_DIVISOR = 1000.0;
         public const double CONV_M_TO_LS_DIVISOR = 299792458.0;
         public const double CONV_S_TO_DAYS_DIVISOR = 86400.0;
+        public const double CONV_S_TO_HOURS_DIVISOR = 3600.0;
         public const double CONV_PA_TO_ATM_DIVISOR = 101325.0;
 
         // Variable names from the edastro CSV.
@@ -243,22 +244,23 @@ namespace ObservatoryStatScanner
         public static readonly Regex RE = new(PROCGEN_NAME_RE);
 
         // Pseudo EDAstro/Journal Object type names for aggregate personal bests.
+        public const string OBJECT_TYPE_REGION = "Galactic Region";
         public const string OBJECT_TYPE_SYSTEM = "System";
         public const string OBJECT_TYPE_ODYSSEY_PLANET = "Odyssey Landable Planet";
-        public const string OBJECT_TYPE_REGION = "Galactic Region";
 
         // Aggregate personal best data definitions (since these can't be derived from an EDAstro equivelent).
+        public static readonly PersonalBestData PB_RegionsVisited =
+            new(RecordTable.Regions, OBJECT_TYPE_REGION, V_VISITED_REGIONS_COUNT);
+
         public static readonly PersonalBestData PB_SystemOdysseyBiosData =
             new(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BIO_COUNT);
         public static readonly PersonalBestData PB_SystemBodyCountData =
             new(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_BODY_COUNT);
         public static readonly PersonalBestData PB_UndiscoveredSystemTallyData =
             new(RecordTable.Systems, OBJECT_TYPE_SYSTEM, V_SYS_UNDISCOVERED_COUNT);
+
         public static readonly PersonalBestData PB_BodyBiosData =
             new(RecordTable.Planets, OBJECT_TYPE_ODYSSEY_PLANET, V_BODY_BIO_COUNT);
-
-        public static readonly PersonalBestData PB_RegionsVisited =
-            new(RecordTable.Regions, OBJECT_TYPE_REGION, V_VISITED_REGIONS_COUNT);
 
         public static List<PersonalBestData> GeneratePersonalBestRecords()
         {
@@ -277,7 +279,7 @@ namespace ObservatoryStatScanner
             {
                 foreach (var codexCategory in CodexCategoriesByJournalId.Values)
                 {
-                    records.Add(new(RecordTable.Regions, regionName, codexCategory));
+                    records.Add(new(RecordTable.Codex, regionName, codexCategory));
                 }
             }
             return records;

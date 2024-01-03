@@ -6,19 +6,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class RegionsVisitedTally : RegionRecord
     {
         private const char SEPARATOR = '|';
 
         public RegionsVisitedTally(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Visited regions")
+            : base(settings, recordKind, data, "Visited")
         { }
 
         public override bool Enabled => Settings.EnableVisitedRegionRecords;
         public override string ValueFormat { get => "{0}"; }
-        public override string Units { get => "visited"; }
+        public override string Units { get => "region"; }
 
         public override List<Result> CheckCodexEntry(CodexEntry codexEntry)
         {

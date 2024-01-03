@@ -5,10 +5,47 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner
+namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     class StatScannerSettings
     {
+        internal readonly static StatScannerSettings DEFAULT = new()
+        {
+            MaxNearRecordThreshold = 0,
+            MinNearRecordThreshold = 0,
+            HighCardinalityTieSuppression = 20000,
+            ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING,
+            FirstDiscoveriesOnly = false,
+            EnablePersonalBests = true,
+            NotifyPossibleNewGalacticRecords = true,
+            NotifyMatchedGalacticRecords = true,
+            NotifyVisitedGalacticRecords = true,
+            NotifyNearGalacticRecords = false,
+            NotifyNewPersonalBests = true,
+            NotifyNewCodexEntries = false,
+            NotifyTallies = false,
+            NotifySilentFallback = true,
+            EnableEarthMassesRecord = true,
+            EnablePlanetaryRadiusRecord = true,
+            EnableSurfaceGravityRecord = true,
+            EnableSurfacePressureRecord = true,
+            EnableSurfaceTemperatureRecord = true,
+            EnableOrbitalEccentricityRecord = true,
+            EnableOrbitalPeriodRecord = true,
+            EnableRotationalPeriodRecord = true,
+            EnableSolarMassesRecord = true,
+            EnableSolarRadiusRecord = true,
+            EnableRingOuterRadiusRecord = true,
+            EnableRingWidthRecord = true,
+            EnableRingMassRecord = true,
+            EnableRingDensityRecord = true,
+            EnableOdysseySurfaceBioRecord = true,
+            EnableSystemBodyCountRecords = true,
+            EnableRegionCodexCountRecords = false,
+            EnableVisitedRegionRecords = true,
+            EnableUndiscoveredSystemCountRecord = true,
+        };
+
         public const string DEFAULT_PROCGEN_HANDLING = "Ignore ProcGen records";
         
         public enum ProcGenHandlingMode

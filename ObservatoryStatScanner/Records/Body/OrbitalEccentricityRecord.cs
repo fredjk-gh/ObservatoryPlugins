@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class OrbitalEccentricityRecord : BodyRecord
     {
@@ -22,10 +22,7 @@ namespace ObservatoryStatScanner.Records
                 || (string.IsNullOrEmpty(scan.StarType) && (string.IsNullOrEmpty(scan.PlanetClass) || IsNonProcGenOrTerraformedELW(scan))))
                 return new();
 
-            var results = CheckMax(scan.Eccentricity, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
-            results.AddRange(CheckMin(scan.Eccentricity, scan.Timestamp, scan.BodyName, IsUndiscovered(scan)));
-
-            return results;
+            return CheckMax(scan.Eccentricity, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
         }
     }
 }

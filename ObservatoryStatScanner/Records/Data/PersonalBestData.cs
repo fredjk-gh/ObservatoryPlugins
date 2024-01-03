@@ -1,17 +1,15 @@
-﻿using ObservatoryStatScanner.DB;
-using ObservatoryStatScanner.Records;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     public class PersonalBestData : IRecordData
     {
-        private readonly PersonalBest dbRow = new();
-        private PersonalBestManager manager;
+        private readonly DB.PersonalBest dbRow = new();
+        private DB.PersonalBestManager manager;
 
         // For creating non EDAstro-based records.
         public PersonalBestData(RecordTable table, string objectName, string variable)
@@ -52,7 +50,7 @@ namespace ObservatoryStatScanner.Records
 
         public override string ExtraData { get => dbRow.ExtraData; set => dbRow.ExtraData = value; }
 
-        public override void Init(PersonalBestManager manager)
+        public override void Init(DB.PersonalBestManager manager)
         {
             this.manager = manager;
 

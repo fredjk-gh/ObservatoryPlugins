@@ -1,10 +1,8 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
-using ObservatoryStatScanner.DB;
-using static ObservatoryStatScanner.StatScannerSettings;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class SystemRecord : IRecord
     {
@@ -101,7 +99,7 @@ namespace ObservatoryStatScanner.Records
             Data.ResetMutable();
         }
 
-        public void MaybeInitForPersonalBest(PersonalBestManager manager)
+        public void MaybeInitForPersonalBest(DB.PersonalBestManager manager)
         {
             Data.Init(manager);
         }
@@ -122,9 +120,9 @@ namespace ObservatoryStatScanner.Records
             var isUndiscovered = IsUndiscoveredSystem.GetValueOrDefault(systemName);
             if ((Settings.FirstDiscoveriesOnly && !isUndiscovered) || observedValue == 0) return new();
 
-            var procGenHandlingMode = (ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
+            var procGenHandlingMode = (StatScannerSettings.ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
             if ((!HasMax || observedValue >= MaxValue)
-                && (procGenHandlingMode != ProcGenHandlingMode.ProcGenOnly || Constants.RE.IsMatch(systemName)))
+                && (procGenHandlingMode != StatScannerSettings.ProcGenHandlingMode.ProcGenOnly || Constants.RE.IsMatch(systemName)))
             {
                 StatScannerGrid gridRow = new()
                 {

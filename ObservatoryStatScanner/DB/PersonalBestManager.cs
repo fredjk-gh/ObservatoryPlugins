@@ -1,12 +1,11 @@
 ﻿using LiteDB;
-using ObservatoryStatScanner.Records;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.DB
+namespace com.github.fredjk_gh.ObservatoryStatScanner.DB
 {
     public class PersonalBestManager
     {
@@ -21,7 +20,7 @@ namespace ObservatoryStatScanner.DB
 
             string dbPath = $"{pluginDataPath}{PERSONAL_BEST_DB_FILENAME}";
 
-            PersonalBestsDB = new LiteDatabase($"Filename={dbPath};Connection=shared"); // Should be direct?
+            PersonalBestsDB = new LiteDatabase($"Filename={dbPath};Connection=direct"); // Direct for performance
             PersonalBestsCol = PersonalBestsDB.GetCollection<PersonalBest>("personalbests");
             PersonalBestsCol.EnsureIndex(pb => pb._id);
             PersonalBestsCol.EnsureIndex(pb => pb.Table);
@@ -59,13 +58,13 @@ namespace ObservatoryStatScanner.DB
             PersonalBestsCol.DeleteAll();
         }
 
-        public void RewriteAll(List<PersonalBestData> updatedRecords)
+        public void RewriteAll(List<Records.PersonalBestData> updatedRecords)
         {
             // Clear
             Clear();
 
             // Re-write everything.
-            foreach (PersonalBestData data in updatedRecords)
+            foreach (Records.PersonalBestData data in updatedRecords)
             {
                 data.Save();
             }

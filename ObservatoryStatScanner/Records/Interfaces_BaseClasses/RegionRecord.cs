@@ -1,13 +1,12 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
-using ObservatoryStatScanner.DB;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class RegionRecord : IRecord
     {
@@ -96,7 +95,7 @@ namespace ObservatoryStatScanner.Records
             return results;
         }
 
-        public void MaybeInitForPersonalBest(PersonalBestManager manager)
+        public void MaybeInitForPersonalBest(DB.PersonalBestManager manager)
         {
             Data.Init(manager);
         }

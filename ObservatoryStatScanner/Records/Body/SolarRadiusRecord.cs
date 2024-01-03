@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 {
     internal class SolarRadiusRecord : BodyRecord
     {
@@ -16,7 +16,7 @@ namespace ObservatoryStatScanner.Records
         public override bool Enabled => Settings.EnableSolarRadiusRecord;
 
         // Black holes are *really* small in terms of solar radius. So add extra digits to the display format.
-        public override string ValueFormat { get => (EDAstroObjectName == Constants.EDASTRO_STAR_BLACK_HOLE ? "{0:0.00000000}" : "{0:0.0000}"); }
+        public override string ValueFormat { get => (EDAstroObjectName == Constants.EDASTRO_STAR_BLACK_HOLE ? "{0:n8}" : "{0:n4}"); }
         public override string Units { get => "SR"; }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
