@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702;8618</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>1701;1702;8618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.0.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.0.4" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ObservatoryCore\ObservatoryFramework\ObservatoryFramework.csproj" />
+    <ProjectReference Include="..\ObservatoryAggregator\ObservatoryAggregator.csproj" />
+    <ProjectReference Include="..\ObservatoryArchivist\ObservatoryArchivist.csproj" />
+    <ProjectReference Include="..\ObservatoryFleetCommander\ObservatoryFleetCommander.csproj" />
+    <ProjectReference Include="..\ObservatoryPluginAutoUpdater\ObservatoryPluginAutoUpdater.csproj" />
+    <ProjectReference Include="..\ObservatoryProspectorBasic\ObservatoryProspectorBasic.csproj" />
+    <ProjectReference Include="..\ObservatoryStatScanner\ObservatoryStatScanner.csproj" />
+  </ItemGroup>
+
+</Project>

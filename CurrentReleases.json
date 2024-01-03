@@ -16,7 +16,15 @@
         "PluginName": "ObservatoryHelm"
     },
     {
-        "PluginName": "ObservatoryPluginAutoUpdater"
+        "PluginName": "ObservatoryPluginAutoUpdater",
+        "Production":{
+            "Version": "0.24.003.0711",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.24.003.0711/ObservatoryPluginAutoUpdater.v0.24.003.0711.eop"
+        },
+        "Beta":{
+            "Version": "0.24.003.0711",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.24.003.0711/ObservatoryPluginAutoUpdater-v0.24.003.0711.eop"
+        }
     },
     {
         "PluginName": "ObservatoryProspectorBasic",
