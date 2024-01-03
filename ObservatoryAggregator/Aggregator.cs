@@ -4,7 +4,7 @@ using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
 
-namespace ObservatoryAggregator
+namespace com.github.fredjk_gh.ObservatoryAggregator
 {
     public class Aggregator : IObservatoryNotifier, IObservatoryWorker
     {
@@ -14,9 +14,9 @@ namespace ObservatoryAggregator
         private AggregatorSettings settings = new()
         {
             ShowCurrentSystemOnly = true,
+            FilterSpec = "",
         };
-        private string CurrentSystem;
-        private string CurrentCommander;
+        internal TrackedData data = new();
 
         public string Name => "Observatory Aggregator";
 
@@ -29,8 +29,12 @@ namespace ObservatoryAggregator
         public object Settings
         {
             get => settings;
-            set => settings = (AggregatorSettings)value;
+            set {
+                settings = (AggregatorSettings)value;
+                data.FiltersFromSettings(settings);
+            }
         }
+
         public void Load(IObservatoryCore observatoryCore)
         {
             Core = observatoryCore;
@@ -60,30 +64,50 @@ namespace ObservatoryAggregator
                     MaybeChangeSystem(location.StarSystem);
                     break;
                 case LoadGame loadGame:
-                    CurrentCommander = loadGame.Commander;
+                    data.CurrentCommander = loadGame.Commander;
                     break;
             }
         }
 
         public void OnNotificationEvent(NotificationArgs args)
         {
-            var gridItem = new AggregatorNotificationGrid()
+            if (shouldShow(args))
             {
-                Timestamp = DateTime.Now.ToString(),
-                System = CurrentSystem,
-                Title = args.Title,
-                Detail = args.Detail,
-#if EXTENDED_EVENT_ARGS
-                Sender = args.Sender != null ? args.Sender.ShortName : "",
-                ExtendedDetails = args.ExtendedDetails,
-#endif
-            };
-            Core.AddGridItem(this, gridItem);
+                var gridItem = new AggregatorNotificationGrid()
+                {
+                    Timestamp = DateTime.Now.ToString(),
+                    System = data.CurrentSystem,
+                    Title = args.Title,
+                    Detail = args.Detail,
+    #if EXTENDED_EVENT_ARGS
+                    Sender = args.Sender != null ? args.Sender.ShortName : "",
+                    ExtendedDetails = args.ExtendedDetails,
+    #endif
+                };
+                Core.AddGridItem(this, gridItem);
+            }
+        }
+
+        private bool shouldShow(NotificationArgs args)
+        {
+            var show = true;
+            foreach (string f in data.Filters)
+            {
+                if (f.Trim().Length == 0) continue;
+                if (args.Title.Contains(f, StringComparison.InvariantCultureIgnoreCase)
+                    || args.Detail.Contains(f, StringComparison.InvariantCultureIgnoreCase)
+                    || (args.Sender?.ShortName.Contains(f, StringComparison.InvariantCultureIgnoreCase) ?? false))
+                {
+                    show = false;
+                    break;
+                }
+            }
+            return show;
         }
 
         private void MaybeChangeSystem(string newSystem)
         {
-            if (CurrentSystem != newSystem)
+            if (data.CurrentSystem != newSystem)
             {
                 if (settings.ShowCurrentSystemOnly)
                 {
@@ -93,14 +117,14 @@ namespace ObservatoryAggregator
                 {
                     Timestamp = DateTime.Now.ToString(),
                     System = newSystem,
-                    Detail = CurrentCommander,
+                    Detail = data.CurrentCommander,
 #if EXTENDED_EVENT_ARGS
                     Sender = this.GetType().Name,
                     ExtendedDetails = $"{this.ShortName} version: v{this.Version}",
 #endif
                 });
             }
-            CurrentSystem = newSystem;
+            data.CurrentSystem = newSystem;
         }
     }
 
