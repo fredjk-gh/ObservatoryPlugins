@@ -29,10 +29,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public object Settings
         {
             get => settings;
-            set {
-                settings = (AggregatorSettings)value;
-                data.FiltersFromSettings(settings);
-            }
+            set => settings = (AggregatorSettings)value;
         }
 
         public void Load(IObservatoryCore observatoryCore)
@@ -53,7 +50,14 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     CarrierJump carrierJump = fsdJump as CarrierJump;
                     if (carrierJump != null)
                     {
-                        if (carrierJump.Docked) MaybeChangeSystem(carrierJump.StarSystem);
+                        if (carrierJump.Docked
+#if EXTENDED_EVENT_ARGS
+                            || carrierJump.OnFoot
+#endif
+                            )
+                        {
+                            MaybeChangeSystem(carrierJump.StarSystem);
+                        }
                     }
                     else
                     {
@@ -79,10 +83,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     System = data.CurrentSystem,
                     Title = args.Title,
                     Detail = args.Detail,
-    #if EXTENDED_EVENT_ARGS
-                    Sender = args.Sender != null ? args.Sender.ShortName : "",
+#if EXTENDED_EVENT_ARGS
+                    Sender = args.Sender?.ShortName ?? "",
                     ExtendedDetails = args.ExtendedDetails,
-    #endif
+#endif
                 };
                 Core.AddGridItem(this, gridItem);
             }
@@ -91,12 +95,16 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private bool shouldShow(NotificationArgs args)
         {
             var show = true;
-            foreach (string f in data.Filters)
+            foreach (string f in settings.Filters)
             {
                 if (f.Trim().Length == 0) continue;
                 if (args.Title.Contains(f, StringComparison.InvariantCultureIgnoreCase)
                     || args.Detail.Contains(f, StringComparison.InvariantCultureIgnoreCase)
-                    || (args.Sender?.ShortName.Contains(f, StringComparison.InvariantCultureIgnoreCase) ?? false))
+#if EXTENDED_EVENT_ARGS
+                    || (args.Sender?.ShortName.Contains(f, StringComparison.InvariantCultureIgnoreCase) ?? false)
+                    || (args.ExtendedDetails?.Contains(f, StringComparison.InvariantCultureIgnoreCase) ?? false)
+#endif
+                    )
                 {
                     show = false;
                     break;
