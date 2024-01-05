@@ -26,7 +26,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         public string Name => "Observatory Helm";
         public string ShortName => "Helm";
         public string Version => typeof(Helm).Assembly.GetName().Version.ToString();
-
         public PluginUI PluginUI => pluginUI;
 
         public object Settings
@@ -112,7 +111,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                     break;
                 case FSDJump jump:
                     incompleteSystemsNotified.Clear();
-                    if (jump is CarrierJump carrierJump && carrierJump.Docked) // (carrierJump.Docked || carrierJump.OnFoot))
+                    if (jump is CarrierJump carrierJump && (
+                        carrierJump.Docked
+#if EXTENDED_EVENT_ARGS
+                        || carrierJump.OnFoot
+#endif
+                    ))
                     {
                         // Do nothing else. We're missing fuel level, etc. here.
                         if (data.LastJumpEvent != null)
@@ -279,28 +283,28 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                     break;
                 case ApproachBody approachBody:
                     Scan s;
-                    if (settings.GravityAdvisoryThresholdx10 <= 0) break; // disabled
+                    if (settings.GravityAdvisoryThreshold <= 0) break; // disabled
                     if (!data.Scans.TryGetValue(approachBody.Body, out s)) break;
 
                     string bodyShortName = BodyShortName(approachBody.Body, approachBody.StarSystem);
                     var gravityG = s.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
-                    if (gravityG >= settings.GravityWarningThresholdx10 / 10.0)
+                    if (gravityG >= settings.GravityWarningThreshold)
                     {
                         Core.SendNotification(new()
                         {
                             Title = $"Body {bodyShortName}",
-                            Detail = $"Warning! High gravity: {gravityG:0.0}g",
+                            Detail = $"Warning! High gravity: {gravityG:n1}g",
 #if EXTENDED_EVENT_ARGS
                             Sender = this,
 #endif
                         });
                     }
-                    else if (gravityG > settings.GravityAdvisoryThresholdx10 / 10.0)
+                    else if (gravityG > settings.GravityAdvisoryThreshold)
                     {
                         Core.SendNotification(new()
                         {
                             Title = $"Body {bodyShortName}",
-                            Detail = $"Heads up! Relatively high gravity: {gravityG:0.0}g",
+                            Detail = $"Heads up! Relatively high gravity: {gravityG:n1}g",
 #if EXTENDED_EVENT_ARGS
                             Sender = this,
 #endif

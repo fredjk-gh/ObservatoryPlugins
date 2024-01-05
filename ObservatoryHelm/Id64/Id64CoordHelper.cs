@@ -69,9 +69,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Id64
             int boxbits = 7 - details.masscode;
             int boxmask = (1 << boxbits) - 1;
 
-            details.systemNum = (int) (id64 & 0x7FFFFFFFFFFFFF) >> (23 + 3*boxbits);
+            details.systemNum = (int) ((id64 & 0x7FFFFFFFFFFFFF) >> (23 + 3*boxbits));
             details.boxX = (int)((id64 >> (boxbits * 2 + 16)) & boxmask);
-            details.boxY = (int)((id64 >> (boxbits + 16)) & boxmask);
+            details.boxY = (int)((id64 >> (boxbits + 10)) & boxmask);
             details.boxZ = (int)((id64 >> 3) & boxmask);
             details.sectorX = (int)(127 & (id64 >> (16 + boxbits * 3)));
             details.sectorY = (int)(63 & (id64 >> (10 + boxbits * 2)));

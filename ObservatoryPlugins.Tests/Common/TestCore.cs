@@ -8,9 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace com.github.fredjk_gh.ObservatoryPlugins.Common
+namespace com.github.fredjk_gh.ObservatoryPlugins.Tests.Common
 {
-    class TestCore : IObservatoryCore
+    internal class TestCore : IObservatoryCore
     {
         internal HttpClient _httpClient;
         internal List<string> _messages = new();
