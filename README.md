@@ -37,7 +37,7 @@ The Aggregator plugin is a notification log -- collecting notifications from all
 A companion for fleet carrier owners. Probably my favourite feature is the jump cooldown timer.
 
 *  Status: Beta
-*  Download latest: [ObservatoryFleetCommander.0.22.348.0241-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.22.348.0241-beta/ObservatoryFleetCommander.0.22.348.0241-beta.eop) (Dec 13, 2022)
+*  Download latest: [ObservatoryFleetCommander-v0.24.005.1441-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.005.1441-beta/ObservatoryFleetCommander-v0.24.005.1441-beta.eop) (Jan 5, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Fleet-Commander)
 
 ## Helm
