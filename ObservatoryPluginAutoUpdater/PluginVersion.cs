@@ -14,31 +14,68 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
         public VersionDetail Production { get; set; }
         public VersionDetail Beta { get; set; }
 
-        public bool IsNewerThan(PluginVersion other, bool allowBeta)
+        // Boolean response is "isBeta".
+        public static VersionPair SelectVersion(PluginVersion local, PluginVersion latest, bool allowBeta, string coreVersionStr)
         {
-            var thisVersion = parseVersion(
-                allowBeta && !string.IsNullOrEmpty(Beta?.Version) ? Beta.Version : Production?.Version);
-            var otherVersion = parseVersion(
-                allowBeta && !string.IsNullOrEmpty(other.Beta?.Version) ? other.Beta.Version : other.Production?.Version);
-
-            for (int i = 0; i < thisVersion.Length && i < otherVersion.Length; i++)
+            List<VersionPair> availableVersions = new();
+            if (allowBeta && latest.Beta != null && latest.Beta?.Version != VersionDetail.NO_VERSION)
             {
-                if (thisVersion[i] > otherVersion[i])
+                availableVersions.Add(new()
                 {
-                    return true;
-                }
-                else if (thisVersion[i] < otherVersion[i])
+                    Name = "Beta",
+                    Local = local.Beta ?? local.Production,
+                    Latest = latest.Beta
+                });
+            }
+            if (latest.Production != null && latest.Production?.Version != VersionDetail.NO_VERSION)
+            {
+                availableVersions.Add(new()
                 {
-                    return false; // All previous were equal, thus we can't be newer.
-                }
+                    Name = "Production",
+                    Local = local.Production,
+                    Latest = latest.Production,
+                });
             }
 
-            return false;
-        }
+            var coreVersion = VersionDetail.ParseVersion(coreVersionStr);
+            foreach (var considered in availableVersions)
+            {
+                var minRequiredCoreVersion = considered.Latest.MinRequiredCoreVersionParsed;
+                if (minRequiredCoreVersion.Length > 0 && VersionDetail.Compare(coreVersion, minRequiredCoreVersion) < 0)
+                {
+                    // Core version is too old; incompatible release.
+                    continue;
+                }
+                var localVersion = considered.Local.VersionParsed;
+                var latestVersion = considered.Latest.VersionParsed;
 
-        private int[] parseVersion(string version)
+                if (VersionDetail.Compare(localVersion, latestVersion) < 0)
+                {
+                    // Local version is older and it's compatible. We have an update.
+                    return considered;
+                }
+            }
+            return null;
+        }
+    }
+
+    internal class VersionDetail
+    {
+        internal const string NO_VERSION = "0.0.0.0";
+        internal static readonly int[] NO_VERSION_PARSED = new int[] { 0, 0, 0, 0 };
+        private string _version = NO_VERSION;
+        private string _downloadUrl = "";
+
+        public string Version { get => _version; set => _version = value; }
+        public string DownloadURL { get => _downloadUrl; set => _downloadUrl = value; }
+        public string MinRequiredCoreVersion { get; set; }
+
+        internal int[] VersionParsed { get => ParseVersion(Version); }
+        internal int[] MinRequiredCoreVersionParsed { get => ParseVersion(MinRequiredCoreVersion); }
+
+        internal static int[] ParseVersion(string version)
         {
-            if (string.IsNullOrEmpty(version)) return new int[0];
+            if (string.IsNullOrEmpty(version) || version == NO_VERSION) return NO_VERSION_PARSED;
 
             string[] parts = version.Split('.');
             int[] numericParts = new int[parts.Length];
@@ -49,15 +86,31 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
             }
             return numericParts;
         }
+
+        internal static int Compare(int[] left, int[] right)
+        {
+
+            int compareResult = 0; // equal.
+            for (int i = 0; i < left.Length && i < right.Length; i++)
+            {
+                if (left[i] > right[i])
+                {
+                    return 1;
+                }
+                else if (left[i] < right[i])
+                {
+                    return -1; // All previous were equal, thus we can't be newer.
+                }
+            }
+
+            return compareResult;
+        }
     }
 
-    internal class VersionDetail
+    internal class VersionPair
     {
-        internal const string NO_VERSION = "0.0.0.0";
-        private string _version = NO_VERSION;
-        private string _downloadUrl = "";
-
-        public string Version { get => _version; set => _version = value; }
-        public string DownloadURL { get => _downloadUrl; set => _downloadUrl = value; }
+        public string Name { get; set; }
+        public VersionDetail Local { get; set; }
+        public VersionDetail Latest { get; set; }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using com.github.fredjk_gh.ObservatoryPluginAutoUpdater;
-using com.github.fredjk_gh.ObservatoryPlugins.Common;
 using com.github.fredjk_gh.ObservatoryPlugins.Tests.AutoUpdater;
 using Observatory.Framework;
 using System;
@@ -15,7 +14,7 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
     public class AutoUpdaterTests
     {
         private AutoUpdaterSettings _settings;
-        private TestCore _core;
+        private Common.TestCore _core;
         private FixedResponseHttpClient _httpClient;
         private TestableAutoUpdater sutUpdater;
         private DirectoryInfo _pluginsDir;
@@ -23,7 +22,7 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         [TestInitialize]
         public void Setup()
         {
-            _core = new TestCore();
+            _core = new Common.TestCore();
             _settings = new()
             {
                 Enabled = true,
@@ -31,7 +30,7 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
             _httpClient = new();
 
             sutUpdater = new TestableAutoUpdater();
-            sutUpdater.PluginFolderPath = "V:\\elite-dangerous\\GitHub\\ObservatoryCore\\Testing\\plugins";
+            sutUpdater.PluginFolderPath = "V:\\elite-dangerous\\GitHub\\ObsCoreTesting\\plugins";
             sutUpdater.Settings = _settings;
             sutUpdater.Core = _core;
             // Tests should provide LocalPluginVersions.
@@ -47,9 +46,11 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         public void TestLiveCurrentReleasesJson()
         {
             string jsonText = File.ReadAllText("V:\\elite-dangerous\\GitHub\\ObservatoryPlugins\\CurrentReleases.json");
-            var json = JsonDocument.Parse(jsonText);
+            var jsonDocOptions = new JsonDocumentOptions() { AllowTrailingCommas = true };
+            var jsonSerializeOptions = new JsonSerializerOptions() { AllowTrailingCommas = true };
+            var json = JsonDocument.Parse(jsonText, jsonDocOptions);
+            var jsonObj = json.Deserialize<List<PluginVersion>>(jsonSerializeOptions);
 
-            var jsonObj = json.Deserialize<List<PluginVersion>>();
             Assert.IsNotNull(jsonObj);
             Assert.AreNotEqual(0, jsonObj.Count);
 
@@ -70,14 +71,31 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         }
 
         [TestMethod]
+        public void TestVersionDetail_Compare()
+        {
+            int[] noVersion = VersionDetail.ParseVersion(VersionDetail.NO_VERSION);
+            int[] version1 = VersionDetail.ParseVersion("0.1.2.3");
+            int[] version2 = VersionDetail.ParseVersion("0.2.4.6");
+
+            Assert.AreEqual(-1, VersionDetail.Compare(version1, version2));
+            Assert.AreEqual(1, VersionDetail.Compare(version2, version1));
+            Assert.AreEqual(0, VersionDetail.Compare(version1, version1));
+
+            Assert.AreEqual(-1, VersionDetail.Compare(noVersion, version1));
+            Assert.AreEqual(1, VersionDetail.Compare(version2, noVersion));
+            Assert.AreEqual(0, VersionDetail.Compare(noVersion, noVersion));
+        }
+
+        [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-        public void TestPluginVersion_Newer(bool useBeta)
+        public void TestPluginVersion_SelectVersion(bool useBeta)
         {
+            string latestVersion = "0.2.4.6";
             PluginVersion latest = new PluginVersion()
             {
-                Production = new() { Version = "0.2.4.6" },
-                Beta = new() { Version = "0.2.4.6" }
+                Production = new() { Version = latestVersion },
+                Beta = new() { Version = latestVersion }
             };
             PluginVersion local = new PluginVersion()
             {
@@ -85,18 +103,22 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Beta = new() { Version = "0.1.2.3" }
             };
 
-            Assert.IsTrue(latest.IsNewerThan(local, useBeta));
+            var selected = PluginVersion.SelectVersion(local, latest, useBeta, _core.Version);
+            Assert.IsNotNull(selected);
+            Assert.AreEqual((useBeta ? "Beta" : "Production"), selected.Name);
+            Assert.AreEqual(latestVersion, selected.Latest.Version);
         }
 
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-        public void TestPluginVersion_NewerThanZeros(bool useBeta)
+        public void TestPluginVersion_SelectVersionNewerThanZeros(bool useBeta)
         {
+            string latestVersion = "0.2.4.6";
             PluginVersion latest = new PluginVersion()
             {
-                Production = new() { Version = "0.2.4.6" },
-                Beta = new() { Version = "0.2.4.6" }
+                Production = new() { Version = latestVersion },
+                Beta = new() { Version = latestVersion }
             };
             PluginVersion local = new PluginVersion()
             {
@@ -104,13 +126,16 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Beta = new() { Version = VersionDetail.NO_VERSION }
             };
 
-            Assert.IsTrue(latest.IsNewerThan(local, useBeta));
+            var selected = PluginVersion.SelectVersion(local, latest, useBeta, _core.Version);
+            Assert.IsNotNull(selected);
+            Assert.AreEqual((useBeta ? "Beta" : "Production"), selected.Name);
+            Assert.AreEqual(latestVersion, selected.Latest.Version);
         }
 
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-        public void TestPluginVersion_Older(bool useBeta)
+        public void TestPluginVersion_SelectVersion_NoneSelectedOlder(bool useBeta)
         {
             PluginVersion local = new PluginVersion()
             {
@@ -123,13 +148,13 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Beta = new() { Version = "0.1.2.3" }
             };
 
-            Assert.IsFalse(latest.IsNewerThan(local, useBeta));
+            Assert.IsNull(PluginVersion.SelectVersion(local, latest, useBeta, _core.Version));
         }
 
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-        public void TestPluginVersion_OlderWhenZeros(bool useBeta)
+        public void TestPluginVersion_SelectVersion_NoLatestVersion(bool useBeta)
         {
             PluginVersion local = new PluginVersion()
             {
@@ -142,13 +167,13 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Beta = new() { Version = VersionDetail.NO_VERSION }
             };
 
-            Assert.IsFalse(latest.IsNewerThan(local, useBeta));
+            Assert.IsNull(PluginVersion.SelectVersion(local, latest, useBeta, _core.Version));
         }
 
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-        public void TestPluginVersion_Equal(bool useBeta)
+        public void TestPluginVersion_SelectVersion_SameVersion(bool useBeta)
         {
             PluginVersion local = new PluginVersion()
             {
@@ -161,27 +186,57 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Beta = new() { Version = "0.2.4.6" }
             };
 
-            Assert.IsFalse(latest.IsNewerThan(local, useBeta));
+            Assert.IsNull(PluginVersion.SelectVersion(local, latest, useBeta, _core.Version));
         }
 
         [TestMethod]
-        public void TestPluginVersion_BetaAbsentButEnabledUsesMainVersion()
+        [DataRow(true)]
+        [DataRow(false)]
+        public void TestPluginVersion_SelectVersion_BetaAbsentButEnabledUsesMainVersion(bool useBeta)
         {
+            string latestVersion = "0.2.4.6";
             PluginVersion latest = new PluginVersion()
             {
-                Production = new() { Version = "0.2.4.6" },
+                Production = new() { Version = latestVersion },
             };
             PluginVersion local = new PluginVersion()
             {
                 Production = new() { Version = "0.1.2.3" },
             };
 
-            Assert.IsTrue(latest.IsNewerThan(local, true));
+            var selected = PluginVersion.SelectVersion(local, latest, useBeta, _core.Version);
+            Assert.IsNotNull(selected);
+            Assert.AreEqual("Production", selected.Name);
+            Assert.AreEqual(latestVersion, selected.Latest.Version);
         }
 
         [TestMethod]
-        public void TestPluginVersion_OnlyBetaNewerRespectsUsage()
+        public void TestPluginVersion_SelectVersion_BetaIncompatibleWithCore()
         {
+            string latestVersion = "0.2.4.6";
+            PluginVersion latest = new PluginVersion()
+            {
+                Production = new() { Version = "0.1.2.3" },
+                Beta = new()
+                {
+                    Version = latestVersion,
+                    MinRequiredCoreVersion = "9.9.9.9"
+                }
+            };
+            PluginVersion local = new PluginVersion()
+            {
+                Production = new() { Version = "0.1.2.3" },
+                Beta = new() { Version = "0.1.2.3" },
+            };
+
+            var selected = PluginVersion.SelectVersion(local, latest, true, _core.Version);
+            Assert.IsNull(selected);
+        }
+
+        [TestMethod]
+        public void TestPluginVersion_SelectVersion_OnlyBetaNewerRespectsAllowedUsage()
+        {
+            string latestVersion = "0.2.4.6";
             PluginVersion local = new PluginVersion()
             {
                 Production = new() { Version = "0.1.2.3" },
@@ -190,11 +245,18 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
             PluginVersion latest = new PluginVersion()
             {
                 Production = new() { Version = "0.1.2.3" },
-                Beta = new() { Version = "0.2.4.6" }
+                Beta = new() { Version = latestVersion }
             };
 
-            Assert.IsTrue(latest.IsNewerThan(local, true));
-            Assert.IsFalse(latest.IsNewerThan(local, false));
+            // Beta allowed
+            var selected = PluginVersion.SelectVersion(local, latest, true, _core.Version);
+            Assert.IsNotNull(selected);
+            Assert.AreEqual("Beta", selected.Name);
+            Assert.AreEqual(latestVersion, selected.Latest.Version);
+
+            // Beta disallowed -- no new version.
+            selected = PluginVersion.SelectVersion(local, latest, false, _core.Version);
+            Assert.IsNull(selected);
         }
 
         [TestMethod]
@@ -403,6 +465,66 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         }
 
         [TestMethod]
+        public void TestCheckForUpdates_ProductionUpdateAvailableIncompatibleBeta()
+        {
+            string updatedVersion = "0.24.3.1";
+            string incompatibleVersion = "0.24.5.7";
+            string filename = $"ObservatoryPluginAutoUpdater-v{updatedVersion}.eop";
+            string downloadUrl = $"file:///local/{filename}";
+            string incompatibleDownloadUrl = $"file://local/ObservatoryPluginAutoUpdater-v{incompatibleVersion}.eop";
+
+            List<PluginVersion> latestVersions = new()
+            {
+                new PluginVersion() {
+                    PluginName = "ObservatoryPluginAutoUpdater",
+                    Production = new()
+                    {
+                        Version = updatedVersion,
+                        DownloadURL = downloadUrl
+                    },
+                    Beta = new()
+                    {
+                        Version = incompatibleVersion,
+                        DownloadURL = incompatibleDownloadUrl,
+                        MinRequiredCoreVersion = "9.9.9.9",
+                    }
+                }
+            };
+            _httpClient.JsonResponses.Add(FredJKsPluginAutoUpdater.CURRENT_RELEASES_URL, latestVersions);
+            _httpClient.StreamResponses.Add(downloadUrl, MakeStream(updatedVersion));
+
+            List<PluginVersion> localVersions = new()
+            {
+                new PluginVersion() {
+                    PluginName = "ObservatoryPluginAutoUpdater",
+                    Production = new()
+                    {
+                        Version = "0.24.2.123",
+                    }
+                }
+            };
+            sutUpdater.LocalPluginVersions = localVersions;
+
+            Assert.IsTrue(sutUpdater.CheckForUpdates(_httpClient));
+            Assert.AreEqual(0, _core.Messages.Count);
+
+            sutUpdater.LogMonitorStateChanged(new()
+            {
+                NewState = LogMonitorState.Realtime
+            });
+            Assert.AreEqual(1, _core.Notifications.Count);
+            Assert.IsTrue(_core.Notifications.First().Value.Title.Contains("Pending"));
+
+            Assert.AreEqual(1, _httpClient.GetLatestVersionsCalls);
+            Assert.AreEqual(1, _httpClient.GetStreamCalls);
+
+            var files = _pluginsDir.GetFiles("*.eop");
+            Assert.AreEqual(1, files.Length);
+            Assert.AreEqual(filename, files[0].Name);
+            Assert.IsTrue(files[0].Length > 0);
+        }
+
+        [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
         public void TestCheckForUpdates_BetaUpdateAvailable(bool useBeta)
@@ -437,6 +559,10 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 new PluginVersion() { 
                     PluginName = "ObservatoryPluginAutoUpdater",
                     Production = new()
+                    {
+                        Version = oldVersion,
+                    },
+                    Beta = new()
                     {
                         Version = oldVersion,
                     }

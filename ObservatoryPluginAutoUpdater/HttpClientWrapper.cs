@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime;
+using System.Text.Json;
 
 namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
 {
@@ -20,7 +21,10 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
         public Dictionary<string, PluginVersion> GetLatestVersions(string latestReleasesUrl)
         {
             Dictionary<string, PluginVersion> latestVersions;
-            var latestVersionsTask = Core.HttpClient.GetFromJsonAsync<List<PluginVersion>>(latestReleasesUrl);
+            var options = new JsonSerializerOptions() {
+                AllowTrailingCommas = true,
+            };
+            var latestVersionsTask = Core.HttpClient.GetFromJsonAsync<List<PluginVersion>>(latestReleasesUrl, options);
             try
             {
                 latestVersions = latestVersionsTask.Result.ToDictionary(v => v.PluginName, v => v);

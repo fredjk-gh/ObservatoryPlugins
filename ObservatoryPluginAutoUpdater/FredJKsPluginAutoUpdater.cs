@@ -99,21 +99,22 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
 
             int updateCount = 0;
             int failedCount = 0;
-            foreach (var version in localVersions)
+            foreach (var localVersion in localVersions)
             {
-                if (!latestVersions.ContainsKey(version.PluginName))
+                if (!latestVersions.ContainsKey(localVersion.PluginName))
                 {
-                    Debug.WriteLine($"Unexpected unknown plugin name in downloaded latest versions: {version.PluginName}");
+                    Debug.WriteLine($"Unexpected unknown plugin name in downloaded latest versions: {localVersion.PluginName}");
                     continue;
                 }
-                var latest = latestVersions[version.PluginName];
 
-                if (latest.IsNewerThan(version, _settings.UseBeta))
+                var latest = latestVersions[localVersion.PluginName];
+                var selectedVersion = PluginVersion.SelectVersion(localVersion, latest, _settings.UseBeta, Core.Version);
+                if (selectedVersion != null)
                 {
-                    var downloadUrl = _settings.UseBeta ? latest.Beta?.DownloadURL : latest.Production?.DownloadURL;
+                    var downloadUrl = selectedVersion.Latest.DownloadURL;
                     if (string.IsNullOrEmpty(downloadUrl))
                     {
-                        Debug.WriteLine($"No download URL for {(_settings.UseBeta ? "beta " : "")}version for plugin: {version.PluginName}");
+                        Debug.WriteLine($"No download URL for {selectedVersion.Name} version for plugin: {localVersion.PluginName}");
                         continue;
                     }
                     if (DownloadLatestPlugin(httpClient, downloadUrl, latest))
