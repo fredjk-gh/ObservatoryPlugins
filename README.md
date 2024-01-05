@@ -21,7 +21,7 @@ After installation, be sure to enable the plugin and configure any other options
 NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need to enable the "Use beta options" option.
 
 *  Status: Released
-*  Download latest: [ObservatoryPluginAutoUpdater-v0.24.003.0711.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.003.0711/ObservatoryPluginAutoUpdater-v0.24.003.0711.eop) (Jan 3, 2024)
+*  Download latest: [ObservatoryPluginAutoUpdater-v0.24.005.1933.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.005.1933/ObservatoryPluginAutoUpdater.v0.24.005.1933.eop) (Jan 5, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater)
 
 ## Aggregator
