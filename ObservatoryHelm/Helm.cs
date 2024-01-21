@@ -83,7 +83,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         MaybeMakeGridItemForSummary(data.LastJumpEvent?.Timestamp ?? "");
 
                     }
-                    data.SessionReset(loadGame.Odyssey, loadGame.FuelCapacity, loadGame.FuelLevel);
+                    data.SessionReset(loadGame.Odyssey, loadGame.Commander, loadGame.FuelCapacity, loadGame.FuelLevel);
                     break;
                 case Location location:
                     data.CurrentSystem = location.StarSystem;
@@ -98,6 +98,19 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                     break;
                 case FuelScoop fuelScoop:
                     data.FuelRemaining = Math.Min(data.FuelCapacity, data.FuelRemaining + fuelScoop.Scooped);
+                    break;
+                case NavRouteFile navRoute:
+                    data.LastNavRoute = navRoute;
+                    Core.SendNotification(new()
+                    {
+                        Title = "New route",
+                        Detail = "",
+#if EXTENDED_EVENT_ARGS
+                        Sender = this,
+                        ExtendedDetails = $"{data.JumpsRemainingInRoute} jumps to {data.Destination}",
+                        Rendering = NotificationRendering.PluginNotifier,
+#endif
+                    });
                     break;
                 case NavRouteClear clear:
                     data.JumpsRemainingInRoute = 0;
@@ -146,12 +159,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm
 
                         MakeGridItem(jump.Timestamp, (data.JumpsRemainingInRoute == 0 ? "(no route)" : ""));
                         string arrivalStarScoopableStr = (data.LastStartJumpEvent != null && !Constants.Scoopables.Contains(data.LastStartJumpEvent.StarClass))
-                                ? $"Arrival star (type: {data.LastStartJumpEvent.StarClass}) is NOT scoopable!"
+                                ? $"Arrival star (type: {data.LastStartJumpEvent.StarClass}) is not scoopable!"
                                 : "";
                         Core.SendNotification(new()
                         {
                             Title = "Route Progress",
-                            Detail = $"Jumps left: {data.JumpsRemainingInRoute}",
+                            Detail = $"{data.JumpsRemainingInRoute} jumps remaining{(!string.IsNullOrEmpty(data.Destination) ? $" to {data.Destination}" : "")}",
 #if EXTENDED_EVENT_ARGS
                             Sender = this,
                             ExtendedDetails = arrivalStarScoopableStr,
@@ -260,7 +273,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         Core.SendNotification(new()
                         {
                             Title = "Warning! Low fuel!",
-                            Detail = "There is NO scoopable star in this system!",
+                            Detail = "There is no scoopable star in this system!",
 #if EXTENDED_EVENT_ARGS
                             ExtendedDetails = extendedDetails,
                             Sender = this,
@@ -336,6 +349,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             }
         }
 
+
+
         private static string BodyShortName(string bodyName, string systemName)
         {
             string shortName = bodyName.Replace(systemName, "").Trim();
@@ -353,7 +368,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 System = data.CurrentSystem ?? "",
                 Fuel = (data.IsDockedOnCarrier ? "" : $"{(100 * data.FuelRemaining / data.FuelCapacity):0}% ({Math.Round(data.FuelRemaining, 2)} T)"),
                 DistanceTravelled = $"{data.DistanceTravelled:n1} ly ({data.JumpsCompleted} jumps" + (data.DockedCarrierJumpsCompleted > 0 ? $", {data.DockedCarrierJumpsCompleted} jumps on a carrier)" : ")"),
-                JumpsRemaining = data.IsDockedOnCarrier ? "" : (data.JumpsRemainingInRoute > 0 ? $"{data.JumpsRemainingInRoute}" : ""),
+                JumpsRemaining = data.IsDockedOnCarrier ? "" : 
+                        (data.JumpsRemainingInRoute > 0 ? $"{data.JumpsRemainingInRoute}{(!string.IsNullOrEmpty(data.Destination) ? $" en route to {data.Destination}" : "")}" : ""),
                 Details = $"{details}",
             };
             Core.AddGridItem(this, gridItem);
@@ -374,7 +390,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 Fuel = "",
                 DistanceTravelled = $"{data.DistanceTravelled:n1} ly ({data.JumpsCompleted} jumps" + (data.DockedCarrierJumpsCompleted > 0 ? $", {data.DockedCarrierJumpsCompleted} jumps on a carrier)" : ")"),
                 JumpsRemaining = data.IsDockedOnCarrier ? "" : (data.JumpsRemainingInRoute > 0 ? $"{data.JumpsRemainingInRoute}" : ""),
-                Details = "Previous session summary",
+                Details = $"Previous session summary for {data.Commander}",
             };
 
             Core.AddGridItem(this, gridItem);
