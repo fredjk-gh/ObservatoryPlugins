@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -68,6 +70,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         {
             base.ResetMutable();
             dbRow._id = default;
+        }
+
+        public PersonalBestData Clone()
+        {
+            PersonalBestData clone = new(dbRow.Table, dbRow.EDAstroObjectName, dbRow.Variable);
+            clone.dbRow.JournalObjectName = dbRow.JournalObjectName;
+            return clone;
         }
     }
 }

@@ -1,11 +1,9 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
-using com.github.fredjk_gh.ObservatoryStatScanner.DB;
 using com.github.fredjk_gh.ObservatoryStatScanner.Records;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using TextFieldParserCore;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
@@ -20,17 +18,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         private Action<Exception, string> ErrorLogger;
         private PluginUI pluginUI;
         ObservableCollection<object> gridCollection = new();
-        private string galacticRecordsCSV;
-        private string galacticRecordsPGCSV;
-
-        private RecordBook recordBook;
-        private PersonalBestManager manager;
-
-        private bool IsOdyssey = false;
         private bool HasHeaderRows = false;
-        private string CurrentSystem = "";
-        private Statistics lastStats = null;
-        private LoadGame lastLoadGame = null;
+        private StatScannerState _state = null;
+        private string currentCommander = "";
 
         public string Name => "Observatory Stat Scanner";
         public string ShortName => "Stat Scanner";
@@ -41,7 +31,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public object Settings
         {
             get => settings;
-            set => settings = (StatScannerSettings)value;
+            set
+            {
+                settings = (StatScannerSettings)value;
+                if (_state != null) _state.Settings = settings;
+            }
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -49,7 +43,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             // * -> ReadAll
             if (args.NewState.HasFlag(LogMonitorState.Batch))
             {
-                recordBook.ResetPersonalBests();
+                _state.ResetForReadAll();
                 Core.ClearGrid(this, new StatScannerGrid());
                 HasHeaderRows = false;
             }
@@ -64,12 +58,41 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         {
             switch (journal)
             {
+                case FileHeader fileHeader:
+                    _state.ResetForNewFile();
+                    _state.IsOdyssey = fileHeader.Odyssey;
+                    break;
+                case LoadGame loadGame:
+                    _state.LastLoadGame = loadGame;
+                    if (loadGame.Commander != currentCommander)
+                    {
+                        Debug.WriteLine($"Switching commanders: {loadGame.Commander}");
+                        currentCommander = loadGame.Commander;
+                        Core.AddGridItem(
+                            this,
+                            new StatScannerGrid
+                            {
+                                ObjectClass = "Plugin message",
+                                Variable = "Commander",
+                                Function = "Changed to",
+                                BodyOrItem = currentCommander,
+                            });
+                    }
+                    break;
+                case Statistics statistics:
+                    // TODO: do more with this?
+                    _state.LastStats = statistics;
+                    if (!Core.IsLogMonitorBatchReading)
+                    {
+                        AddResultsToGrid(MaybeAddStats());
+                    }
+                    break;
                 case FSDJump fsdJump:
                     // Track this here because it's not present in older Scans.
-                    CurrentSystem = fsdJump.StarSystem;
+                    _state.CurrentSystem = fsdJump.StarSystem;
                     break;
-                case FileHeader fileHeader:
-                    IsOdyssey = fileHeader.Odyssey;
+                case Location location:
+                    _state.CurrentSystem = location.StarSystem;
                     break;
                 case Scan scan:
                     OnScan(scan);
@@ -84,17 +107,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 case CodexEntry codexEntry:
                     OnCodexEntry(codexEntry);
                     break;
-                case LoadGame loadGame:
-                    lastLoadGame = loadGame;
-                    break;
-                case Statistics statistics:
-                    // TODO: do more with this?
-                    lastStats = statistics;
-                    if (!Core.IsLogMonitorBatchReading)
-                    {
-                        AddResultsToGrid(MaybeAddStats());
-                    }
-                    break;
+
             }
         }
 
@@ -108,18 +121,22 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             pluginUI = new PluginUI(gridCollection);
 
             Core = observatoryCore;
-            var storagePath = Core.PluginStorageFolder;
-            galacticRecordsCSV = storagePath + Constants.LOCAL_GALACTIC_RECORDS_FILE;
-            galacticRecordsPGCSV = storagePath + Constants.LOCAL_GALACTIC_PROCGEN_RECORDS_FILE;
-
             ErrorLogger = Core.GetPluginErrorLogger(this);
+
+            _state = new(settings, Core.PluginStorageFolder, ErrorLogger);
 
             MaybeUpdateGalacticRecords();
 
-            manager = new PersonalBestManager(storagePath, ErrorLogger);
-            recordBook = new(manager);
-
-            LoadRecords();
+            if (_state.KnownCommanderFIDs.Count == 0)
+            {
+                Core.AddGridItem(
+                    this,
+                    new StatScannerGrid
+                    {
+                        ObjectClass = "Plugin message",
+                        Variable = $"Please run 'Read All' to initialize database(s)",
+                    });
+            }
         }
 
         private void MaybeFixUnsetSettings()
@@ -132,8 +149,22 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void MaybeAddHeaderRows()
         {
-            if (Core.IsLogMonitorBatchReading || HasHeaderRows) return;
+            if (Core.IsLogMonitorBatchReading || HasHeaderRows || _state.KnownCommanderFIDs.Count == 0) return;
 
+            if (!_state.Initialized || _state.NeedsReadAll)
+            {
+                Core.AddGridItem(
+                    this,
+                    new StatScannerGrid
+                    {
+                        ObjectClass = "Plugin message",
+                        Variable = $"Please run 'Read All' to initialize database(s)",
+                    });
+                HasHeaderRows = true;
+                return;
+            }
+
+            var recordBook = _state.GetRecordBook();
             var devModeWarning = (settings.DevMode ? "!!DEV mode!!" : "");
             var handlingMode = (StatScannerSettings.ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling];
             var gridItems = new List<Result>
@@ -200,19 +231,19 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         private List<Result> MaybeAddStats()
         {
             var gridItems = new List<Result>();
-            if (lastStats != null && lastLoadGame != null)
+            if (_state.Initialized)
             {
                 gridItems.Add(
                     new(
                         NotificationClass.None,
                         new StatScannerGrid
                         {
-                            Timestamp = lastStats.Timestamp,
+                            Timestamp = _state.LastStats.Timestamp,
                             ObjectClass = "Game stats",
                             Variable = "Time played",
-                            BodyOrItem = lastLoadGame.Commander,
+                            BodyOrItem = _state.CommanderName,
                             Function = Function.Count.ToString(),
-                            ObservedValue = $"{(lastStats.Exploration.TimePlayed / Constants.CONV_S_TO_HOURS_DIVISOR):N0}",
+                            ObservedValue = $"{(_state.LastStats.Exploration.TimePlayed / Constants.CONV_S_TO_HOURS_DIVISOR):N0}",
                             Units = "hr",
                         }));
             }
@@ -221,6 +252,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void ShowPersonalBestSummary()
         {
+            if (!_state.Initialized || _state.NeedsReadAll) return;
+
+            var recordBook = _state.GetRecordBook();
             MaybeAddHeaderRows();
             List<RecordTable> tableOrder  = new()
             {
@@ -246,30 +280,23 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void ForceRefreshGalacticRecords()
         {
-            if (FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, galacticRecordsCSV)
-                || FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, galacticRecordsPGCSV))
+            if (FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, _state.GalacticRecordsCsv)
+                || FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, _state.GalacticRecordsPGCsv))
             {
-                ResetGalacticRecords();
-                LoadRecords();
+                _state.ReloadGalacticRecords();
             }
-        }
-
-        private void ResetGalacticRecords()
-        {
-            manager.Clear();
-            recordBook = new RecordBook(manager);
         }
 
         private void MaybeUpdateGalacticRecords()
         {
             // If galactic records files are missing OR > 7 days, fetch a new one and freshen.
-            if (!File.Exists(galacticRecordsCSV) || File.GetLastWriteTimeUtc(galacticRecordsCSV) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
+            if (!File.Exists(_state.GalacticRecordsCsv) || File.GetLastWriteTimeUtc(_state.GalacticRecordsCsv) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
             {
-                FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, galacticRecordsCSV);
+                FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, _state.GalacticRecordsCsv);
             }
-            if (!File.Exists(galacticRecordsPGCSV) || File.GetLastWriteTimeUtc(galacticRecordsPGCSV) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
+            if (!File.Exists(_state.GalacticRecordsPGCsv) || File.GetLastWriteTimeUtc(_state.GalacticRecordsPGCsv) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
             {
-                FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, galacticRecordsPGCSV);
+                FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, _state.GalacticRecordsPGCsv);
             }
         }
 
@@ -322,123 +349,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             return true;
         }
 
-        private void LoadRecords()
-        {
-            LoadGalacticRecords(galacticRecordsCSV, RecordKind.Galactic);
-            LoadGalacticRecords(galacticRecordsPGCSV, RecordKind.GalacticProcGen);
-            LoadPersonalBestRecords();
-        }
-
-        private void LoadGalacticRecords(string csvLocalFile, RecordKind recordKind, bool retry = false)
-        {
-            try
-            {
-                if (!File.Exists(csvLocalFile)) return;
-                int recordCount = 0;
-                int pbRecordCount = 0;
-                bool shouldInitPersonalBest = (recordKind == RecordKind.Galactic); // To avoid dupes
-
-                // Open the file, parse it.
-                using (var csvParser = new TextFieldParser(csvLocalFile, System.Text.Encoding.UTF8))
-                {
-                    csvParser.TextFieldType = FieldType.Delimited;
-                    csvParser.SetDelimiters(",");
-
-                    while (!csvParser.EndOfData)
-                    {
-                        var fields = csvParser.ReadFields();
-                        if (fields.Length != Constants.ExpectedFields.Length)
-                        {
-                            // Format has changed!
-                            throw new RecordsCSVFormatChangedException("Galactic Records Format has changed; Reverting to previous good file, if available. Please check for an updated plugin!");
-                        }
-                        if (fields[0].Equals("type", StringComparison.InvariantCultureIgnoreCase)) // Header row.
-                        {
-                            // Check that fields in the header row are as expected. If these 
-                            for (int i = 0; i < fields.Length; i++)
-                            {
-                                if (!fields[i].Equals(Constants.ExpectedFields[i], StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    throw new RecordsCSVFormatChangedException(String.Format("Galactic Records CSV Format has changed! Field {0} of galactic records file is expected to be {1}, but is {2}", i, Constants.ExpectedFields[i], fields[i]));
-                                }
-                            }
-
-                            continue;
-                        }
-
-                        // Filter a bunch of stuff we don't plan on using.
-                        if (fields[0].Contains(" (as ", StringComparison.InvariantCultureIgnoreCase)) continue; // Not handled
-                        if (fields[0].Contains(" (any)", StringComparison.InvariantCultureIgnoreCase)) continue; // Not handled.
-                        if (fields[0].Contains(" (landable)", StringComparison.InvariantCultureIgnoreCase)) continue; // Not handled.
-
-                        // Hey, a potentially usable record. See if we have a handler for it and if so, add it to the book of records we're tracking.
-                        IRecord record;
-                        try
-                        {
-                            record = RecordFactory.CreateRecord(fields, settings, recordKind);
-                            if (record != null)
-                            {
-                                recordCount++;
-                                recordBook.AddRecord(record);
-                                if (settings.DevMode) Debug.WriteLine($"Tracking {recordKind} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
-
-                                if (shouldInitPersonalBest)
-                                {
-                                    PersonalBestData pbData = new(fields);
-                                    record = RecordFactory.CreateRecord(pbData, settings);
-                                    if (record != null)
-                                    {
-                                        pbRecordCount++;
-                                        recordBook.AddRecord(record);
-                                        if (settings.DevMode) Debug.WriteLine($"Tracking {RecordKind.Personal} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
-                                    }
-                                }
-                            }
-                        }
-                        catch (RecordsCSVParseException ex)
-                        {
-                            ErrorLogger(ex, $"Error while parsing record: {String.Join(", ", fields)}");
-                        }
-                    }
-                }
-                Debug.WriteLine($"Created a total of {recordCount} {recordKind} and {pbRecordCount} {RecordKind.Personal} records; {recordBook.Count} are now in recordBook");
-            }
-            catch (RecordsCSVFormatChangedException ex)
-            {
-                if (retry)
-                {
-                    ErrorLogger(ex, $"While parsing previously good {csvLocalFile} file; Giving up!");
-                    throw ex;
-                }
-                ErrorLogger(ex, $"While parsing {csvLocalFile} file; Attempting to use previous known good file");
-
-                // Revert to previous good file and try again.
-                File.Copy(csvLocalFile + Constants.GOOD_BACKUP_EXT, csvLocalFile, /* overwrite */ true);
-                LoadGalacticRecords(csvLocalFile, recordKind, true);
-            }
-        }
-
-        private void LoadPersonalBestRecords()
-        {
-            int pbRecordCount = 0;
-
-            foreach (var pbData in Constants.GeneratePersonalBestRecords())
-            {
-                var record = RecordFactory.CreateRecord(pbData, settings);
-                if (record == null) continue;
-                pbRecordCount++;
-                recordBook.AddRecord(record);
-                if (settings.DevMode) Debug.WriteLine($"Tracking {RecordKind.Personal} record: {record.Table}, {record.EDAstroObjectName}, {record.VariableName}");
-            }
-
-            Debug.WriteLine($"Created a total of {pbRecordCount} {RecordKind.Personal} records; {recordBook.Count} are now in recordBook");
-        }
-
         private void OnScan(Scan scan)
         {
             // Determine type of object from scan (stars, planets, rings, systems)
             // Look up records for the specific variant of the object (type + variant).
             List<Result> results = new();
+            var recordBook = _state.GetRecordBook();
 
             if (!String.IsNullOrEmpty(scan.StarType))
             {
@@ -473,8 +389,18 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             List<Result> results = new();
             foreach (var record in records)
             {
-                if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
-                    results.AddRange(record.CheckScan(scan, CurrentSystem));
+                try
+                {
+                    if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
+                        results.AddRange(record.CheckScan(scan, _state.CurrentSystem));
+                }
+                catch (Exception ex)
+                {
+                    // TODO: Replace "this.ShortName" with just "this" after next update
+                    // ... or update PluginEventHandler's RecordError method(s) to include version for us
+                    //     and just remove this try-catch.
+                    throw new PluginException(this.ShortName, $"Failure while processing record {record.DisplayName} while processing scan: {scan.Json}", ex);
+                }
             }
             return results;
         }
@@ -485,10 +411,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             List<Result> results = new();
             foreach (var t in Constants.PB_RecordTypesForFssScans)
             {
-                foreach (var record in recordBook.GetRecords(t.Item1, t.Item2))
+                foreach (var record in _state.GetRecordBook().GetRecords(t.Item1, t.Item2))
                 {
                     if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
-                        results.AddRange(record.CheckFSSBodySignals(bodySignals, IsOdyssey));
+                        results.AddRange(record.CheckFSSBodySignals(bodySignals, _state.IsOdyssey));
                 }
             }
             AddResultsToGrid(results, /* notify */ true);
@@ -500,7 +426,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             List<Result> results = new();
             foreach (var t in Constants.PB_RecordTypesForFssScans)
             {
-                foreach (var record in recordBook.GetRecords(t.Item1, t.Item2))
+                foreach (var record in _state.GetRecordBook().GetRecords(t.Item1, t.Item2))
                 {
                     if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
                         results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, scans));
@@ -514,6 +440,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             if (!Constants.RegionNamesByJournalId.ContainsKey(codexEntry.Region)
                 || !codexEntry.IsNewEntry) return;
 
+            var recordBook = _state.GetRecordBook();
             var readMode = Core.CurrentLogMonitorState;
             string regionNameByJournalValue = Constants.RegionNamesByJournalId[codexEntry.Region];
             List<Result> results = new();
@@ -534,7 +461,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         // TODO: Extract these to shared library or move into IObservatoryCore?
         private string GetShortBodyName(string bodyName, string baseName = "")
         {
-            return string.IsNullOrEmpty(baseName) ? bodyName.Replace(CurrentSystem, "").Trim() : bodyName.Replace(baseName, "").Trim();
+            return string.IsNullOrEmpty(baseName) ?
+                (string.IsNullOrEmpty(_state.CurrentSystem) ? bodyName : bodyName.Replace(_state.CurrentSystem, "").Trim())
+                : bodyName.Replace(baseName, "").Trim();
         }
 
         private string GetBodyTitle(string bodyName)

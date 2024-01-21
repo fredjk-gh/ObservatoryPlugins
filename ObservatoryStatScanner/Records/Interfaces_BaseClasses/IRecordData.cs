@@ -87,7 +87,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             RecordTable table;
             if (Enum.TryParse(str, true, out table)) return table;
 
-            Debug.WriteLine("Unknown table value found in galactic records csv file: " + str);
+            // Debug.WriteLine("Unknown table value found in galactic records csv file: " + str);
             return RecordTable.Unknown;
         }
     }

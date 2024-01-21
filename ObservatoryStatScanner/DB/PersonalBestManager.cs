@@ -9,16 +9,16 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.DB
 {
     public class PersonalBestManager
     {
-        private const string PERSONAL_BEST_DB_FILENAME = "StatScanner_PersonalBests.db";
+        internal const string PERSONAL_BEST_DB_FILENAME_TEMPLATE = "{0}StatScanner_PersonalBests_{1}.db";
         private ILiteDatabase PersonalBestsDB;
         private ILiteCollection<PersonalBest> PersonalBestsCol;
         private Action<Exception, string> ErrorLogger;
 
-        public PersonalBestManager(string pluginDataPath, Action<Exception, string> errorLogger)
+        public PersonalBestManager(string pluginDataPath, Action<Exception, string> errorLogger, string commanderId)
         {
             ErrorLogger = errorLogger;
 
-            string dbPath = $"{pluginDataPath}{PERSONAL_BEST_DB_FILENAME}";
+            string dbPath = string.Format(PERSONAL_BEST_DB_FILENAME_TEMPLATE, pluginDataPath, commanderId);
 
             PersonalBestsDB = new LiteDatabase($"Filename={dbPath};Connection=direct"); // Direct for performance
             PersonalBestsCol = PersonalBestsDB.GetCollection<PersonalBest>("personalbests");
@@ -56,18 +56,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.DB
         public void Clear()
         {
             PersonalBestsCol.DeleteAll();
-        }
-
-        public void RewriteAll(List<Records.PersonalBestData> updatedRecords)
-        {
-            // Clear
-            Clear();
-
-            // Re-write everything.
-            foreach (Records.PersonalBestData data in updatedRecords)
-            {
-                data.Save();
-            }
         }
     }
 }
