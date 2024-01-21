@@ -4,6 +4,10 @@ using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Net.Http.Json;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
@@ -20,7 +24,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         };
 
         private string _currentCommander;
-        private Dictionary<ulong, CarrierJumpRequest> _jumpRequestsById = new();
         private Location _initialLocation = null;
         private CarrierManager _manager = new();
 
@@ -44,9 +47,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     _currentCommander = loadGame.Commander;
                     break;
                 case Docked docked:
+                    // This isn't a great position signal.
                     if (docked.StationType == "FleetCarrier" && _manager.IsCallsignKnown(docked.StationName))
                     {
-                        MaybeUpdateCarrierLocation(docked.TimestampDateTime, docked.StationName, docked.StarSystem, docked.StarSystem, /* notifyIfChanged */ false, /* carrierMoveEvent */ false);
+                        MaybeUpdateCarrierLocation(docked.TimestampDateTime, docked.StationName, new(docked.StarSystem, docked.SystemAddress), /* notifyIfChanged */ false, /* carrierMoveEvent */ false);
                     }
                     break;
                 case Location location:
@@ -55,10 +59,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     // other carrier action for that matter.
                     if (location.StationType == "FleetCarrier" && _manager.IsCallsignKnown(location.StationName))
                     {
-                        MaybeUpdateCarrierLocation(location.TimestampDateTime, location.StationName, location.StarSystem, location.Body, true);
+                        MaybeUpdateCarrierLocation(location.TimestampDateTime, location.StationName, new(location), true);
                     }
                     else if (_initialLocation == null)
                     {
+                        
                         _initialLocation = location;
                     }
                     break;
@@ -72,14 +77,28 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                         // Odd that we wouldn't know about it yet.
                         break;
                     }
+
+                    if (carrierData.LastCarrierJumpRequest != null)
+                    {
+                        // We may be looking at journals from a period of time where we did NOT get CarrierJump events. This shouldn't happen in
+                        // realtime mode anymore. Furthermore, older journals don't have DepartureTime so we can't rely on that either.
+                        // For simplicity sake, let's assume it happened (since you can't jump again unless cooldown is over or cancelled)
+                        // thus, we'll advance the carrier position to the previously requested location. If this is wrong, it will eventually self-correct.
+                        //
+                        // This is a low fidelity location, but it's better than output being stuck in the wrong spot. We cache coordinates
+                        // so maybe, hopefully, we've cached this one. In realtime, we'll look it up. Being a likely stale event, no notification
+                        // is raised, but it is treated as a carrier move situation (and should be output to the grid). This has a side effect
+                        // of clearing the LastCarrierJumpRequest, so don't update till after.
+                        MaybeUpdateCarrierLocation(carrierJumpRequest.TimestampDateTime, carrierData.CarrierCallsign, new(carrierData.LastCarrierJumpRequest.SystemName, carrierData.LastCarrierJumpRequest.SystemAddress), false, true);
+                    }
+
                     carrierData.LastCarrierJumpRequest = carrierJumpRequest;
 
                     var jumpTargetBody = (!string.IsNullOrEmpty(carrierJumpRequest.Body)) ? carrierJumpRequest.Body : carrierJumpRequest.SystemName;
                     string departureTime = "";
                     if (!String.IsNullOrEmpty(carrierJumpRequest.DepartureTime))
                     {
-                        // TODO: Update to use this once a new framework is released: lastCarrierJumpRequest.DepartureTimeDateTime
-                        DateTime carrierDepartureTime = DateTime.ParseExact(carrierJumpRequest.DepartureTime, "yyyy-MM-ddTHH:mm:ssZ", null, System.Globalization.DateTimeStyles.AssumeUniversal);
+                        DateTime carrierDepartureTime = carrierJumpRequest.DepartureTimeDateTime;
                         double departureTimeMinutes = carrierDepartureTime.Subtract(DateTime.Now).TotalMinutes;
                         if (departureTimeMinutes > 0) {
                             departureTime = $" Jump in {departureTimeMinutes:#.0} minutes (@ {carrierDepartureTime.ToShortTimeString()}).";
@@ -89,20 +108,20 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                             MaybeScheduleCooldownNotification(carrierData);
                         }
                     }
-                    AddToGrid(carrierJumpRequest.TimestampDateTime, carrierData, carrierData.CarrierBody, carrierData.CarrierFuel, $"Requested a jump to {jumpTargetBody}.{departureTime}");
+                    AddToGrid(carrierJumpRequest.TimestampDateTime, carrierData, carrierData.Position.BodyName, $"{carrierData.CarrierFuel}", $"Requested a jump to {jumpTargetBody}.{departureTime}");
                     break;
                 case CarrierJump carrierJump: // These have been broken in the past.
-                    MaybeUpdateCarrierLocation(carrierJump.TimestampDateTime, carrierJump.StationName, carrierJump.StarSystem, carrierJump.Body, true);
+                    MaybeUpdateCarrierLocation(carrierJump.TimestampDateTime, carrierJump.StationName, new(carrierJump), true);
                     break;
                 case CarrierJumpCancelled carrierJumpCancelled:
                     carrierData = _manager.GetById(carrierJumpCancelled.CarrierID);
                     if (carrierData.LastCarrierJumpRequest != null)
                     {
-                        AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierData, carrierData.CarrierBody, carrierData.CarrierFuel, $"Cancelled requested jump to {carrierData.LastCarrierJumpRequest.SystemName}");
+                        AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierData, carrierData.Position.BodyName, $"{carrierData.CarrierFuel}", $"Cancelled requested jump to {carrierData.LastCarrierJumpRequest.SystemName}");
                     }
                     else
                     {
-                        AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierData, carrierData.CarrierBody, carrierData.CarrierFuel, $"Cancelled requested jump");
+                        AddToGrid(carrierJumpCancelled.TimestampDateTime, carrierData, carrierData.Position.BodyName, $"{carrierData.CarrierFuel}", $"Cancelled requested jump");
                     }
                     carrierData.CancelCarrierJump();
                     break;
@@ -121,24 +140,40 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
         }
 
-        private void MaybeUpdateCarrierLocation(DateTime dateTime, string callsign, string starSystem, string body, bool notifyIfChanged, bool carrierMoveEvent = true)
+        private void MaybeUpdateCarrierLocation(DateTime dateTime, string callsign, CarrierPositionData position, bool notifyIfChanged, bool carrierMoveEvent = true)
         {
             var data = _manager.GetByCallsign(callsign);
-            if (data == null) return;
+            if (data == null || position == null) return;
 
-            if (data.CarrierSystem != null && data.CarrierBody != null && starSystem == data.CarrierSystem && body == data.CarrierBody)
+            if (data.IsPositionKnown && data.Position.IsSamePosition(position))
             {
-                // Everything is set and nothing has changed. Nothing to do.
+                // Nothing has changed. Maybe update position precision.
+                data.MaybeUpdateLocation(position);
                 return;
             }
-            else if ((data.CarrierSystem != null && data.CarrierBody != null && carrierMoveEvent && data.CarrierSystem != starSystem && data.CarrierBody != body)
-                || data.CarrierSystem == null && data.LastCarrierJumpRequest != null && data.LastCarrierJumpRequest.SystemName == starSystem)
+            else if (data.IsPositionKnown && data.Position.SystemName == position.SystemName && !carrierMoveEvent)
+            {
+                // This is low quality/untrusted bit of info (ie. it's Docked event or something) which may not have a useful body. Skip.
+                return;
+            }
+            else if (carrierMoveEvent
+                || !data.IsPositionKnown
+                || (data.LastCarrierJumpRequest != null && data.LastCarrierJumpRequest.SystemName == position.SystemName))
             {
                 // We've moved.
                 string locationUpdateDetails = "Carrier jump complete";
-                AddToGrid(dateTime, data, body, data.CarrierFuel, locationUpdateDetails);
+
+                int estFuelUsage = 0;
+                // Skip fuel estimate for in-system jumps (as it appears sometimes it doesn't actually deduct the 5 T of fuel.
+                if (data.IsPositionKnown && data.Position.SystemName != position.SystemName)
+                {
+                    estFuelUsage = EstimateFuelUsageForCompletedJump(data, position);
+                    data.CarrierFuel -= estFuelUsage;
+                }
+
+                AddToGrid(dateTime, data, position.BodyName, $"{data.CarrierFuel}{(estFuelUsage > 0 ? " T (estimated)" : "")}", locationUpdateDetails);
                 // Notify if not initial values and context requests it and user has this notification enabled.
-                if (notifyIfChanged && data.CarrierSystem != null && !Core.IsLogMonitorBatchReading)
+                if (notifyIfChanged && !Core.IsLogMonitorBatchReading)
                 {
                     if (settings.NotifyJumpComplete) {
                         Core.SendNotification(new()
@@ -155,7 +190,71 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 }
                 data.LastCarrierJumpRequest = null;
             }
-            data.MaybeUpdateLocation(starSystem, body);
+            data.MaybeUpdateLocation(position);
+        }
+
+        private int EstimateFuelUsageForCompletedJump(CarrierData data, CarrierPositionData newPosition)
+        {
+            if (!data.IsPositionKnown || newPosition == null || data.LastCarrierStats == null) return 0; // Not enough data.
+
+            // TODO: Handle other cases using ID64CoordHelper and/or lookup exact system positions from edastro to land in ideal case?
+            if (!data.Position.StarPos.HasValue) data.Position.StarPos = MaybeGetStarPos(data.Position.SystemName);
+            if (!newPosition.StarPos.HasValue) newPosition.StarPos = MaybeGetStarPos(newPosition.SystemName);
+
+            // Ideal case: two detailed positions.
+            double distanceLy = 0;
+            (double, double, double)? pos1 = data.Position.StarPos;
+            (double, double, double)? pos2 = newPosition.StarPos;
+            if (pos1.HasValue && pos2.HasValue)
+            {
+
+                distanceLy = Math.Sqrt(Math.Pow(pos1.Value.Item1 - pos2.Value.Item1, 2) + Math.Pow(pos1.Value.Item2 - pos2.Value.Item2, 2) + Math.Pow(pos1.Value.Item3 - pos2.Value.Item3, 2));
+                long capacityUsage = data.LastCarrierStats.SpaceUsage.TotalCapacity - data.LastCarrierStats.SpaceUsage.FreeSpace;
+                double fuelCost = 5 + (distanceLy / 8.0) * (1.0 + ((capacityUsage + data.CarrierFuel) / 25000.0));
+
+                return Convert.ToInt32(Math.Round(fuelCost, 0));
+            }
+            else if (!Core.IsLogMonitorBatchReading)
+            {
+                Debug.WriteLineIf(!data.Position.StarPos.HasValue, $"No coordinates for current system (after fetching!): {data.Position.SystemName}");
+                Debug.WriteLineIf(!newPosition.StarPos.HasValue, $"No coordinates for new system (after fetching!): {newPosition.SystemName}");
+            }
+
+            return 0;
+        }
+
+        private (double, double, double)? MaybeGetStarPos(string systemName)
+        {
+            // We'll get rate-limited.
+            if (Core.IsLogMonitorBatchReading || string.IsNullOrEmpty(systemName)) return null;
+
+            string url = $"https://edastro.com/api/starsystem?q={systemName}";
+            string jsonStr = "";
+
+            var jsonFetchTask = Core.HttpClient.GetStringAsync(url);
+            try
+            {
+                jsonStr = jsonFetchTask.Result;
+            }
+            catch (Exception ex)
+            {
+                Core.GetPluginErrorLogger(this)(ex, $"Failed to fetch data from edastro.com for system: {systemName}");
+                return null;
+            }
+
+            using var jsonDoc = JsonDocument.Parse(jsonStr);
+            var root = jsonDoc.RootElement;
+
+            // I want [0].coordinates () which is an array of 3 doubles.
+            if (root.GetArrayLength() > 0 && root[0].GetProperty("coordinates").GetArrayLength() == 3)
+            {
+                var coordsArray = root[0].GetProperty("coordinates");
+
+                (double, double, double)? position = (
+                    coordsArray[0].GetDouble(), coordsArray[1].GetDouble(), coordsArray[2].GetDouble());
+                return position;
+            }
+            return null;
         }
 
         private void MaybeScheduleCooldownNotification(CarrierData data)
@@ -178,7 +277,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (!_manager.IsCallsignKnown(stats.Callsign))
             {
                 var data = _manager.RegisterCarrier(_currentCommander, stats);
-                AddToGrid(dateTime, data, data.CarrierBody, data.CarrierFuel, $"Carrier detected: {data.CarrierName} {data.CarrierCallsign}. Configured notifications are active.");
+                AddToGrid(dateTime, data, data.Position.BodyName, $"{data.CarrierFuel}", $"Carrier detected: {data.CarrierName} {data.CarrierCallsign}. Configured notifications are active.");
                 return true;
             }
             return false;
@@ -201,10 +300,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 bool lowFuel = updatedCarrierFuel < 135;
                 string fuelDetails = lowFuel
                     ? $"Carrier has {updatedCarrierFuel} tons of tritium remaining and may require more soon."
-                    : "Fuel level has changed.";
+                    : $"Fuel level has changed{(fuel != null ? " (deposited fuel)" : "")}.";
                 // Only add "Fuel level has changed" output if we have a value for it already. At startup, the carrier detected line includes it and thus,
                 // this line appears redundant.
-                AddToGrid(dateTime, data, data.CarrierBody, updatedCarrierFuel, fuelDetails);
+                AddToGrid(dateTime, data, data.Position.BodyName, $"{updatedCarrierFuel}", fuelDetails);
 
                 if (!Core.IsLogMonitorBatchReading && lowFuel)
                 {
@@ -223,7 +322,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (stats != null) data.LastCarrierStats = stats;
         }
 
-        private void AddToGrid(DateTime dateTime, CarrierData data, string location, int? fuelLevel, string details)
+        private void AddToGrid(DateTime dateTime, CarrierData data, string location, string fuelLevel, string details)
         {
             Core.AddGridItem(this, new FleetCommanderGrid
             {
@@ -231,15 +330,18 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 Commander = data.OwningCommander,
                 Carrier = $"{data.CarrierName} ({data.CarrierCallsign})",
                 CurrentLocation = location ?? "unknown",
-                CurrentFuelLevel = fuelLevel == null ? "unknown" : $"{fuelLevel.Value} T",
+                // HACK: Improve how we communicated "estimated" fuel levels.
+                CurrentFuelLevel = string.IsNullOrEmpty(fuelLevel) ? "unknown" : (fuelLevel.Contains("estimated") ? fuelLevel : $"{fuelLevel} T"),
                 Details = details,
             });
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
-            if (LogMonitorStateChangedEventArgs.IsBatchRead(args.NewState))
+            // * -> ReadAll
+            if (args.NewState.HasFlag(LogMonitorState.Batch))
             {
+                _manager.Clear();
                 Core.ClearGrid(this, new FleetCommanderGrid());
             }
         }
@@ -260,7 +362,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             var data = _manager.GetByTimer((System.Timers.Timer)sender);
             if (data == null) return;
 
-            AddToGrid(DateTime.Now, data, data.CarrierSystem, data.CarrierFuel, "Carrier jump cooldown has ended. You may now schedule a new jump.");
+            AddToGrid(DateTime.Now, data, data.Position.BodyName, $"{data.CarrierFuel}", "Carrier jump cooldown has ended. You may now schedule a new jump.");
             Core.SendNotification(new()
             {
                 Title = "Carrier jump cooldown has ended",

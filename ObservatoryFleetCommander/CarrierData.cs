@@ -59,8 +59,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
         }
 
-        public string CarrierSystem { get; set; }
-        public string CarrierBody { get; set; }
+        public bool IsPositionKnown
+        {
+            get => Position != null;
+        }
+
+        public CarrierPositionData Position { get; set; }
         public CarrierJumpRequest LastCarrierJumpRequest { get; set; }
         public bool CooldownNotifyScheduled { get; set; }
         internal System.Timers.Timer CarrierCooldownTimer { get; set; }
@@ -76,12 +80,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
         }
 
-        public bool MaybeUpdateLocation(string starSystem, string body)
+        public bool MaybeUpdateLocation(CarrierPositionData newPosition)
         {
-            if (CarrierSystem != null && CarrierBody != null && CarrierSystem == starSystem && CarrierBody == body) return false;
+            if (newPosition == null
+                || (Position?.IsSamePosition(newPosition) ?? false)) return false;
 
-            CarrierSystem = starSystem;
-            CarrierBody = body;
+            Position = newPosition;
             return true;
         }
     }

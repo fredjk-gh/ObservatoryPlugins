@@ -15,7 +15,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         public CarrierData RegisterCarrier(string commander, CarrierBuy buyData)
         {
             CarrierData data = new(commander, buyData); // Sets fuel too.
-            data.MaybeUpdateLocation(buyData.Location, buyData.Location);
+            data.MaybeUpdateLocation(new(buyData.Location, buyData.SystemAddress));
 
             _knownCarriersByCallsign.Add(buyData.Callsign, data);
             return data;
@@ -26,7 +26,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             CarrierData data = new(commander, stats); // Sets fuel too.
             if (initialLocation != null && initialLocation.StationName == stats.Callsign && (initialLocation.Docked || initialLocation.OnFoot))
             {
-                data.MaybeUpdateLocation(initialLocation.StarSystem, initialLocation.Body);
+                data.MaybeUpdateLocation(new(initialLocation));
             }
 
             _knownCarriersByCallsign.Add(stats.Callsign, data);
@@ -53,6 +53,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         public CarrierData GetByTimer(System.Timers.Timer timer)
         {
             return _knownCarriersByCallsign.Values.Where(c => c.CarrierCooldownTimer == timer).FirstOrDefault();
+        }
+
+        public void Clear()
+        {
+            _knownCarriersByCallsign.Clear();
         }
     }
 }
