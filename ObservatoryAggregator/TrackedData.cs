@@ -12,5 +12,6 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
     {
         public string CurrentSystem { get; set; }
         public string CurrentCommander { get; set; }
+        public string CurrentShip { get; set; }
     }
 }

@@ -69,6 +69,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     break;
                 case LoadGame loadGame:
                     data.CurrentCommander = loadGame.Commander;
+                    data.CurrentShip = loadGame.ShipName;
+                    break;
+                case Loadout loadout:
+                    data.CurrentShip = loadout.ShipName;
                     break;
             }
         }
@@ -125,7 +129,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 {
                     Timestamp = DateTime.Now.ToString(),
                     System = newSystem,
-                    Detail = data.CurrentCommander,
+                    Title = data.CurrentCommander,
+                    Detail = data.CurrentShip,
 #if EXTENDED_EVENT_ARGS
                     Sender = this.GetType().Name,
                     ExtendedDetails = $"{this.ShortName} version: v{this.Version}",
