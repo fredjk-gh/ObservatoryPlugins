@@ -25,6 +25,8 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests.Common
 
         internal List<object> gridItems = new List<object>();
 
+#region IObservatoryCore implementation
+
         public string Version => "0.0.0.1";
 
         public HttpClient HttpClient { get => _httpClient; }
@@ -96,6 +98,18 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests.Common
             _messages.Add(message);
             System.Diagnostics.Debug.WriteLine(message);
         }
+
+        public Task PlayAudioFile(string filePath)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SendPluginMessage(IObservatoryPlugin plugin, object message)
+        {
+            // TODO...
+        }
+#endregion
+
 
         public List<string> Messages
         {

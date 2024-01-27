@@ -18,7 +18,6 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         {
             _settings = new()
             {
-                ShowCurrentSystemOnly = true,
                 FilterSpec = "",
             };
             sutAggregator = new Aggregator();
@@ -31,6 +30,11 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         public void TestNotificationFiltering_Match()
         {
             _settings.FilterSpec = "Minimum Distance Reached";
+            // Ensure basic state exists.
+            sutAggregator.JournalEvent(new FSDJump()
+            {
+                StarSystem = "FSD Jump",
+            });
             NotificationArgs args = new NotificationArgs()
             {
                 Title = "Minimum Distance Reached",
@@ -39,7 +43,8 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
 
             sutAggregator.OnNotificationEvent(args);
 
-            Assert.AreEqual(0, _core.gridItems.Count);
+            // Header is expected.
+            Assert.AreEqual(1, _core.gridItems.Count);
         }
 
         [TestMethod]
@@ -47,6 +52,10 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         {
             _settings.FilterSpec = "Minimum Distance Reached|TestWorker|junk";
             sutAggregator.Settings = _settings;
+            sutAggregator.JournalEvent(new FSDJump()
+            {
+                StarSystem = "FSD Jump",
+            });
 
             List<NotificationArgs> notifications = new()
             {
@@ -59,9 +68,7 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 {
                     Title = "Sender name is filtered",
                     Detail = "This should not be aggregated.",
-#if EXTENDED_EVENT_ARGS
-                    Sender = new Common.TestWorker(),
-#endif
+                    Sender = new Common.TestWorker().ShortName,
                 },
                 new NotificationArgs()
                 {
@@ -72,9 +79,7 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 {
                     Title = "Suppressed",
                     Detail = "This should not be aggregated.",
-#if EXTENDED_EVENT_ARGS
                     ExtendedDetails = "This notification is also Junk.",
-#endif
                 },
             };
 
@@ -82,7 +87,8 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
             {
                 sutAggregator.OnNotificationEvent(notification);
 
-                Assert.AreEqual(0, _core.gridItems.Count);
+                // Header row only.
+                Assert.AreEqual(1, _core.gridItems.Count);
             }
         }
 
@@ -95,9 +101,14 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Detail = "You've travelled over 200 metres from previous sample."
             };
 
+            sutAggregator.JournalEvent(new FSDJump()
+            {
+                StarSystem = "FSD Jump",
+            });
             sutAggregator.OnNotificationEvent(args);
 
-            Assert.AreEqual(1, _core.gridItems.Count);
+            // Header + notification.
+            Assert.AreEqual(2, _core.gridItems.Count);
 
             // Change the settings so as to filter the previous event and and re-send it. This verifies that
             // changed settings are ingested correctly after the filter is updated.
@@ -105,8 +116,8 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
 
             sutAggregator.OnNotificationEvent(args);
 
-            // No *additional* item added -- this is the same item added in response to the first event.
-            Assert.AreEqual(1, _core.gridItems.Count);
+            // No *additional* item added -- these are the same items added above.
+            Assert.AreEqual(2, _core.gridItems.Count);
         }
 
         [TestMethod]
@@ -119,14 +130,20 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Detail = "You've travelled over 200 metres from previous sample."
             };
 
+            sutAggregator.JournalEvent(new FSDJump()
+            {
+                StarSystem = "FSD Jump",
+            });
             sutAggregator.OnNotificationEvent(args);
 
-            Assert.AreEqual(1, _core.gridItems.Count);
+            // Header + notification.
+            Assert.AreEqual(2, _core.gridItems.Count);
         }
 
         [TestMethod]
         public void TestJournalEvents_Jumps_CurrentSystemChanges()
         {
+            
             List<FSDJump> jumps = new()
             {
                 new FSDJump()
@@ -138,22 +155,20 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                     Docked = true,
                     StarSystem = "Docked Carrier Jump",
                 },
-#if EXTENDED_EVENT_ARGS
                 new CarrierJump()
                 {
                     OnFoot = true,
                     StarSystem = "OnFoot Carrier Jump",
                 },
-#endif
             };
 
             foreach (var jump in jumps)
             {
                 sutAggregator.JournalEvent(jump);
 
-                Assert.AreEqual(jump.StarSystem, sutAggregator.data.CurrentSystem);
+                Assert.AreEqual(jump.StarSystem, sutAggregator.data.CurrentSystem.Name);
                 Assert.AreEqual(1, _core.gridItems.Count); // Header row updated with new system.
-                Assert.AreEqual(jump.StarSystem, ((AggregatorNotificationGrid)_core.gridItems[0]).System);
+                Assert.AreEqual(jump.StarSystem, ((AggregatorGrid)_core.gridItems[0]).Body);
             }
         }
 
@@ -164,9 +179,9 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
 
             sutAggregator.JournalEvent(location);
 
-            Assert.AreEqual(location.StarSystem, sutAggregator.data.CurrentSystem);
+            Assert.AreEqual(location.StarSystem, sutAggregator.data.CurrentSystem.Name);
             Assert.AreEqual(1, _core.gridItems.Count); // Header row updated with new system.
-            Assert.AreEqual(location.StarSystem, ((AggregatorNotificationGrid)_core.gridItems[0]).System);
+            Assert.AreEqual(location.StarSystem, ((AggregatorGrid)_core.gridItems[0]).Body);
         }
     }
 }

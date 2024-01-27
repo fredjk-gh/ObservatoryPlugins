@@ -9,13 +9,13 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private string _filterSpec = "";
         private List<String> _filters = new();
 
+        [SettingDisplayName("Show all body summaries")]
+        public bool ShowAllBodySummaries { get; set; }
+
         [SettingIgnore]
         public List<string> Filters { get => _filters; }
 
-        [SettingDisplayName("Show content from current system only")]
-        public bool ShowCurrentSystemOnly { get; set; }
-
-        [SettingDisplayName("Exclude matching (| separated literals):")]
+        [SettingDisplayName("Exclude matching (| separated literals)")]
         public string FilterSpec {
             get => _filterSpec;
             set
