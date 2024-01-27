@@ -21,15 +21,7 @@
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)plugins\&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net6.0-windows\plugins\&quot; /y" />
 		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(TargetPath)&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/&quot; -f" />
 	</Target>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<DefineConstants>$(DefineConstants)</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<DefineConstants>$(DefineConstants);EXTENDED_EVENT_ARGS</DefineConstants>
-	</PropertyGroup>
 </Project>

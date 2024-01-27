@@ -4,9 +4,6 @@ using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Net.Http.Json;
-using System.Net.Sockets;
-using System.Text;
 using System.Text.Json;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
@@ -23,6 +20,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             NotifyLowFuel = true,
         };
 
+        private Grid _lastShown = new();
         private string _currentCommander;
         private Location _initialLocation = null;
         private CarrierManager _manager = new();
@@ -45,6 +43,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 case LoadGame loadGame:
                     _currentCommander = loadGame.Commander;
+                    _lastShown = new(); // Reset last show to get periodic refresh of data in some columns.
                     break;
                 case Docked docked:
                     // This isn't a great position signal.
@@ -173,16 +172,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
                 AddToGrid(dateTime, data, position.BodyName, $"{data.CarrierFuel}{(estFuelUsage > 0 ? " T (estimated)" : "")}", locationUpdateDetails);
                 // Notify if not initial values and context requests it and user has this notification enabled.
-                if (notifyIfChanged && !Core.IsLogMonitorBatchReading)
+                if (notifyIfChanged)
                 {
                     if (settings.NotifyJumpComplete) {
                         Core.SendNotification(new()
                         {
                             Title = locationUpdateDetails,
                             Detail = "",
-#if EXTENDED_EVENT_ARGS
-                            Sender = this,
-#endif
+                            Sender = ShortName,
                         });
                     }
 
@@ -197,7 +194,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (!data.IsPositionKnown || newPosition == null || data.LastCarrierStats == null) return 0; // Not enough data.
 
-            // TODO: Handle other cases using ID64CoordHelper and/or lookup exact system positions from edastro to land in ideal case?
+            // TODO: Consider using ID64CoordHelper to minimize lookups from edastro (with a cache in-play, do NOT set estimated coords to the StarPos property).
             if (!data.Position.StarPos.HasValue) data.Position.StarPos = MaybeGetStarPos(data.Position.SystemName);
             if (!newPosition.StarPos.HasValue) newPosition.StarPos = MaybeGetStarPos(newPosition.SystemName);
 
@@ -259,6 +256,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         private void MaybeScheduleCooldownNotification(CarrierData data)
         {
+            if (Core.IsLogMonitorBatchReading || data.LastCarrierJumpRequest == null) return;
+
             // Don't start a countdown if the cooldown is already over.
             // TODO: Update to use this once a new framework is released: lastCarrierJumpRequest.DepartureTimeDateTime
             DateTime carrierDepartureTime = DateTime.ParseExact(data.LastCarrierJumpRequest.DepartureTime, "yyyy-MM-ddTHH:mm:ssZ", null, System.Globalization.DateTimeStyles.AssumeUniversal);
@@ -305,16 +304,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 // this line appears redundant.
                 AddToGrid(dateTime, data, data.Position.BodyName, $"{updatedCarrierFuel}", fuelDetails);
 
-                if (!Core.IsLogMonitorBatchReading && lowFuel)
+                if (lowFuel)
                 {
                     // Only notify if fuel is running low and not reading-all.
                     Core.SendNotification(new()
                     {
                         Title = "Low Fuel",
                         Detail = fuelDetails,
-#if EXTENDED_EVENT_ARGS
-                        Sender = this,
-#endif
+                        Sender = ShortName,
                     });
                 }
             }
@@ -324,16 +321,41 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         private void AddToGrid(DateTime dateTime, CarrierData data, string location, string fuelLevel, string details)
         {
-            Core.AddGridItem(this, new FleetCommanderGrid
+            Grid gridItem = new()
             {
                 Timestamp = dateTime.ToString("G"),
-                Commander = data.OwningCommander,
-                Carrier = $"{data.CarrierName} ({data.CarrierCallsign})",
-                CurrentLocation = location ?? "unknown",
-                // HACK: Improve how we communicated "estimated" fuel levels.
-                CurrentFuelLevel = string.IsNullOrEmpty(fuelLevel) ? "unknown" : (fuelLevel.Contains("estimated") ? fuelLevel : $"{fuelLevel} T"),
                 Details = details,
-            });
+            };
+
+            if (string.IsNullOrEmpty(_lastShown.Commander) && !string.IsNullOrEmpty(data.OwningCommander)
+                || data.OwningCommander != _lastShown.Commander)
+            {
+                gridItem.Commander = _lastShown.Commander = data.OwningCommander;
+            }
+
+            var carrierDisplay = $"{data.CarrierName} ({data.CarrierCallsign})";
+            if (string.IsNullOrEmpty(_lastShown.Carrier) && !string.IsNullOrEmpty(carrierDisplay)
+                || carrierDisplay != _lastShown.Carrier)
+            {
+                gridItem.Carrier = _lastShown.Carrier = carrierDisplay;
+            }
+
+            var displayLocation = location ?? "unknown";
+            if (string.IsNullOrEmpty(_lastShown.CurrentLocation) && !string.IsNullOrEmpty(displayLocation)
+                ||  displayLocation != _lastShown.CurrentLocation)
+            {
+                gridItem.CurrentLocation = _lastShown.CurrentLocation = displayLocation;
+            }
+
+            // HACK: Improve how we communicate "estimated" fuel levels.
+            var displayFuel = string.IsNullOrEmpty(fuelLevel) ? "unknown" : (fuelLevel.Contains("estimated") ? fuelLevel : $"{fuelLevel} T");
+            if (string.IsNullOrEmpty(_lastShown.CurrentFuelLevel) && !string.IsNullOrEmpty(displayFuel)
+                || displayFuel != _lastShown.CurrentFuelLevel)
+            {
+                gridItem.CurrentFuelLevel = _lastShown.CurrentFuelLevel = displayFuel;
+            }
+
+            Core.AddGridItem(this, gridItem);
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -342,14 +364,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (args.NewState.HasFlag(LogMonitorState.Batch))
             {
                 _manager.Clear();
-                Core.ClearGrid(this, new FleetCommanderGrid());
+                Core.ClearGrid(this, new Grid());
             }
         }
 
         public void Load(IObservatoryCore observatoryCore)
         {
             GridCollection = new();
-            FleetCommanderGrid uiObject = new();
+            Grid uiObject = new();
 
             GridCollection.Add(uiObject);
             pluginUI = new PluginUI(GridCollection);
@@ -367,21 +389,25 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 Title = "Carrier jump cooldown has ended",
                 Detail = "You may now schedule a new jump.",
-#if EXTENDED_EVENT_ARGS
-                Sender = this,
-#endif
+                Sender = ShortName,
             });
             data.CancelCarrierJump();
         }
     }
 
-    public class FleetCommanderGrid
+    public class Grid
     {
+        [ColumnSuggestedWidth(300)]
         public string Timestamp { get; set; }
+        [ColumnSuggestedWidth(250)]
         public string Commander { get; set; }
+        [ColumnSuggestedWidth(400)]
         public string Carrier {  get; set; }
+        [ColumnSuggestedWidth(350)]
         public string CurrentLocation { get; set; }
+        [ColumnSuggestedWidth(200)]
         public string CurrentFuelLevel { get; set; }
+        [ColumnSuggestedWidth(500)]
         public string Details { get; set; }
     }
 }
