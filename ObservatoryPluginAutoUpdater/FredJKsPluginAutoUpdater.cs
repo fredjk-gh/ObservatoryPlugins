@@ -1,9 +1,7 @@
-﻿using Microsoft.VisualBasic;
-using Observatory.Framework;
+﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
 using System.Diagnostics;
-using System.Linq;
 
 
 namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
@@ -80,11 +78,10 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
                 {
                     Title = title,
                     Detail = detail,
-#if EXTENDED_EVENT_ARGS
                     Rendering = NotificationRendering.PluginNotifier,
                     ExtendedDetails = extendedDetail,
-                    Sender = this,
-#endif
+                    Sender = Name,
+                    CoalescingId = Int32.MinValue,
                 });
                 Core.GetPluginErrorLogger(this)(new ArgumentNullException("PluginFolder", extendedDetail), "> Loading plugin");
                 return false;
@@ -135,11 +132,10 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
                 {
                     Title = "Pending plugin updates",
                     Detail = "Restart the app to complete the update",
-#if EXTENDED_EVENT_ARGS
                     Rendering = NotificationRendering.PluginNotifier,
                     ExtendedDetails = extendedDetail,
-                    Sender = this,
-#endif
+                    Sender = Name,
+                    CoalescingId = Int32.MinValue,
                 });
             }
             else if (failedCount > 0)
@@ -149,11 +145,10 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
                 {
                     Title = "Plugin update failed",
                     Detail = "Please check crash log",
-#if EXTENDED_EVENT_ARGS
                     Rendering = NotificationRendering.PluginNotifier,
                     ExtendedDetails = extendedDetail,
-                    Sender = this,
-#endif
+                    Sender = Name,
+                    CoalescingId = Int32.MinValue,
                 });
             }
             return true;
