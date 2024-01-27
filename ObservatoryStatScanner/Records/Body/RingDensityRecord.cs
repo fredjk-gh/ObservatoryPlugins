@@ -30,7 +30,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             {
                 var densityMtPerKm2 = ring.MassMT /
                     ((Math.PI * Math.Pow(ring.OuterRad / Constants.CONV_M_TO_KM_DIVISOR, 2.0)) - (Math.PI * Math.Pow(ring.InnerRad / Constants.CONV_M_TO_KM_DIVISOR, 2.0)));
-                results.AddRange(CheckMax(densityMtPerKm2, scan.Timestamp, ring.Name, IsUndiscovered(scan)));
+                results.AddRange(CheckMax(densityMtPerKm2, scan.Timestamp, ring.Name, scan.BodyID, IsUndiscovered(scan)));
             }
             return results;
         }

@@ -93,7 +93,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             RecordHolder = (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder),
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
                             RecordKind = RecordKind.ToString(),
-                        }));
+                        },
+                        Constants.SUMMARY_COALESCING_ID));
             }
             if (HasMin)
             {
@@ -110,12 +111,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             RecordHolder = (MinCount > 1 ? $"{MinHolder} (and {MinCount} more)" : MinHolder),
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
                             RecordKind = RecordKind.ToString(),
-                        }));
+                        },
+                        Constants.SUMMARY_COALESCING_ID));
             }
             return results;
         }
 
-        protected List<Result> CheckMax(double observedValue, string timestamp, string bodyName, bool isUndiscovered)
+        protected List<Result> CheckMax(double observedValue, string timestamp, string bodyName, int bodyId, bool isUndiscovered)
         {
             List<Result> results = new();
 
@@ -124,7 +126,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                 if (!FilterPersonalRecordForProcGenAndFirstDiscovered(bodyName, isUndiscovered)) return results;
                 if (!Data.HasMax || observedValue > Data.MaxValue)
                 {
-                    var gridItem = MakeGridItem(Outcome.PersonalNew, MaxFunction, observedValue, timestamp, bodyName, isUndiscovered);
+                    var gridItem = MakeGridItem(Outcome.PersonalNew, MaxFunction, observedValue, timestamp, bodyName, bodyId, isUndiscovered);
 
                     if (gridItem != null) results.Add(gridItem);
                 }
@@ -141,13 +143,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             if (outcome != Outcome.None)
             {
-                var gridItem = MakeGridItem(outcome, MaxFunction, observedValue, timestamp, bodyName, isUndiscovered);
+                var gridItem = MakeGridItem(outcome, MaxFunction, observedValue, timestamp, bodyName, bodyId, isUndiscovered);
                 if (gridItem != null) results.Add(gridItem);
             }
             return results;
         }
 
-        protected List<Result> CheckMin(double observedValue, string timestamp, string bodyName, bool isUndiscovered)
+        protected List<Result> CheckMin(double observedValue, string timestamp, string bodyName, int bodyId, bool isUndiscovered)
         {
             List<Result> results = new();
 
@@ -156,7 +158,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                 if (!FilterPersonalRecordForProcGenAndFirstDiscovered(bodyName, isUndiscovered)) return results;
                 if (!Data.HasMin || observedValue < Data.MinValue)
                 {
-                    var gridItem = MakeGridItem(Outcome.PersonalNew, MinFunction, observedValue, timestamp, bodyName, isUndiscovered);
+                    var gridItem = MakeGridItem(Outcome.PersonalNew, MinFunction, observedValue, timestamp, bodyName, bodyId, isUndiscovered);
 
                     if (gridItem != null) results.Add(gridItem);
                 }
@@ -174,14 +176,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             if (outcome != Outcome.None)
             {
-                var gridItem = MakeGridItem(outcome, MinFunction, observedValue, timestamp, bodyName, isUndiscovered);
+                var gridItem = MakeGridItem(outcome, MinFunction, observedValue, timestamp, bodyName, bodyId, isUndiscovered);
                 if (gridItem != null) results.Add(gridItem);
             }
             return results;
         }
 
         protected Result MakeGridItem(
-            Outcome outcome, Function function, double observedValue, string timestamp, string bodyName, bool isUndiscovered)
+            Outcome outcome, Function function, double observedValue, string timestamp, string bodyName, int bodyId, bool isUndiscovered)
         {
             string recordValueStr;
             double recordTieCount;
@@ -261,7 +263,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                 DiscoveryStatus = (isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED),
                 RecordKind = RecordKind.ToString(),
             };
-            return new(notificationClass, gridRow);
+            return new(notificationClass, gridRow, bodyId);
         }
 
         private bool FilterPersonalRecordForProcGenAndFirstDiscovered(string bodyName, bool isUndiscovered)

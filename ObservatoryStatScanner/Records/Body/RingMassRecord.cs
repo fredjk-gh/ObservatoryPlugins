@@ -28,7 +28,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             // Check all rings of the specified type for this record:
             foreach (var ring in scan.Rings.Where(r => r.RingClass == JournalObjectName && r.Name.Contains("Ring")))
             {
-                results.AddRange(CheckMax(ring.MassMT, scan.Timestamp, ring.Name, IsUndiscovered(scan)));
+                results.AddRange(CheckMax(ring.MassMT, scan.Timestamp, ring.Name, scan.BodyID, IsUndiscovered(scan)));
             }
             return results;
         }

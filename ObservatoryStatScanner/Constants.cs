@@ -142,6 +142,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             { "B (Blue-White super giant) Star", "B_BlueWhiteSuperGiant" }, // Undocumented, but present in my journals.
             { "B (Blue-White) Star", "B" },
             { EDASTRO_STAR_BLACK_HOLE, "H" },
+            { "Supermassive BH", "SupermassiveBlackHole" },
             { "C Star", "C" },
             { "CJ Star", "CJ" },
             { "CN Star", "﻿CN" },
@@ -302,5 +303,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string UI_FIRST_DISCOVERY = "1st Discovery";
         public const string UI_FIRST_VISIT = "First visit";
         public const string UI_ALREADY_DISCOVERED = "Discovered";
+
+        public const int HEADER_COALESCING_ID = Int32.MinValue;
+        public const int SUMMARY_COALESCING_ID = -11;
+        public const int STATS_COALESCING_ID = -10;
+        public const int REGION_COALESCING_ID = -2;
+        public const int SYSTEM_COALESCING_ID = -1;
     }
 }

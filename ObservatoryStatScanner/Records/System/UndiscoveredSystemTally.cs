@@ -37,5 +37,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             }
             return new();
         }
+
+        public override void Reset()
+        {
+            base.Reset();
+            _visitedSystems.Clear();
+        }
     }
 }

@@ -26,8 +26,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             // Convert m -> SR
             var radiusSR = scan.Radius / Constants.CONV_M_TO_SOLAR_RAD_DIVISOR;
-            var results = CheckMax(radiusSR, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
-            results.AddRange(CheckMin(radiusSR, scan.Timestamp, scan.BodyName, IsUndiscovered(scan)));
+            var results = CheckMax(radiusSR, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
+            results.AddRange(CheckMin(radiusSR, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
 
             return results;
         }

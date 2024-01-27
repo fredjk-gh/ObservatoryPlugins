@@ -13,6 +13,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         {
             MaxNearRecordThreshold = 0,
             MinNearRecordThreshold = 0,
+            MaxPersonalBestsPerBody = 3,
             HighCardinalityTieSuppression = 20000,
             ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING,
             FirstDiscoveriesOnly = false,
@@ -63,6 +64,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         [SettingDisplayName("Near Minimum record threshold % (Caution: high values can generate lots of hits; 0 disables [default])")]
         [SettingNumericBounds(0.0, 20.0)]
         public int MinNearRecordThreshold { get; set; }
+
+        [SettingDisplayName("Maximum personal best notifications per body")]
+        [SettingNumericBounds(0.0, 20.0)]
+        public int MaxPersonalBestsPerBody { get; set; }
 
         // For some combinations (ie. MIN(icy body surface pressure) == 0), the
         // extreme value is VERY common meaning we generate a lot of ties and this

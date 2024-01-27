@@ -32,8 +32,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                 return new();
             }
 
-            var results = CheckMax(pressureAtms, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
-            results.AddRange(CheckMin(pressureAtms, scan.Timestamp, scan.BodyName, IsUndiscovered(scan)));
+            var results = CheckMax(pressureAtms, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
+            results.AddRange(CheckMin(pressureAtms, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
 
             return results;
         }

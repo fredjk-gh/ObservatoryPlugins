@@ -89,7 +89,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             RecordHolder = (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder),
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
                             RecordKind = RecordKind.ToString(),
-                        }));
+                        },
+                        Constants.SUMMARY_COALESCING_ID));
             }
             return results;
         }
@@ -139,7 +140,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     DiscoveryStatus = (isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED),
                     RecordKind = RecordKind.ToString(),
                 };
-                results.Add(new Result(notificationClass, gridRow));
+                results.Add(new Result(notificationClass, gridRow, Constants.SYSTEM_COALESCING_ID));
 
                 // Update the record *AFTER* generating the GridRow to ensure we have access to the previous value.
                 // When there's a tie, this increments the count only.

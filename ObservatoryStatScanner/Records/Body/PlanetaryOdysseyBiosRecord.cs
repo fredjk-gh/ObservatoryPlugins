@@ -35,7 +35,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             }
 
             BodyBioSignals.Remove(scan.BodyName);
-            return CheckMax(bioCount, scan.Timestamp, scan.BodyName, IsUndiscovered(scan));
+            return CheckMax(bioCount, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
         }
 
         public override List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)

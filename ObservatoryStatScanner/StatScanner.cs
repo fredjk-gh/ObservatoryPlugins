@@ -175,14 +175,16 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         ObjectClass = "Plugin info",
                         Variable = $"{this.ShortName} version",
                         ObservedValue = $"v{this.Version}",
-                    }),
+                    },
+                    Constants.HEADER_COALESCING_ID),
                 new (NotificationClass.None,
                     new StatScannerGrid
                     {
                         ObjectClass = "Plugin settings",
                         Variable = "Tracking First Discoveries only?",
                         ObservedValue = $"{settings.FirstDiscoveriesOnly}",
-                    }),
+                    },
+                    Constants.HEADER_COALESCING_ID),
                 new (NotificationClass.None,
                     new StatScannerGrid
                     {
@@ -192,7 +194,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         BodyOrItem = "Total",
                         ObservedValue = $"{recordBook.Count}",
                         RecordValue = devModeWarning,
-                    }),
+                    },
+                    Constants.HEADER_COALESCING_ID),
             };
             foreach (RecordKind kind in Enum.GetValues(typeof(RecordKind))) {
                 var count = recordBook.CountByKind(kind);
@@ -221,7 +224,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                             ObservedValue = $"{count}",
                             RecordValue = devModeWarning,
                             Details = details,
-                        }));
+                        },
+                        Constants.SUMMARY_COALESCING_ID));
             }
             gridItems.AddRange(MaybeAddStats());
             AddResultsToGrid(gridItems);
@@ -245,7 +249,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                             Function = Function.Count.ToString(),
                             ObservedValue = $"{(_state.LastStats.Exploration.TimePlayed / Constants.CONV_S_TO_HOURS_DIVISOR):N0}",
                             Units = "hr",
-                        }));
+                        },
+                        Constants.STATS_COALESCING_ID));
             }
             return gridItems;
         }
@@ -482,33 +487,58 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             if (!maybeNotify || !settings.NotifySilentFallback)
                 return;
 
-            foreach (var r in results)
+            // Squash high-volumes of personal best notifications for a single body into 1 to avoid spamming notifications.
+            var grouped = results.GroupBy(r => r.CoalescingID).ToDictionary(g => g.Key, g => g.ToList());
+            foreach (var e in grouped)
             {
-                string firstDiscoveryStatus = "";
-                if (!string.IsNullOrEmpty(r.ResultItem.DiscoveryStatus) && r.ResultItem.DiscoveryStatus != "-")
+                var resultItems = e.Value;
+                var pbs = e.Value.Where(r => r.ResultItem.Details.Contains("personal best"));
+                if (settings.MaxPersonalBestsPerBody > 0 && pbs.Count() > settings.MaxPersonalBestsPerBody)
                 {
-                    firstDiscoveryStatus = $" ({r.ResultItem.DiscoveryStatus})";
-                }
-                string title = "";
-                if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION)
-                {
-                    title = r.ResultItem.ObjectClass;
-                }
-                else
-                {
-                    title = GetBodyTitle(GetShortBodyName(r.ResultItem.BodyOrItem));
+                    var r = pbs.First();
+                    var title = "";
+                    if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION)
+                        title = r.ResultItem.ObjectClass;
+                    else
+                        title = GetBodyTitle(GetShortBodyName(r.ResultItem.BodyOrItem));
+
+                    Core.SendNotification(new()
+                    {
+                        Title = title,
+                        Detail = $"{pbs.Count()} personal bests: {r.ResultItem.ObjectClass}",
+                        Rendering = GetNotificationRendering(r),
+                        ExtendedDetails = string.Join("; ", pbs.Select(pb => $"{pb.ResultItem.Variable}, {pb.ResultItem.Function}")),
+                        Sender = ShortName,
+                        CoalescingId = r.CoalescingID,
+                    });
+
+                    // Continue processing the non-personal bests.
+                    resultItems = e.Value.Where(r => !r.ResultItem.Details.Contains("personal best")).ToList();
                 }
 
-                Core.SendNotification(new()
+                foreach (var r in resultItems)
                 {
-                    Title = title,
-                    Detail = $"{r.ResultItem.Details}: {r.ResultItem.ObjectClass}; {r.ResultItem.Variable}; {r.ResultItem.Function}",
-                    Rendering = GetNotificationRendering(r),
-#if EXTENDED_EVENT_ARGS
-                    ExtendedDetails = $"{r.ResultItem.ObservedValue} {r.ResultItem.Units} @ {r.ResultItem.BodyOrItem}{firstDiscoveryStatus}. Previous value: {r.ResultItem.RecordValue} {r.ResultItem.Units}",
-                    Sender = this,
-#endif
-                }); ;
+                    string firstDiscoveryStatus = "";
+                    if (!string.IsNullOrEmpty(r.ResultItem.DiscoveryStatus) && r.ResultItem.DiscoveryStatus != "-")
+                    {
+                        firstDiscoveryStatus = $" ({r.ResultItem.DiscoveryStatus})";
+                    }
+                    string title = "";
+                    if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION)
+                        title = r.ResultItem.ObjectClass;
+                    else
+                        title = GetBodyTitle(GetShortBodyName(r.ResultItem.BodyOrItem));
+
+                    Core.SendNotification(new()
+                    {
+                        Title = title,
+                        Detail = $"{r.ResultItem.Details}: {r.ResultItem.ObjectClass}; {r.ResultItem.Variable}; {r.ResultItem.Function}",
+                        Rendering = GetNotificationRendering(r),
+                        ExtendedDetails = $"{r.ResultItem.ObservedValue} {r.ResultItem.Units} @ {r.ResultItem.BodyOrItem}{firstDiscoveryStatus}. Previous value: {r.ResultItem.RecordValue} {r.ResultItem.Units}",
+                        Sender = ShortName,
+                        CoalescingId = r.CoalescingID,
+                    });
+                }
             }
         }
 

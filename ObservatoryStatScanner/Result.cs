@@ -20,14 +20,15 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
     internal class Result
     {
-        public Result(NotificationClass notificationClass, StatScannerGrid item)
+        public Result(NotificationClass notificationClass, StatScannerGrid item, int coalescingId)
         {
             NotificationClass = notificationClass;
             ResultItem = item;
+            CoalescingID = coalescingId;
         }
 
         public NotificationClass NotificationClass { get; }
-
+        public int CoalescingID { get; }
         public StatScannerGrid ResultItem { get; }
 
     }
