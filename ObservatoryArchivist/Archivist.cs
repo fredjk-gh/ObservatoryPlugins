@@ -1,4 +1,5 @@
-﻿using Observatory.Framework;
+﻿using LiteDB;
+using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
 using System.Collections.ObjectModel;
@@ -16,7 +17,6 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         private ObservableCollection<object> gridCollection = new();
         private ArchivistSettings settings = ArchivistSettings.DEFAULT;
         private ArchiveManager manager;
-
 
         private FileHeaderInfo lastFileHeaderInfo = new();
         private CurrentSystemInfo currentSystemInfo = null;
@@ -46,6 +46,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
+            // * -> ReadAll
             if (args.NewState.HasFlag(LogMonitorState.Batch))
             {
                 lastFileHeaderInfo = new();
@@ -61,19 +62,39 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                     Details = $"Read All started",
                 });
             }
-            else
+            // ReadAll -> *
+            else if (args.PreviousState.HasFlag(LogMonitorState.Batch))
             {
-                if (args.PreviousState.HasFlag(LogMonitorState.Batch))
-                {
-                    Core.AddGridItem(this, new ArchivistGrid()
-                    {
-                        Timestamp = DateTime.UtcNow.ToString(),
-                        Details = $"Read All completed",
-                    });
-                }
                 MaybeFlushSystemData(currentSystemInfo);
                 manager.Connect(ConnectionMode.Shared);
+
+                Core.AddGridItem(this, new ArchivistGrid()
+                {
+                    Timestamp = DateTime.UtcNow.ToString(),
+                    Details = $"Read All completed;",
+                });
+                SummaryToGrid(manager.GetSummary());
             }
+            else if (args.NewState.HasFlag(LogMonitorState.Realtime))
+            {
+                SummaryToGrid(manager.GetSummary());
+            }
+        }
+
+        private void SummaryToGrid(List<BsonDocument> data)
+        {
+            List<ArchivistGrid> items = new();
+
+            foreach(var r in data)
+            {
+                items.Add(new ArchivistGrid()
+                {
+                    Timestamp = DateTime.UtcNow.ToString(),
+                    Details = $"{r["SystemCount"]} known systems for Cmdr {r["Cmdr"]}.",
+                });
+            }
+
+            Core.AddGridItems(this, items);
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -110,6 +131,19 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                     // Don't add extraneous jumps.
                     if (currentSystemInfo.SystemJournalEntries.Count == 0)
                         currentSystemInfo.AddSystemJournalJson(fsdJump.Json, fsdJump.TimestampDateTime);
+                    else
+                    {
+                        // Send existing system data via inter-plugin message bus, in case anyone can use it.
+                        if (!Core.IsLogMonitorBatchReading)
+                        {
+                            Core.SendPluginMessage(this, currentSystemInfo.SystemJournalEntries);
+                            Core.AddGridItem(this, new ArchivistGrid()
+                            {
+                                Timestamp = DateTime.UtcNow.ToString(),
+                                Details = $"Found {currentSystemInfo.SystemJournalEntries.Count} records from a previous visit; shared via inter-plugin message.",
+                            });
+                        }
+                    }
                     break;
                 case Location location:
                     if (!Core.CurrentLogMonitorState.HasFlag(LogMonitorState.PreRead)
@@ -172,7 +206,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public class ArchivistGrid
         {
+            [ColumnSuggestedWidth(300)]
             public string Timestamp { get; set; }
+            [ColumnSuggestedWidth(250)]
             public string Details { get; set; }
         }
     }

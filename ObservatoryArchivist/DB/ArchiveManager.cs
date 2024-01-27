@@ -26,7 +26,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         private ILiteCollection<VisitedSystem> VisitedSystemsCol;
         string dbPath;
 #if DEBUG
-        private ConnectionMode connectionMode = ConnectionMode.Direct; //.Shared;
+        private ConnectionMode connectionMode = ConnectionMode.Shared;
 #else
         private ConnectionMode connectionMode = ConnectionMode.Direct;
 #endif
@@ -83,6 +83,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             {
                 return VisitedSystemsCol.Count(sys => sys.Commander == commanderName);
             }
+        }
+
+        public List<BsonDocument> GetSummary()
+        {
+            return VisitedSystemsCol.Query().GroupBy("Commander")
+                .Select("{ Cmdr:@key, SystemCount:COUNT(*)  }")
+                .ToList();
         }
 
         public List<VisitedSystem> Get(string systemName)

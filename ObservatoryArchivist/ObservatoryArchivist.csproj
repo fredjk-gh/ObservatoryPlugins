@@ -16,9 +16,9 @@
 	</PropertyGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)plugins\&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net6.0-windows\plugins\&quot; /y" />
 		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(TargetPath)&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/&quot; -f" />
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)plugins\deps\&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net6.0-windows\plugins\deps\&quot; /y" />
 		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/deps/&quot; -f" />
 	</Target>
 	
