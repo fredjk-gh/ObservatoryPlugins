@@ -8,6 +8,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
 {
     internal class Constants
     {
+        public const int COALESCING_ID_SYSTEM = -1;
         public const double FuelWarningLevelFactor = 1.5;
         public const double CONV_MperS2_TO_G_DIVISOR = 9.81;
 

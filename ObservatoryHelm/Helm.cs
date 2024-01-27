@@ -70,12 +70,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         {
             switch (journal)
             {
-                // TODO: on ApproachBody before glide (ie ~ApproachBody): alert to the gravity of the planet.
-                // Would require saving scans of at least landable bodies in a dictionary keyed by either body id or body name.
-                // {"timestamp":"2023-03-06T01:36:05Z","event":"ApproachBody","StarSystem":"Viqs KC-M d7-2","SystemAddress":79297529027,"Body":"Viqs KC-M d7-2 4","BodyID":5}
-                // {"timestamp":"2023-03-06T01:36:48Z","event":"SupercruiseExit","Taxi":false,"Multicrew":false,"StarSystem":"Viqs KC-M d7-2","SystemAddress":79297529027,"Body":"Viqs KC-M d7-2 4","BodyID":5,"BodyType":"Planet"}
-                // Consider alerting only if gravity exceeds a certain threshold (1g?)
-                // Other?
                 case LoadGame loadGame:
                     if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
                     {
@@ -105,11 +99,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                     {
                         Title = "New route",
                         Detail = "",
-#if EXTENDED_EVENT_ARGS
-                        Sender = this,
+                        Sender = ShortName,
                         ExtendedDetails = $"{data.JumpsRemainingInRoute} jumps to {data.Destination}",
                         Rendering = NotificationRendering.PluginNotifier,
-#endif
                     });
                     break;
                 case NavRouteClear clear:
@@ -125,11 +117,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 case FSDJump jump:
                     incompleteSystemsNotified.Clear();
                     if (jump is CarrierJump carrierJump && (
-                        carrierJump.Docked
-#if EXTENDED_EVENT_ARGS
-                        || carrierJump.OnFoot
-#endif
-                    ))
+                        carrierJump.Docked || carrierJump.OnFoot))
                     {
                         // Do nothing else. We're missing fuel level, etc. here.
                         if (data.LastJumpEvent != null)
@@ -165,11 +153,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         {
                             Title = "Route Progress",
                             Detail = $"{data.JumpsRemainingInRoute} jumps remaining{(!string.IsNullOrEmpty(data.Destination) ? $" to {data.Destination}" : "")}",
-#if EXTENDED_EVENT_ARGS
-                            Sender = this,
+                            Sender = ShortName,
                             ExtendedDetails = arrivalStarScoopableStr,
                             Rendering = NotificationRendering.PluginNotifier,
-#endif
                         });
                         // This check is essential when travelling through areas where scans don't trigger (ie. known space).
                         if (data.FuelWarningNotifiedSystem != jump.StarSystem && data.FuelRemaining < (data.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
@@ -178,9 +164,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             {
                                 Title = "Warning! Low fuel",
                                 Detail = $"Refuel soon! {arrivalStarScoopableStr}",
-#if EXTENDED_EVENT_ARGS
-                                Sender = this,
-#endif
+                                Sender = ShortName,
                             });
                             data.FuelWarningNotifiedSystem = jump.StarSystem;
                         }
@@ -221,45 +205,43 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                     {
                         if (Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance)
                         {
-                            string extendedDetails = $"Warning! Low Fuel! Scoopable star: {BodyShortName(scan.BodyName, data.CurrentSystem /*scan.StarSystem*/)}, {scan.DistanceFromArrivalLS:0.0} Ls";
+                            string extendedDetails = $"Warning! Low Fuel! Scoopable star: {BodyShortName(scan.BodyName, data.CurrentSystem)}, {scan.DistanceFromArrivalLS:0.0} Ls";
                             MakeGridItem(scan.Timestamp, extendedDetails);
                             Core.SendNotification(new()
                             {
                                 Title = "Warning! Low fuel",
                                 Detail = $"There is a scoopable star in this system!",
-#if EXTENDED_EVENT_ARGS
                                 ExtendedDetails = extendedDetails,
-                                Sender = this,
-#endif
+                                Sender = ShortName,
+                                CoalescingId = scan.BodyID,
                             });
-                            data.FuelWarningNotifiedSystem = data.CurrentSystem; // scan.StarSystem;
+                            data.FuelWarningNotifiedSystem = data.CurrentSystem;
                         }
                     }
 
-                    if (scan.StarType == "N" && scan.DistanceFromArrivalLS == 0) data.NeutronPrimarySystem = data.CurrentSystem; // scan.StarSystem;
+                    if (scan.StarType == "N" && scan.DistanceFromArrivalLS == 0) data.NeutronPrimarySystem = data.CurrentSystem;
 
-                    if (data.NeutronPrimarySystem == null || data.NeutronPrimarySystem != data.CurrentSystem /*scan.StarSystem*/) break;
+                    if (data.NeutronPrimarySystem == null || data.NeutronPrimarySystem != data.CurrentSystem) break;
 
-                    if ((Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance && data.ScoopableSecondaryCandidateScan?.StarSystem != data.CurrentSystem /*scan.StarSystem*/)
-                        || (data.ScoopableSecondaryCandidateScan?.StarSystem == data.CurrentSystem /*scan.StarSystem*/ && scan.DistanceFromArrivalLS < data.ScoopableSecondaryCandidateScan.DistanceFromArrivalLS))
+                    if ((Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance && data.ScoopableSecondaryCandidateScan?.StarSystem != data.CurrentSystem)
+                        || (data.ScoopableSecondaryCandidateScan?.StarSystem == data.CurrentSystem && scan.DistanceFromArrivalLS < data.ScoopableSecondaryCandidateScan.DistanceFromArrivalLS))
                     {
                         data.ScoopableSecondaryCandidateScan = scan;
                     }
 
-                    if (data.NeutronPrimarySystem == scan.StarSystem && data.ScoopableSecondaryCandidateScan?.StarSystem == data.CurrentSystem /*scan.StarSystem*/
-                        && data.NeutronPrimarySystemNotified != data.CurrentSystem /*scan.StarSystem*/)
+                    if (data.NeutronPrimarySystem == scan.StarSystem && data.ScoopableSecondaryCandidateScan?.StarSystem == data.CurrentSystem
+                        && data.NeutronPrimarySystemNotified != data.CurrentSystem)
                     {
-                        data.NeutronPrimarySystemNotified = data.CurrentSystem; // scan.StarSystem;
+                        data.NeutronPrimarySystemNotified = data.CurrentSystem;
                         string extendedDetails = $"Nearby scoopable secondary star; Type: {data.ScoopableSecondaryCandidateScan?.StarType}, {Math.Round(data.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls";
                         MakeGridItem(scan.Timestamp, extendedDetails);
                         Core.SendNotification(new()
                         {
                             Title = "Nearby scoopable secondary star",
-                            Detail = $"Body {BodyShortName(scan.BodyName, data.CurrentSystem /*scan.StarSystem*/)}{Environment.NewLine}Type: {data.ScoopableSecondaryCandidateScan?.StarType}{Environment.NewLine}{Math.Round(data.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls",
-#if EXTENDED_EVENT_ARGS
+                            Detail = $"Body {BodyShortName(scan.BodyName, data.CurrentSystem)}{Environment.NewLine}Type: {data.ScoopableSecondaryCandidateScan?.StarType}{Environment.NewLine}{Math.Round(data.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls",
                             ExtendedDetails = extendedDetails,
-                            Sender = this,
-#endif
+                            Sender = ShortName,
+                            CoalescingId = scan.BodyID,
                         });
                     }
                     break;
@@ -274,10 +256,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         {
                             Title = "Warning! Low fuel!",
                             Detail = "There is no scoopable star in this system!",
-#if EXTENDED_EVENT_ARGS
                             ExtendedDetails = extendedDetails,
-                            Sender = this,
-#endif
+                            Sender = ShortName,
+                            CoalescingId = Constants.COALESCING_ID_SYSTEM,
                         });
                     }
                     if (!data.AllBodiesFound)
@@ -287,9 +268,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             Title = "FSS completed",
                             Detail = $"All {allFound.Count} bodies found",
                             Rendering = NotificationRendering.PluginNotifier,
-#if EXTENDED_EVENT_ARGS
-                            Sender = this,
-#endif
+                            Sender = ShortName,
+                            CoalescingId = Constants.COALESCING_ID_SYSTEM,
                         });
                     }
                     data.AllBodiesFound = true;
@@ -307,9 +287,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         {
                             Title = $"Body {bodyShortName}",
                             Detail = $"Warning! High gravity: {gravityG:n1}g",
-#if EXTENDED_EVENT_ARGS
-                            Sender = this,
-#endif
+                            Sender = ShortName,
+                            CoalescingId = approachBody.BodyID,
                         });
                     }
                     else if (gravityG > settings.GravityAdvisoryThreshold)
@@ -318,9 +297,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         {
                             Title = $"Body {bodyShortName}",
                             Detail = $"Heads up! Relatively high gravity: {gravityG:n1}g",
-#if EXTENDED_EVENT_ARGS
-                            Sender = this,
-#endif
+                            Sender = ShortName,
+                            CoalescingId = approachBody.BodyID,
                         });
                     }
                     break;
@@ -333,18 +311,16 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             if (status.Fuel != null) 
                 data.FuelRemaining = status.Fuel.FuelMain;
 
-            // TODO: Add a setting for this.
-            if (status.Flags2.HasFlag(StatusFlags2.FsdHyperdriveCharging)
+            if (status.Flags2.HasFlag(StatusFlags2.FsdHyperdriveCharging) && settings.WarnIncompleteUndiscoveredSystemScan
                 && !data.AllBodiesFound && data.UndiscoveredSystem && !incompleteSystemsNotified.Contains(data.CurrentSystem))
             {
                 incompleteSystemsNotified.Add(data.CurrentSystem);
                 Core.SendNotification(new()
                 {
                     Title = "Incomplete system scan!",
-                    Detail = $"Heads up! The undiscovered system you are about to leave is not fully scanned!",
-#if EXTENDED_EVENT_ARGS
-                    Sender = this,
-#endif
+                    Detail = $"The undiscovered system you are about to leave is not fully scanned!",
+                    Sender = ShortName,
+                    CoalescingId = Constants.COALESCING_ID_SYSTEM,
                 });
             }
         }
@@ -410,11 +386,17 @@ namespace com.github.fredjk_gh.ObservatoryHelm
 
         class HelmGrid
         {
+            [ColumnSuggestedWidth(300)]
             public string Timestamp { get; set; }
+            [ColumnSuggestedWidth(350)]
             public string System { get; set; }
+            [ColumnSuggestedWidth(150)]
             public string Fuel { get; set; }
+            [ColumnSuggestedWidth(250)]
             public string DistanceTravelled { get; set; }
+            [ColumnSuggestedWidth(250)]
             public string JumpsRemaining { get; set; }
+            [ColumnSuggestedWidth(500)]
             public string Details { get; set; }
         }
     }

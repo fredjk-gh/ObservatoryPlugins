@@ -16,6 +16,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             GravityWarningThresholdx10 = 30,
             GravityAdvisoryThresholdx10 = 10,
             MaxNearbyScoopableDistance = 3000,
+            WarnIncompleteUndiscoveredSystemScan = false,
         };
 
         private int _gravityWarning = 0;
@@ -54,5 +55,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         [SettingDisplayName("Maximum secondary scoopable star distance (Ls)")]
         [SettingNumericBounds(500, 50000, 1000)]
         public int MaxNearbyScoopableDistance { get; set; }
+
+        [SettingDisplayName("Warn if current undiscovered system is not fully scanned")]
+        public bool WarnIncompleteUndiscoveredSystemScan { get; set; }
     }
 }
