@@ -56,30 +56,6 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 .ToList();
         }
 
-        //[SettingIgnore]
-        //public MiningMethod Method { get; set; }
-
-        //[SettingDisplayName("Method: Laser")]
-        //public bool MethodLaser {
-        //    get { return Method.HasFlag(MiningMethod.Laser); }
-        //    set { Method |= MiningMethod.Laser; }
-        //}
-
-        //[SettingDisplayName("Method: Core")]
-        //public bool MethodCore
-        //{
-        //    get { return Method.HasFlag(MiningMethod.Core); }
-        //    set { Method |= MiningMethod.Core; }
-        //}
-
-        //[SettingDisplayName("Method: SubSurface")]
-        //public bool MethodSubSurface
-        //{
-        //    get { return Method.HasFlag(MiningMethod.SubSurface); }
-        //    set { Method |= MiningMethod.SubSurface; }
-        //}
-
-
         // Raw mats
         [SettingDisplayName("Prospect high material content")]
         public bool ProspectHighMaterialContent { get; set; }
@@ -300,6 +276,19 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             get { return getFor(Commodities.Water); }
             set { setFor(Commodities.Water, value); }
         }
+
+        // Surface material prospecting
+        [SettingDisplayName("Prospect Mats for FSD Boost")]
+        public bool MatsFSDBoost { get; set; }
+
+        [SettingDisplayName("Prospect Mats for AFMU Refill")]
+        public bool MatsAFMURefill { get; set; }
+
+        [SettingDisplayName("Prospect Mats for SRV Refuel")]
+        public bool MatsSRVRefuel { get; set; }
+
+        [SettingDisplayName("Prospect Mats for SRV Repair")]
+        public bool MatsSRVRepair { get; set; }
     }
 
     public class CommodityDetails
@@ -453,5 +442,4 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         Tritium,
         Water,
     }
-
 }

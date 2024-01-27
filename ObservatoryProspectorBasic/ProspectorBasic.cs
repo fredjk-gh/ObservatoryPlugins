@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Observatory.Framework.Files.ParameterTypes;
 using System.Diagnostics;
+using static com.github.fredjk_gh.ObservatoryProspectorBasic.SynthRecipes;
 
 namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
@@ -31,7 +32,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         private PluginUI pluginUI;
         private IObservatoryCore Core;
         ObservableCollection<object> GridCollection = new();
-        private ProspectorSettings settings = new()
+        private ProspectorSettings _settings = new()
         {
             ShowProspectorNotifications = true,
             ShowCargoNotification = true,
@@ -40,20 +41,10 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             ProspectPlatinum = true,
         };
 
-        private string currentSystem = null;
-        private string currentLocation = null;
-        private bool currentLocationShown = false;
-        private HashSet<string> alreadyReportedScansSaaSignals = new();
-        private int goodRocks = 0;
-        private int prospectorsEngaged = 0;
-        private int limpetsAbandoned = 0;
-        private int limpetsUsed = 0;
-        private int limpetsSynthed = 0;
-        private readonly Guid[] prospectorNotifications = new Guid[2];
-        private Guid cargoNotification = Guid.Empty;
-        private int? cargoMax = null;
-        private int? cargoCur = null;
-        private readonly Dictionary<string, int> cargo = new();
+        private TrackedData _data = new();
+        private TrackedStats _stats = new();
+        private readonly Guid[] _prospectorNotifications = new Guid[2];
+        private Guid _cargoNotification = Guid.Empty;
 
         public string Name => "Observatory Prospector Basic";
 
@@ -65,8 +56,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         public object Settings
         {
-            get => settings;
-            set => settings = (ProspectorSettings)value;
+            get => _settings;
+            set => _settings = (ProspectorSettings)value;
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -79,133 +70,141 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     break;
                 case Scan scan:
                     OnScan(scan);
+                    _data.AddScanRawMats(scan);
                     break;
                 case SAASignalsFound saaSignalsFound:
                     OnRingPing(saaSignalsFound);
                     break;
+                case FSSAllBodiesFound allBodies:
+                    if (!_data.AllBodiesFound)
+                    {
+                        FindSynthMatRichBodies();
+                        _data.AllBodiesFound = true;
+                    }
+                    break;
                 case SupercruiseEntry scEntry:
                     // Reset when we jump to supercruise or another system.
                     Reset("SupercruiseEntry");
-                    MaybeUpdateCurrentSystem(scEntry.StarSystem);
+                    _data.LocationChanged(scEntry.StarSystem);
                     if (scEntry is SupercruiseExit)
                     {
                         SupercruiseExit scExit = (SupercruiseExit)scEntry;
-                        MaybeUpdateCurrentLocation(scExit.Body);
+                        _data.LocationChanged(scExit.Body);
                     }
                     break;
                 case FSDJump fsdJump:
                     // Reset when we jump to supercruise or another system.
                     Reset("FSDJump");
-                    MaybeUpdateCurrentSystem(fsdJump.StarSystem);
+                    _data.SystemChanged(fsdJump.StarSystem);
                     break;
                 case Location location:
                     // Reset (this could be game startup or carrier jump)
                     Reset("Location");
-                    MaybeUpdateCurrentSystem(location.StarSystem);
+                    _data.SystemChanged(location.StarSystem);
                     break;
                 case MiningRefined miningRefined:
                     string miningKey = CargoKey(miningRefined.Type, miningRefined.Type_Localised);
-                    if (!cargo.ContainsKey(miningKey)) cargo[miningKey] = 0;
-                    cargo[miningKey] += 1;
-                    if (enableDebug) Debug.WriteLine("MiningRefined: {0} += 1", (object)miningKey);  // The (object) cast here is to force the correct overload of Debug.Writeline.
+                    _data.CargoAdd(miningKey, 1);
+                    Debug.WriteLineIf(enableDebug, $"MiningRefined: {miningKey} += 1");
                     UpdateCargoNotification();
                     break;
                 case BuyDrones buyDrones:
-                    if (!cargo.ContainsKey(LimpetDronesKey)) cargo[LimpetDronesKey] = 0;
-                    cargo[LimpetDronesKey] += buyDrones.Count;
-                    if (enableDebug) Debug.WriteLine("BuyDrones: Limpets += {0}", (object)buyDrones.Count);  // The (object) cast here is to force the correct overload of Debug.Writeline.
+                    _data.CargoAdd(LimpetDronesKey, buyDrones.Count);
+                    Debug.WriteLineIf(enableDebug, $"BuyDrones: Limpets += {buyDrones.Count}");
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case CollectCargo collectCargo:
                     string collectedKey = CargoKey(collectCargo.Type, collectCargo.Type_Localised);
-                    if (!cargo.ContainsKey(collectedKey)) cargo[collectedKey] = 0;
-                    cargo[collectedKey] += 1;
-                    if (enableDebug) Debug.WriteLine("CollectCargo: {0} += 1", (object)collectedKey);  // The (object) cast here is to force the correct overload of Debug.Writeline.
+                    _data.CargoAdd(collectedKey, 1);
+                    Debug.WriteLineIf(enableDebug, $"CollectCargo: {collectedKey} += 1");
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case Synthesis synth:
                     if (CargoKey(synth.Name) == LimpetDronesKey)
                     {
                         // Not always 4 limpets synthed -- depends on available cargo space.
-                        var limpetsSynthedGuess = Math.Min(4, (cargoMax ?? 4) - (cargoCur ?? 0));
-                        limpetsSynthed += limpetsSynthedGuess;
-                        if (!cargo.ContainsKey(LimpetDronesKey)) cargo[LimpetDronesKey] = 0;
-                        cargo[LimpetDronesKey] += limpetsSynthedGuess;
-                        if (enableDebug) Debug.WriteLine("Synthesis: Limpets += 4");
+                        var limpetsSynthedGuess = Math.Min(4, (_data.CargoMax ?? 4) - (_data.CargoCur ?? 0));
+                        _stats.LimpetsSynthed += limpetsSynthedGuess;
+                        _data.CargoAdd(LimpetDronesKey, limpetsSynthedGuess);
+                        Debug.WriteLineIf(enableDebug, $"Synthesis: Limpets += {limpetsSynthedGuess}");
                         UpdateCargoNotification(false /* newNotification */);
+                    }
+                    foreach (var mat in synth.Materials)
+                    {
+                        if (MaterialData.IsRawMat(mat.Name)) {
+                            _data.RawMatInventorySubtract(mat.Name, mat.Count);
+                        }
                     }
                     break;
                 case SellDrones sellDrones:
-                    if (cargo.ContainsKey(LimpetDronesKey))
+                    if (_data.CargoGet(LimpetDronesKey) > 0)
                     {
-                        if (enableDebug) Debug.WriteLine("SellDrones: Limpets -= Min( {0}, {1} )", sellDrones.Count, cargo[LimpetDronesKey]);
-                        cargo[LimpetDronesKey] -= Math.Min(sellDrones.Count, cargo[LimpetDronesKey]);
+                        Debug.WriteLineIf(enableDebug, $"SellDrones: Limpets -= {sellDrones.Count}");
+                        _data.CargoRemove(LimpetDronesKey, sellDrones.Count);
                         UpdateCargoNotification(false /* newNotification */);
                     }
                     break;
                 case EjectCargo eject:
                     string ejectedKey = CargoKey(eject.Type, eject.Type_Localised);
-                    if (cargo.ContainsKey(ejectedKey))
+                    if (_data.CargoGet(ejectedKey) > 0)
                     {
-                        if (enableDebug) Debug.WriteLine("EjectCargo: {0} -= Min of ( {1}, {2} )", ejectedKey, eject.Count, cargo[ejectedKey]);
-                        cargo[ejectedKey] -= Math.Min(eject.Count, cargo[ejectedKey]);
+                        Debug.WriteLineIf(enableDebug, $"EjectCargo: {ejectedKey} -= {eject.Count}");
+                        _data.CargoRemove(ejectedKey, eject.Count);
                     }
                     if (ejectedKey == LimpetDronesKey) // Ditching limpets:
-                        limpetsAbandoned += eject.Count;
+                        _stats.LimpetsAbandoned += eject.Count;
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case LaunchDrone launchDrone:
                     // Ignore if unset (we can't subtract from a value we don't know).
-                    if (enableDebug) Debug.WriteLine("LaunchDrone: Limpets -= 1");
-                    if (cargo.ContainsKey(LimpetDronesKey) && cargo[LimpetDronesKey] > 0) cargo[LimpetDronesKey] -= 1;
-                    limpetsUsed++;
+                    Debug.WriteLineIf(enableDebug, "LaunchDrone: Limpets -= 1");
+                    _data.CargoRemove(LimpetDronesKey, 1);
+                    _stats.LimpetsUsed++;
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case Loadout loadout:
-                    cargoMax = loadout.CargoCapacity;
-                    if (cargoMax > 0 && enableDebug) Debug.WriteLine("Loadout: New cargoMax: {0}", loadout.CargoCapacity);
+                    _data.CargoMax = loadout.CargoCapacity;
+                    Debug.WriteLineIf(_data.CargoMax > 0 && enableDebug, $"Loadout: New cargoMax: {loadout.CargoCapacity}");
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case Cargo cargoEvent:
-                    cargoCur = cargoEvent.Count;
+                    _data.CargoCur = cargoEvent.Count;
                     if (cargoEvent.Inventory != null && !cargoEvent.Inventory.IsEmpty) // Usually on game load or loadout change.
                     {
-                        if (cargoCur > 0 && enableDebug) Debug.WriteLine("Cargo w/Inventory: cargoCur: {0}", cargoCur);
+                        Debug.WriteLineIf(_data.CargoCur > 0 && enableDebug, $"Cargo w/Inventory: cargoCur: {_data.CargoCur}");
                         Reset("Cargo w/Inventory");
-                        cargo.Clear(); // This is a cargo state reset.
+                        _data.Cargo.Clear(); // This is a cargo state reset.
                         foreach (CargoType inventoryItem in cargoEvent.Inventory)
                         {
                             string inventoryKey = CargoKey(inventoryItem.Name);
-                            // replace any value 
-                            cargo[inventoryKey] = inventoryItem.Count;
+                            _data.CargoAdd(inventoryKey, inventoryItem.Count);
                         }
                         UpdateCargoNotification(false /* newNotification */);
                     }
-                    else if (cargoEvent.Count == 0 && cargo.Values.Sum() > 0)
+                    else if (cargoEvent.Count == 0 && _data.Cargo.Values.Sum() > 0)
                     {
                         // On rare occasion we'll find that the game doesn't properly account for all launched limpets and we'll
                         // end up with limpets "stuck" in our inventory. When the cargoEvent reports 0, we have an opportunity to
                         // fix. So clear the cargo contents and effectively reset.
-                        if (enableDebug) Debug.WriteLine("Cargo event with 0 count but we think we still have {0} items... Correction!", cargo.Values.Sum());
+                        Debug.WriteLineIf(enableDebug, $"Cargo event with 0 count but we think we still have {_data.Cargo.Values.Sum()} items... Correction!");
                         Reset("Cargo");
-                        cargo.Clear();
+                        _data.Cargo.Clear();
                         UpdateCargoNotification(false /* newNotification */);
                     }
                     break;
                 case MarketSell marketSell:
                     string sellKey = CargoKey(marketSell.Type, marketSell.Type_Localised);
-                    if (cargo.ContainsKey(sellKey))
+                    if (_data.CargoGet(sellKey) > 0)
                     {
-                        if (enableDebug) Debug.WriteLine("MarketSell: {0} -= Min of ( {1}, {2} )", sellKey, marketSell.Count, cargo[sellKey]);
-                        cargo[sellKey] -= Math.Min(marketSell.Count, cargo[sellKey]);
+                        Debug.WriteLineIf(enableDebug, $"MarketSell: {sellKey} -= {marketSell.Count}");
+                        _data.CargoRemove(sellKey, marketSell.Count);
                     }
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case MarketBuy marketBuy:
                     string buyKey = CargoKey(marketBuy.Type, marketBuy.Type_Localised);
-                    if (!cargo.ContainsKey(buyKey)) cargo[buyKey] = 0;
-                    cargo[buyKey] += marketBuy.Count;
-                    if (enableDebug) Debug.WriteLine("MarketBuy: {0} += {1}", buyKey, marketBuy.Count);
+                    _data.CargoAdd(buyKey, marketBuy.Count);
+                    Debug.WriteLineIf(enableDebug, $"MarketBuy: {buyKey} += {marketBuy.Count}");
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case CargoTransfer transfer:
@@ -214,64 +213,164 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                         string transferKey = CargoKey(transferred.Type, transferred.Type_Localised);
                         if (transferred.Direction == CargoTransferDirection.ToShip)
                         {
-                            if (enableDebug) Debug.WriteLine("CargoTransfer (to Ship): {0} += {1}", transferKey, transferred.Count);
-                            if (!cargo.ContainsKey(transferKey)) cargo[transferKey] = 0;
-                            cargo[transferKey] += transferred.Count;
+                            Debug.WriteLineIf(enableDebug, $"CargoTransfer (to Ship): {transferKey} += {transferred.Count}");
+                            _data.CargoAdd(transferKey, transferred.Count);
                         }
-                        else if (cargo.ContainsKey(transferKey)) // tocarrier and tosrv; either way, off the ship
+                        else if (_data.CargoGet(transferKey) > 0) // tocarrier and tosrv; either way, off the ship
                         {
-                            if (enableDebug) Debug.WriteLine("CargoTransfer (off Ship): {0} -= Min of ( {1}, {2} )", transferKey, transferred.Count, cargo[transferKey]);
-                            cargo[transferKey] -= Math.Min(transferred.Count, cargo[transferKey]);
+                            Debug.WriteLineIf(enableDebug, $"CargoTransfer (off Ship): {transferKey} -= {transferred.Count}");
+                            _data.CargoRemove(transferKey, transferred.Count);
                         }
                     }
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case CarrierDepositFuel tritiumDonation:
-                    if (cargo.ContainsKey(TritiumKey))
+                    if (_data.CargoGet(TritiumKey) > 0)
                     {
-                        if (enableDebug) Debug.WriteLine("CarrierDepositFuel: Tritium -= Min of ( {0}, {1} )", tritiumDonation.Amount, cargo[TritiumKey]);
-                        cargo[TritiumKey] -= Math.Min(tritiumDonation.Amount, cargo[TritiumKey]);
+                        Debug.WriteLineIf(enableDebug, $"CarrierDepositFuel: Tritium -= {tritiumDonation.Amount}");
+                        _data.CargoRemove(TritiumKey, tritiumDonation.Amount);
                         UpdateCargoNotification(false /* newNotification */);
                     }
                     break;
+                case Materials mats:
+                    _data.RawMatInventoryUpdate(mats);
+                    break;
+                case MaterialCollected matCollected:
+                    if (matCollected.Category.ToLower() != "raw") break;
+                    var discarded = matCollected as MaterialDiscarded;
+                    if (discarded != null)
+                        // Why would one ever do this!? Also, how?
+                        _data.RawMatInventorySubtract(discarded.Name, discarded.Count);
+                    else
+                        _data.RawMatInventoryAdd(matCollected.Name, matCollected.Count);
+                    break;
+                case MaterialTrade matTrade:
+                    if (matTrade.Paid.Category.ToLower() == "raw")
+                        _data.RawMatInventorySubtract(matTrade.Paid.Material, matTrade.Paid.Quantity);
+                    if (matTrade.Received.Category.ToLower() == "raw")
+                        _data.RawMatInventorySubtract(matTrade.Received.Material, matTrade.Received.Quantity);
+
+                    break;
+
+                // Maybe todo: Handle other events which could affect mat inventory:
+                // - Mission rewards
+                // - Techbroker unlocks
+                // - Engineer contributions
+                // - Engineer crafting
+                // - Scientific Research - is this even used?
                 case Shutdown shutdown:
                     Reset("Shutdown", true);
                     break;
             }
         }
 
+        private void FindSynthMatRichBodies()
+        {
+            HashSet<string> allAvailableMats = new();
+            if (_settings.MatsFSDBoost) allAvailableMats.UnionWith(FindAvailableSynthRecipeLevels("FSD Boost", SynthRecipes.FSDBoost));
+            if (_settings.MatsAFMURefill) allAvailableMats.UnionWith(FindAvailableSynthRecipeLevels("AFMU Refill", SynthRecipes.AFMURefill));
+            if (_settings.MatsSRVRefuel) allAvailableMats.UnionWith(FindAvailableSynthRecipeLevels("SRV Refuel", SynthRecipes.SRVRefuel));
+            if (_settings.MatsSRVRepair) allAvailableMats.UnionWith(FindAvailableSynthRecipeLevels("SRV Repair", SynthRecipes.SRVRepair));
+
+            var bestMatBodies = _data.MatsInSystem.Where(e => allAvailableMats.Contains(e.Key))
+                .Select(e => e.Value.OrderByDescending(bmc => bmc.Percent).First())
+                .GroupBy(bmc => (bmc.BodyName, bmc.BodyID))
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var items = new List<ProspectorGrid>();
+            foreach (var e in bestMatBodies)
+            {
+                Core.SendNotification(new()
+                {
+                    Sender = ShortName,
+                    CoalescingId =  e.Key.BodyID,
+                    Title =  _data.GetBodyTitle(e.Key.BodyName),
+                    Detail = $"Good source of synth mats",
+                    ExtendedDetails = $"Materials: {string.Join(", ", e.Value.Select(bmc => $"{bmc.Material}: {bmc.Percent:n2}%"))}",
+                    Rendering = NotificationRendering.PluginNotifier,
+                });
+
+                items.Add(new()
+                {
+                    Location = $"{_data.SystemName} {e.Key.BodyName}",
+                    Commodity = $"{string.Join(", ", e.Value.Select(bmc => $"{bmc.Material}"))}",
+                    Percentage = "",
+                    Details = "",
+                });
+            }
+            Core.AddGridItems(this, items);
+        }
+
+        private HashSet<string> FindAvailableSynthRecipeLevels(string recipeName, Dictionary<SynthLevel, HashSet<string>> recipe)
+        {
+            List<SynthLevel> synthLevelMatsFound = new();
+            HashSet<string> availableMats = new();
+
+            foreach (var r in recipe)
+            {
+                if (r.Value.All(m => _data.MatsInSystem.ContainsKey(m)))
+                {
+                    synthLevelMatsFound.Add(r.Key);
+                    availableMats.UnionWith(r.Value);
+                }
+            }
+
+            if (synthLevelMatsFound.Count > 0)
+            {
+                var levelsStr = $"{string.Join(" | ", synthLevelMatsFound.Select(l => SynthRecipes.SynthLevelSymbols[l]))}";
+                List<ProspectorGrid> gridItems = new();
+                Core.AddGridItem(this, new ProspectorGrid()
+                {
+                    Location = _data.SystemName,
+                    Commodity = recipeName,
+                    Percentage = levelsStr,
+                });
+
+                Core.SendNotification(new()
+                {
+                    Sender = ShortName,
+                    CoalescingId = -22,
+                    Title = "Surface materials available",
+                    Detail = $"For {recipeName}",
+                    ExtendedDetails = $"Levels: {levelsStr}",
+                    Rendering = NotificationRendering.PluginNotifier,
+                });
+            }
+
+            return availableMats;
+        }
+
         private void UpdateCargoNotification(bool newNotification = true)
         {
-            if (!settings.ShowCargoNotification) return;
+            if (!_settings.ShowCargoNotification) return;
 
-            int cargoEstimate = cargo.Values.Sum();
-            if (cargoEstimate == 0 || (cargo.Count == 1 && cargo.ContainsKey(LimpetDronesKey)))
+            int cargoEstimate = _data.Cargo.Values.Sum();
+            if (cargoEstimate == 0 || (_data.Cargo.Count == 1 && _data.CargoGet(LimpetDronesKey) > 0))
             {
-                if (MaybeCloseCargoNotification() && enableDebug)
-                    Debug.WriteLine("\t--Cargo Notification closed; no cargo or only limpets remaining.");
+                Debug.WriteLineIf(MaybeCloseCargoNotification() && enableDebug, "\t--Cargo Notification closed; no cargo or only limpets remaining.");
                 return;
             }
 
-            string cargoTitle = cargoMax == null ? "Cargo" : $"Cargo ({cargoEstimate} / {cargoMax})";
-            string cargoDetail = string.Join(Environment.NewLine, cargo.Where(kvp => kvp.Value > 0).Select(kvp =>
+            string cargoTitle = _data.CargoMax == null ? "Cargo" : $"Cargo ({cargoEstimate} / {_data.CargoMax})";
+            string cargoDetail = string.Join(Environment.NewLine, _data.Cargo.Where(kvp => kvp.Value > 0).Select(kvp =>
             {
                 if (kvp.Key == LimpetDronesKey)
                 {
-                    if (limpetsAbandoned > 0)
+                    if (_stats.LimpetsAbandoned > 0)
                     {
-                        int totalLimpets = limpetsAbandoned + limpetsUsed;
-                        return $"{CargoName(kvp.Key)}: {kvp.Value} ({(limpetsAbandoned * 100.0 / totalLimpets):N0}% wasted)";
+                        int totalLimpets = _stats.LimpetsAbandoned + _stats.LimpetsUsed;
+                        return $"{CargoName(kvp.Key)}: {kvp.Value} ({(_stats.LimpetsAbandoned * 100.0 / totalLimpets):N0}% wasted)";
                     }
-                    else if (limpetsSynthed > 0)
+                    else if (_stats.LimpetsSynthed > 0)
                     {
-                        return $"{CargoName(kvp.Key)}: {kvp.Value} ({limpetsSynthed} short)";
+                        return $"{CargoName(kvp.Key)}: {kvp.Value} ({_stats.LimpetsSynthed} short)";
                     }
                 }
                 return $"{CargoName(kvp.Key)}: {kvp.Value}";
             }));
-            if (enableDebug) Debug.WriteLine("\t--Cargo Notification update: {0}; {1}", cargoTitle, cargoDetail.Replace(Environment.NewLine, "; "));
+            Debug.WriteLineIf(enableDebug, $"\t--Cargo Notification update: {cargoTitle}; {cargoDetail.Replace(Environment.NewLine, "; ")}");
 
-            if (Core.IsLogMonitorBatchReading || (cargoNotification == Guid.Empty && !newNotification))
+            if (Core.IsLogMonitorBatchReading || (_cargoNotification == Guid.Empty && !newNotification))
             {
                 // Read-all or this notification shouldn't spawn a new notification and that's what we'd do next -- so we're done here.
                 return;
@@ -285,79 +384,73 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 XPos = 83,
                 YPos = 15,
                 Rendering = NotificationRendering.NativeVisual,
-#if EXTENDED_EVENT_ARGS
-                Sender = this,
-#endif
+                Sender = ShortName,
             };
-            if (cargoNotification == Guid.Empty)
+            if (_cargoNotification == Guid.Empty)
             {
-                cargoNotification = Core.SendNotification(args);
+                _cargoNotification = Core.SendNotification(args);
             }
             else
             {
-                Core.UpdateNotification(cargoNotification, args);
+                Core.UpdateNotification(_cargoNotification, args);
             }
         }
 
         private void AddOrUpdateProspectorNotification(int counter, NotificationArgs args)
         {
-            if (enableDebug) Debug.WriteLine("ProspectedAsteroid: {0}; {1}", args.Title, args.Detail);
+            Debug.WriteLineIf(enableDebug, "ProspectedAsteroid: {args.Title}; {args.Detail}");
 
-            if (!settings.ShowProspectorNotifications || Core.IsLogMonitorBatchReading) return;
+            if (!_settings.ShowProspectorNotifications || Core.IsLogMonitorBatchReading) return;
 
             // This method supports notifications with timeout OR persistent notifications.
-            if (args.Timeout > 0 && prospectorNotifications[counter % 2] != Guid.Empty)
+            if (args.Timeout > 0 && _prospectorNotifications[counter % 2] != Guid.Empty)
             {
                 // Notifications have a time out: Guid should be assumed invalid. Close it explicitly and clear the guid.
                 // Would be nice if we could interrogate Core for the state of a notification ID (ie. is the Guid still associated with a valid notification)?
-                Core.CancelNotification(prospectorNotifications[counter % 2]);
-                prospectorNotifications[counter % 2] = Guid.Empty;
+                Core.CancelNotification(_prospectorNotifications[counter % 2]);
+                _prospectorNotifications[counter % 2] = Guid.Empty;
             }
 
-            if (prospectorNotifications[counter % 2] == Guid.Empty)
+            if (_prospectorNotifications[counter % 2] == Guid.Empty)
             {
-                prospectorNotifications[counter % 2] = Core.SendNotification(args);
+                _prospectorNotifications[counter % 2] = Core.SendNotification(args);
             }
             else
             {
-                Core.UpdateNotification(prospectorNotifications[counter % 2], args);
+                Core.UpdateNotification(_prospectorNotifications[counter % 2], args);
             }
         }
 
         private void Reset(string caller, bool closeStaticNotificationsToo = false)
         {
             bool notificationsClosed = false;
-            for (int i = 0; i < prospectorNotifications.Length; i++)
+            for (int i = 0; i < _prospectorNotifications.Length; i++)
             {
-                Guid notification = prospectorNotifications[i];
+                Guid notification = _prospectorNotifications[i];
                 if (notification != Guid.Empty)
                 {
                     Core.CancelNotification(notification);
-                    prospectorNotifications[i] = Guid.Empty;
+                    _prospectorNotifications[i] = Guid.Empty;
                     notificationsClosed = true;
                 }
             }
             if (closeStaticNotificationsToo) notificationsClosed |= MaybeCloseCargoNotification();
 
             // Reset stats.
-            if ((notificationsClosed || prospectorsEngaged > 0) && enableDebug)
-                Debug.WriteLine("\t--{0} - Reset; Stats: prospectorsEngaged: {1}, limpetsUsed: {2}, limpetsSynthed: {3}, limpetsAbandoned: {4}, goodRocks: {5}", caller, prospectorsEngaged, limpetsUsed, limpetsSynthed, limpetsAbandoned, goodRocks);
+            if ((notificationsClosed || _stats.ProspectorsEngaged > 0) && enableDebug)
+                Debug.WriteLine($"\t--{caller} - Reset; Stats: prospectorsEngaged: {_stats.ProspectorsEngaged}, limpetsUsed: {_stats.LimpetsUsed}, limpetsSynthed: {_stats.LimpetsSynthed}, limpetsAbandoned: {_stats.LimpetsAbandoned}, goodRocks: {_stats.GoodRocks}");
 
-            prospectorsEngaged = 0;
-            limpetsSynthed = 0;
-            limpetsUsed = 0;
-            limpetsAbandoned = 0;
-            goodRocks = 0;
+            _stats.Reset();
             // cargoMax can get updated by the next Loadout.
         }
         
         private bool MaybeCloseCargoNotification()
         {
-            if (cargoNotification != Guid.Empty)
+            if (_cargoNotification != Guid.Empty)
             {
                 // Close the notification.
-                Core.CancelNotification(cargoNotification);
-                cargoNotification = Guid.Empty;
+                Core.CancelNotification(_cargoNotification);
+                _cargoNotification = Guid.Empty;
                 return true;
             }
             return false;
@@ -365,11 +458,11 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         private void OnScan(Scan scan)
         {
-            if (scan.Rings == null || scan.Rings.IsEmpty || alreadyReportedScansSaaSignals.Contains(scan.BodyName) || !settings.MentionPotentiallyMineableRings || !settings.MentionableRings.HasValue) return;
+            if (scan.Rings == null || scan.Rings.IsEmpty || _data.AlreadyReportedScansSaaSignals.Contains(scan.BodyName) || !_settings.MentionPotentiallyMineableRings || !_settings.MentionableRings.HasValue) return;
 
-            alreadyReportedScansSaaSignals.Add(scan.BodyName);
+            _data.AlreadyReportedScansSaaSignals.Add(scan.BodyName);
             List<Tuple<string,string,string>> ringsOfInterest = new();
-            RingType mentionableRings = settings.MentionableRings.Value;
+            RingType mentionableRings = _settings.MentionableRings.Value;
             foreach (Ring ring in scan.Rings)
             {
                 // Ignore belts.
@@ -380,15 +473,15 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 {
                     if (mentionableRings.HasFlag(rt) && ring.RingClass.Contains(rt.MatchString()))
                     {
-                        double densityMTperkm2 = Math.Round(ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0))));
+                        double densityMTperkm2 = ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0)));
                         if (densityMTperkm2 < minRingDensity)
                         {
-                            if (enableDebug) Debug.WriteLine("Scan: Ignoring interesting ring with low density: {0}", densityMTperkm2);
+                            Debug.WriteLineIf(enableDebug, $"Scan: Ignoring interesting ring with low density: {densityMTperkm2:n1}");
                             break;
                         }
-                        string desiredCommodities = string.Join(", ", settings.DesirableCommonditiesByRingType(rt).Select(c => c.ToString()));
+                        string desiredCommodities = string.Join(", ", _settings.DesirableCommonditiesByRingType(rt).Select(c => c.ToString()));
                         var tuple = new Tuple<string, string, string>(
-                            $"{rt.DisplayString()} Ring", $"[{desiredCommodities}]", $"Density: {densityMTperkm2:N1} mT/km^2");
+                            $"{rt.DisplayString()} Ring", $"[{desiredCommodities}]", $"Density: {densityMTperkm2:n1} mT/km^2");
                         if (!ringsOfInterest.Contains(tuple)) ringsOfInterest.Add(tuple);
                         break;
                     }
@@ -396,33 +489,29 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             }
             if (ringsOfInterest.Count == 0) return;
 
-            var shortBodyName = GetShortBodyName(scan.BodyName);
+            var shortBodyName = _data.GetShortBodyName(scan.BodyName);
             var detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => $"{t.Item1} {t.Item2}, {t.Item3}"));
             var bodyDistance = $", distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
-            if (enableDebug) Debug.WriteLine("Scan: Interesting rings at body {0}: {1}", shortBodyName, detailsCommaSeparated + bodyDistance);
+            Debug.WriteLineIf(enableDebug, $"Scan: Interesting rings at body {shortBodyName}: {detailsCommaSeparated + bodyDistance}");
 
             Core.AddGridItem(this, new ProspectorGrid()
             {
                 Location = scan.BodyName,
                 Details = detailsCommaSeparated + bodyDistance,
             });
-            if (!Core.IsLogMonitorBatchReading)
+            Core.SendNotification(new NotificationArgs()
             {
-                Core.SendNotification(new NotificationArgs()
-                {
-                    Title = $"Body {shortBodyName}",
-                    Detail = string.Join(Environment.NewLine, string.Join(", ", ringsOfInterest.Select(t => t.Item1))),
-#if EXTENDED_EVENT_ARGS
-                    ExtendedDetails = detailsCommaSeparated + bodyDistance,
-                    Sender = this,
-#endif
-                });
-            }
+                Title = _data.GetBodyTitle(shortBodyName),
+                Detail = string.Join(Environment.NewLine, string.Join(", ", ringsOfInterest.Select(t => t.Item1))),
+                ExtendedDetails = detailsCommaSeparated + bodyDistance,
+                Sender = ShortName,
+                CoalescingId = scan.BodyID,
+            });
         }
 
         private void OnProspectedAsteroid(ProspectedAsteroid prospected)
         {
-            int prospectorId = prospectorsEngaged++; // Kind-of assumes things land in the order they're launched. But meh.
+            int prospectorId = _stats.ProspectorsEngaged++; // Kind-of assumes things land in the order they're launched. But meh.
             if (prospected.Remaining < 100)
             {
                 AddOrUpdateProspectorNotification(prospectorId, MakeProspectorNotificationArgs("Depleted", "", prospectorId, NotificationRendering.NativeVisual));
@@ -431,39 +520,39 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
             // Separate grid entry, but combine it with other notifications.
             string highMaterialContent = "";
-            if (settings.ProspectHighMaterialContent && prospected.Content == "$AsteroidMaterialContent_High;")
+            if (_settings.ProspectHighMaterialContent && prospected.Content == "$AsteroidMaterialContent_High;")
             {
                 highMaterialContent = " and has high material content";
                 Core.AddGridItem(this, new ProspectorGrid
                 {
-                    Location = !currentLocationShown ? currentLocation : string.Empty,
+                    Location = !_data.CurrentLocationShown ? _data.LocationName : string.Empty,
                     Commodity = "Raw materials",
                     Percentage = "High",
                     Details = string.Empty,
                 });
-                if (!currentLocationShown) currentLocationShown = true;
+                if (!_data.CurrentLocationShown) _data.CurrentLocationShown = true;
             }
 
             Commodities ml;
-            if (Enum.TryParse<Commodities>(prospected.MotherlodeMaterial, true, out ml) && settings.getFor(ml))
+            if (Enum.TryParse<Commodities>(prospected.MotherlodeMaterial, true, out ml) && _settings.getFor(ml))
             {
                 // Found a core of interest!
-                goodRocks++;
+                _stats.GoodRocks++;
                 string name = CommodityName(prospected.MotherlodeMaterial, prospected.MotherlodeMaterial_Localised);
-                string cumulativeStats = $"{(goodRocks * 1000) / (prospectorsEngaged * 10.0):N1}% good rocks ({goodRocks}/{prospectorsEngaged})";
+                string cumulativeStats = $"{(_stats.GoodRocks * 1000.0) / (_stats.ProspectorsEngaged * 10.0):N1}% good rocks ({_stats.GoodRocks}/{_stats.ProspectorsEngaged})";
                 Core.AddGridItem(this, new ProspectorGrid
                 {
-                    Location = !currentLocationShown ? currentLocation : string.Empty,
+                    Location = !_data.CurrentLocationShown ? _data.LocationName : string.Empty,
                     Commodity = name,
                     Percentage = "Core found",
                     Details = cumulativeStats,
                 });
-                if (!currentLocationShown) currentLocationShown = true;
-
+                if (!_data.CurrentLocationShown) _data.CurrentLocationShown = true;
+                
                 NotificationArgs args = MakeProspectorNotificationArgs(
                     "Core found", $"Asteroid contains core of {name}{highMaterialContent}", prospectorId, NotificationRendering.All);
                 AddOrUpdateProspectorNotification(prospectorId, args);
-                if (enableDebug) Debug.WriteLine("\t--Grid Update: {0}; {1}, {2}", name, "Core found", cumulativeStats);
+                Debug.WriteLineIf(enableDebug, $"\t--Grid Update: {name}; Core found, {cumulativeStats}");
                 return;
             }
 
@@ -477,7 +566,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     continue;
                 }
 
-                if (settings.getFor(c))
+                if (_settings.getFor(c))
                 {
                     string name = CommodityName(m.Name, m.Name_Localised);
                     desireableCommodities.Add(name, m.Proportion);
@@ -485,23 +574,23 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 }
             }
 
-            if (desireableCommodities.Count > 0 && desireableCommoditiesPercentSum > settings.MinimumPercent)
+            if (desireableCommodities.Count > 0 && desireableCommoditiesPercentSum > _settings.MinimumPercent)
             {
-                goodRocks++;
+                _stats.GoodRocks++;
                 string title;
                 string details;
                 string commodities = String.Join(", ", desireableCommodities.Keys);
                 string percentageString = $"{desireableCommoditiesPercentSum:N2}%";
-                string cumulativeStats = $"{(goodRocks * 1000) / (prospectorsEngaged * 10.0):N1}% good rocks ({goodRocks}/{prospectorsEngaged})";
+                string cumulativeStats = $"{(_stats.GoodRocks * 1000) / (_stats.ProspectorsEngaged * 10.0):N1}% good rocks ({_stats.GoodRocks}/{_stats.ProspectorsEngaged})";
 
                 Core.AddGridItem(this, new ProspectorGrid
                 {
-                    Location = !currentLocationShown ? currentLocation : string.Empty,
+                    Location = !_data.CurrentLocationShown ? _data.LocationName : string.Empty,
                     Commodity = commodities,
                     Percentage = percentageString,
                     Details = cumulativeStats
                 });
-                if (!currentLocationShown) currentLocationShown = true;
+                if (!_data.CurrentLocationShown) _data.CurrentLocationShown = true;
 
                 if (desireableCommodities.Count > 1)
                 {
@@ -515,7 +604,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     details = $"Asteroid is {desireableCommoditiesPercentSum:N0} percent {commodities}{highMaterialContent}";
                 }
                 AddOrUpdateProspectorNotification(prospectorId, MakeProspectorNotificationArgs(title, details, prospectorId, NotificationRendering.All));
-                if (enableDebug) Debug.WriteLine("\t--Grid Update: {0}; {1}, {2}", commodities, percentageString, cumulativeStats);
+                Debug.WriteLine(enableDebug, $"\t--Grid Update: {commodities}; {percentageString}, {cumulativeStats}");
                 return;
             }
             // If we got here, we didn't find anything interesting.
@@ -536,13 +625,13 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         private void OnRingPing(SAASignalsFound saaSignalsFound)
         {
-            if (String.IsNullOrEmpty(currentSystem)) return;
-            var ringName = GetShortBodyName(saaSignalsFound.BodyName);
-            if (saaSignalsFound.Signals == null || saaSignalsFound.Signals.Count == 0 || alreadyReportedScansSaaSignals.Contains(ringName)
+            if (String.IsNullOrEmpty(_data.SystemName)) return;
+            var ringName = _data.GetShortBodyName(saaSignalsFound.BodyName);
+            if (saaSignalsFound.Signals == null || saaSignalsFound.Signals.Count == 0 || _data.AlreadyReportedScansSaaSignals.Contains(ringName)
                     || !ringName.Contains(" Ring", StringComparison.InvariantCultureIgnoreCase))
                 return;
 
-            alreadyReportedScansSaaSignals.Add(ringName);
+            _data.AlreadyReportedScansSaaSignals.Add(ringName);
             Dictionary<string, int> desireableCommodities = new();
             List<string> notificationDetail = new();
 
@@ -554,7 +643,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     continue;
                 }
 
-                if (settings.getFor(c))
+                if (_settings.getFor(c))
                 {
                     string name = CommodityName(m.Type, m.Type);
                     desireableCommodities.Add(name, m.Count);
@@ -567,13 +656,13 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                         Details = $"{m.Count} hotspot{(m.Count > 1 ? "s" : string.Empty)}",
                     });
                     notificationDetail.Add($"{m.Count} {name}");
-                    if (!currentLocationShown) currentLocationShown = true;
+                    if (!_data.CurrentLocationShown) _data.CurrentLocationShown = true;
                 }
             }
 
             if (notificationDetail.Count > 0)
             {
-                if (enableDebug) Debug.WriteLine("SAASignalsFound: {0}: {1} contains: {2}", "Hotspots of interest", ringName, string.Join(", ", notificationDetail));
+                Debug.WriteLineIf(enableDebug, $"SAASignalsFound: Hotspots of interest: {ringName} contains: {string.Join(", ", notificationDetail)}");
 
                 if (Core.IsLogMonitorBatchReading) return;
 
@@ -581,31 +670,10 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 {
                     Title = "Hotspots of interest",
                     Detail = $"{ringName} contains:{Environment.NewLine}{string.Join(Environment.NewLine, notificationDetail)}",
-#if EXTENDED_EVENT_ARGS
-                    Sender = this,
-#endif
+                    Sender = ShortName,
+                    CoalescingId = saaSignalsFound.BodyID,
                 });
             }
-        }
-
-        private void MaybeUpdateCurrentSystem(string starSystem)
-        {
-            if (starSystem != null && currentSystem != starSystem)
-            {
-                //if (enableDebug) Debug.WriteLine("MaybeUpdateCurrentSystem: Updating to {0}, clearing grid", (object)currentSystem);
-                currentSystem = starSystem;
-                currentLocation = null;
-                currentLocationShown = false;
-                alreadyReportedScansSaaSignals.Clear();
-                if (!Core.IsLogMonitorBatchReading) Core.ClearGrid(this, new ProspectorGrid());
-            }
-        }
-
-        private void MaybeUpdateCurrentLocation(string body)
-        {
-            //if (body != currentLocation && !string.IsNullOrEmpty(body) && enableDebug) Debug.WriteLine("MaybeUpdateCurrentLocation: Updating to {0}", (object)body);
-            currentLocation = body;
-            currentLocationShown = false;
         }
 
         private NotificationArgs MakeProspectorNotificationArgs(string title, string detail, int index, NotificationRendering rendering)
@@ -619,26 +687,9 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 XPos = 1,
                 YPos = ((index % 2) + 1) * 15,
                 Rendering = rendering,
-#if EXTENDED_EVENT_ARGS
-                Sender = this,
-#endif
+                Sender = ShortName,
             };
             return args;
-        }
-
-        // TODO: Extract these to shared library or move into IObservatoryCore?
-        private string GetShortBodyName(string bodyName, string baseName = "")
-        {
-            return string.IsNullOrEmpty(baseName) ? bodyName.Replace(currentSystem, "").Trim() : bodyName.Replace(baseName, "").Trim();
-        }
-
-        private string GetBodyTitle(string bodyName)
-        {
-            if (bodyName.Length == 0)
-            {
-                return "Primary Star";
-            }
-            return $"Body {bodyName}";
         }
 
         private string CargoKey(string name, string localizedName = "")
@@ -709,9 +760,13 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
     public class ProspectorGrid
     {
+        [ColumnSuggestedWidth(400)]
         public string Location { get; set; }
+        [ColumnSuggestedWidth(250)]
         public string Commodity { get; set; }
+        [ColumnSuggestedWidth(150)]
         public string Percentage { get; set; }
+        [ColumnSuggestedWidth(500)]
         public string Details { get; set; }
     }
 }
