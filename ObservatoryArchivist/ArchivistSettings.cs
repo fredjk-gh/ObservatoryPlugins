@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Observatory.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
     {
         public static readonly ArchivistSettings DEFAULT = new()
         {
+            ShareSystemData = true,
         };
+
+        [SettingNewGroup("Plugin Interop")]
+        [SettingDisplayName("Share data for known systems")]
+        public bool ShareSystemData { get; set; }
     }
 }

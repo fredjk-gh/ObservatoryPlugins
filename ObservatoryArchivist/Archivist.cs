@@ -3,6 +3,8 @@ using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
 using System.Collections.ObjectModel;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist
 {
@@ -128,22 +130,12 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                         currentSystemInfo = LoadOrInitSystemInfo(
                             lastFileHeaderInfo, fsdJump.StarSystem, fsdJump.SystemAddress, fsdJump.TimestampDateTime);
                     }
+
                     // Don't add extraneous jumps.
                     if (currentSystemInfo.SystemJournalEntries.Count == 0)
                         currentSystemInfo.AddSystemJournalJson(fsdJump.Json, fsdJump.TimestampDateTime);
                     else
-                    {
-                        // Send existing system data via inter-plugin message bus, in case anyone can use it.
-                        if (!Core.IsLogMonitorBatchReading)
-                        {
-                            Core.SendPluginMessage(this, currentSystemInfo.SystemJournalEntries);
-                            Core.AddGridItem(this, new ArchivistGrid()
-                            {
-                                Timestamp = DateTime.UtcNow.ToString(),
-                                Details = $"Found {currentSystemInfo.SystemJournalEntries.Count} records from a previous visit; shared via inter-plugin message.",
-                            });
-                        }
-                    }
+                        MaybeShareSystemData();
                     break;
                 case Location location:
                     if (!Core.CurrentLogMonitorState.HasFlag(LogMonitorState.PreRead)
@@ -159,9 +151,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                         currentSystemInfo = LoadOrInitSystemInfo(
                             lastFileHeaderInfo, location.StarSystem, location.SystemAddress, location.TimestampDateTime);
                     }
+
                     // Don't add extraneous locations.
                     if (currentSystemInfo.SystemJournalEntries.Count == 0)
                         currentSystemInfo.AddSystemJournalJson(location.Json, location.TimestampDateTime);
+                    else
+                        MaybeShareSystemData();
+
                     break;
                 case DiscoveryScan discoveryScan:
                 case FSSDiscoveryScan fssDiscoveryScan:
@@ -178,6 +174,35 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                     if (currentSystemInfo != null && !Core.CurrentLogMonitorState.HasFlag(LogMonitorState.PreRead))
                         currentSystemInfo.AddSystemJournalJson(journal.Json, journal.TimestampDateTime);
                     break;
+            }
+        }
+
+        private void MaybeShareSystemData()
+        {
+            // Send existing system data via inter-plugin message bus, in case anyone can use it.
+            if (!Core.IsLogMonitorBatchReading && settings.ShareSystemData)
+            {
+                // Send:
+                // - Commander
+                // - SystemName
+                // - VisitCount
+                // - SystemJournalEntries
+                // ??? Premable?
+                (string Commander, string SystemName, int VisitCount, List<string> SystemJournalEntries) msgValue =
+                (
+                    currentSystemInfo.Commander,
+                    currentSystemInfo.SystemName,
+                    currentSystemInfo.VisitCount,
+                    currentSystemInfo.SystemJournalEntries
+                );
+
+                Tuple<string, object> msg = new("archivist_known_system_data", msgValue);
+                Core.SendPluginMessage(this, msg);
+                Core.AddGridItem(this, new ArchivistGrid()
+                {
+                    Timestamp = DateTime.UtcNow.ToString(),
+                    Details = $"Found {currentSystemInfo.SystemJournalEntries.Count} records from a previous visit; shared via inter-plugin message.",
+                });
             }
         }
 
