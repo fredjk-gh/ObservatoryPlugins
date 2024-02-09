@@ -29,20 +29,12 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             { LimpetDronesKey, LimpetDronesName },
         };
 
+        private ProspectorSettings _settings = ProspectorSettings.DEFAULT;
         private PluginUI pluginUI;
         private IObservatoryCore Core;
         ObservableCollection<object> GridCollection = new();
-        private ProspectorSettings _settings = new()
-        {
-            ShowProspectorNotifications = true,
-            ShowCargoNotification = true,
-            MinimumPercent = 10,
-            ProspectTritium = true,
-            ProspectPlatinum = true,
-        };
-
-        private TrackedData _data = new();
-        private TrackedStats _stats = new();
+        private readonly TrackedData _data = new();
+        private readonly TrackedStats _stats = new();
         private readonly Guid[] _prospectorNotifications = new Guid[2];
         private Guid _cargoNotification = Guid.Empty;
 
@@ -62,7 +54,6 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
-
             switch (journal)
             {
                 case ProspectedAsteroid prospected:
