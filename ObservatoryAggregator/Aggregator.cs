@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using Observatory.Framework;
 using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
@@ -10,14 +11,12 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 {
     public class Aggregator : IObservatoryNotifier, IObservatoryWorker
     {
+        private static string AGGREGATOR_WIKI_URL = "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator";
+
         private PluginUI pluginUI;
         private IObservatoryCore Core;
         ObservableCollection<object> GridCollection = new();
-        private AggregatorSettings settings = new()
-        {
-            ShowAllBodySummaries = false,
-            FilterSpec = "",
-        };
+        private AggregatorSettings settings = AggregatorSettings.DEFAULT;
         internal TrackedData data = new();
         private List<AggregatorGrid> _readAllGridItems = new();
 
@@ -41,7 +40,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             AggregatorGrid uiObject = new();
             GridCollection = new() { uiObject };
             pluginUI = new PluginUI(GridCollection);
-            data.Settings = (AggregatorSettings)Settings; 
+            data.Settings = (AggregatorSettings)Settings;
+            settings.OpenAggregatorWiki = OpenWikiUrl;
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -62,7 +62,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
-            switch(journal)
+            switch (journal)
             {
                 case FSDJump fsdJump: // and CarrierJump
                     CarrierJump carrierJump = fsdJump as CarrierJump;
@@ -112,6 +112,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                         {
                             data.CurrentSystem.IsUndiscovered = true;
                         }
+                        // This generates a ton of flicker. Maybe this can be handled by Core (suppressing re-paints?)
+                        // Make this somewhat conditional or only if data is "dirty"?
                         RedrawGrid();
                     }
                     break;
@@ -133,6 +135,49 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             RedrawGrid();
         }
 
+        public void HandlePluginMessage(string sourceName, string sourceVersion, object messageArgs)
+        {
+            switch (sourceName)
+            {
+                case "Observatory Archivist":
+                    HandleArchivistMsg(sourceVersion, messageArgs);
+                    break;
+
+                // Observatory Evaluator?
+                case "Observatory BioInsights":
+                    // Maybe receive notification of interest and/or visitation?
+                    break;
+            }
+        }
+
+        public void HandleArchivistMsg(string version, object messageArgs)
+        {
+            // We get values in the form of Tuple<string, object> from Archivist.
+            //
+            // Known messages:
+            // - archivist_known_system_journal_json
+            //
+            Tuple<string, object> msgTuple = messageArgs as Tuple<string, object>;
+
+            if (msgTuple == null) return; // Unrecognized msg from Archivist!
+
+            switch (msgTuple.Item1)
+            {
+                case "archivist_known_system_journal_json":
+                    // In this event, the value is an tuple of data.
+                    var value = ((string Commander, string SystemName, int VisitCount, List<string> SystemJournalEntries))msgTuple.Item2;
+
+                    // Deserialize and pump into data for current system.
+                    foreach (var line in value.SystemJournalEntries)
+                    {
+                        var eventType = JournalUtilities.GetEventType(line);
+
+                        // TODO rehydrate object from this JSON.
+                    }
+                    break;
+            }
+        }
+
         private List<NotificationData> MaybeSplitMultilineArgs(NotificationArgs args)
         {
             List<NotificationData> notifications = new();
@@ -148,7 +193,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
                     // Clone the core bits we care about but split the detail/extdetails.
                     NotificationData split = new(
-                        data.CurrentSystem.Name, args.Sender, args.Title, details[i], (i < extDetails.Length ? extDetails[i] : ""), args.CoalescingId);
+                        data.CurrentSystem.Name, args.Sender, args.Title, details[i], (i < extDetails.Length ? extDetails[i] : ""), args.CoalescingId ?? Constants.DEFAULT_COALESCING_ID);
 
                     if (shouldShow(split))
                         notifications.Add(split);
@@ -164,38 +209,12 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             return notifications;
         }
 
-        public void HandlePluginMessage(string sourceName, string sourceVersion, object messageArgs)
-        {
-            switch (sourceName)
-            {
-                case "Observatory Archivist":
-                    // Maybe receive previous scan records on FSDJump event?
-                    List<string> existingData = messageArgs as List<string>;
-
-                    if (existingData != null)
-                    {
-                        // Deserialize and pump into data for current system.
-                        foreach (var line in existingData)
-                        {
-                            var eventType = JournalUtilities.GetEventType(line);
-
-                        }
-                    }
-                    break;
-
-                case "Observatory BioInsights": // or Observatory Evaluator?
-                    // Maybe receive notification of interest and/or visitation?
-                    break;
-            }
-        }
-
         private void RedrawGrid()
         {
             // Check for Pre-read too?
             if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Realtime))
             {
-                Core.ClearGrid(this, new AggregatorGrid());
-                Core.AddGridItems(this, data.ToGrid(false)) ;
+                Core.SetGridItems(this, data.ToGrid(false));
             }
         }
 
@@ -232,6 +251,16 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     RedrawGrid();
                 }
             }
+        }
+
+        private void OpenWikiUrl()
+        {
+            OpenUrl(AGGREGATOR_WIKI_URL);
+        }
+
+        private void OpenUrl(string url)
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }
 }

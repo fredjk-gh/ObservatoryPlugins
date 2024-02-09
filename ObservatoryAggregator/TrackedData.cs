@@ -21,6 +21,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public string CurrentShip { get; set; }
         public AggregatorSettings Settings { get; set; }
 
+        public bool IsDirty { get; internal set; }
+
         public Dictionary<int, List<NotificationData>> Notifications { get => _notifications; }
         public Dictionary<int, BodySummary> BodyData { get => _bodies; }
 
@@ -30,37 +32,37 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
             _notifications.Clear();
             _bodies.Clear();
+            IsDirty = true;
         }
         
-        public AggregatorGrid ToGridItem()
+        public List<AggregatorGrid> ToGridItem()
         {
-            return new AggregatorGrid()
-            {
-                Sender = Constants.PLUGIN_SHORT_NAME,
-                Body = CurrentSystem.Name,
-                Flags = GetFlagsString(),
-                Title = GetTitleString(),
-                Detail = CurrentCommander,
-                ExtendedDetails = CurrentShip,
+            List<AggregatorGrid> items = new() {
+                new AggregatorGrid()
+                {
+                    Flags = GetFlagsString(),
+                    Title = CurrentSystem.Name,
+                    Detail = GetDetailString(),
+                    ExtendedDetails = $"{CurrentCommander} - {CurrentShip}",
+                    Sender = Constants.PLUGIN_SHORT_NAME,
+                }
             };
+            return items;
         }
 
         public string GetFlagsString()
         {
-            var flagsStr = "";
-            if (CurrentSystem.IsUndiscovered)
-                flagsStr = "🆕"; // or 🥇??
+            List<string> parts = new();
 
-            if (CurrentSystem.AllBodiesFound != null)
-            {
-                // ⚛, 💯, ✔, 💫 or 🎇 as alternatives?
-                flagsStr += CurrentSystem.IsUndiscovered ? $"{Constants.DETAIL_SEP}💯" : "💯";
-            }
+            if (CurrentSystem.IsUndiscovered) parts.Add("🆕"); // or 🥇??
+            // ⚛, 💯, ✔, 💫 or 🎇 as alternatives?
+            if (CurrentSystem.AllBodiesFound != null) parts.Add("💯");
+            if (_bodies.Values.Any(b => b.IsScoopableStar)) parts.Add("⛽");
 
-            return flagsStr;
+            return string.Join(Constants.DETAIL_SEP, parts);
         }
 
-        public string GetTitleString()
+        public string GetDetailString()
         {
             if (CurrentSystem.DiscoveryScan != null)
                 return $"{CurrentSystem.DiscoveryScan.BodyCount} bodies";
@@ -72,7 +74,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             List<AggregatorGrid> gridItems = new();
 
-            gridItems.Add(ToGridItem());
+            gridItems.AddRange(ToGridItem());
 
             //if (_bodies.Count == 0) return gridItems;
 
@@ -84,17 +86,22 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
             foreach (var cId in cIds)
             {
+                var bodyDisplayString = "";
                 if (BodyData.ContainsKey(cId))
                 {
                     var bData = GetBody(cId);
+                    bodyDisplayString = bData.GetBodyNameDisplayString();
                     gridItems.Add(bData.ToGridItem());
+                } else if (cId == Constants.SYSTEM_COALESCING_ID)
+                {
+                    bodyDisplayString = "System";
                 }
 
                 if (Notifications.ContainsKey(cId))
                 {
                     foreach (var n in GetNotifications(cId))
                     {
-                        gridItems.Add(n.ToGridItem());
+                        gridItems.Add(n.ToGridItem(bodyDisplayString));
                     }
                 }
             }

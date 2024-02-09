@@ -10,7 +10,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
     internal class NotificationData
     {
         public NotificationData(string systemName, NotificationArgs args)
-            : this(systemName, args.Sender, args.Title, args.Detail, args.ExtendedDetails, args.CoalescingId)
+            : this(systemName, args.Sender, args.Title, args.Detail, args.ExtendedDetails, args.CoalescingId ?? Constants.DEFAULT_COALESCING_ID)
         { }
 
         public NotificationData(string system, string sender, string title, string detail, string extDetails, int coalescingId)
@@ -36,16 +36,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public bool IsInteresting { get; set; }
         public bool IsVisited { get; set; }
 
-        public AggregatorGrid ToGridItem()
+        public AggregatorGrid ToGridItem(string suppressTitle = "")
         {
             return new AggregatorGrid()
             {
-                Sender = Sender,
-                Body = "",
                 Flags = GetFlagsString(),
-                Title = Title,
+                Title = !string.IsNullOrWhiteSpace(suppressTitle) && suppressTitle.Equals(Title, StringComparison.CurrentCultureIgnoreCase) ? "" : Title,
                 Detail = Detail,
                 ExtendedDetails = ExtendedDetails,
+                Sender = Sender,
             };
         }
 

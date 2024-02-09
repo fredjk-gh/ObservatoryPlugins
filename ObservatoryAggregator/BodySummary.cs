@@ -65,25 +65,30 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public bool IsValuable
         {
-            get =>  Scan != null && (Constants.HighValueNonTerraformablePlanetClasses.Contains(Scan.PlanetClass) || Scan.TerraformState?.Length > 0);
+            get => Scan != null && (Constants.HighValueNonTerraformablePlanetClasses.Contains(Scan.PlanetClass) || Scan.TerraformState?.Length > 0);
+        }
+
+        public bool IsScoopableStar
+        {
+            get => Scan != null && (Scan.StarType != null && Constants.Scoopables.Contains(Scan.StarType));
         }
 
         public AggregatorGrid ToGridItem()
         {
             var gridItem = new AggregatorGrid()
             {
-                Sender = "",
-                Body = $"└── {GetBodyNameDisplayString()}",
                 Flags = GetFlagsStr(),
-                Title = GetBodyType(),
-                Detail = GetDetailsString(),
-                ExtendedDetails = "",
+                Title = $"{Constants.BODY_NESTING_INDICATOR}{GetBodyNameDisplayString()}",
+                Detail = GetBodyType(),
+                ExtendedDetails = GetDetailsString(),
+                Sender = Constants.PLUGIN_SHORT_NAME,
             };
             return gridItem;
         }
 
         public string GetBodyNameDisplayString()
         {
+            // TODO: Suppart Barycenters
             if (Scan?.PlanetClass != null)
                 return $"Body {BodyShortName}";
             else if (Scan?.StarType != null)
@@ -140,26 +145,30 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public string GetFlagsStr()
         {
-            if (Scan?.PlanetClass == null) return "";
-
             List<string> parts = new();
-
-            if (IsValuable) parts.Add("💰");
-            if (IsMapped) parts.Add("🗺");
-            if (Scan?.Landable ?? false) parts.Add("🛬");
- 
-            if (BodySignals != null)
+            if (Scan?.StarType != null)
             {
-                foreach (var signal in BodySignals.Signals)
+                if (IsScoopableStar) parts.Add("⛽");
+            }
+            else if (Scan?.PlanetClass != null)
+            {
+                if (IsValuable) parts.Add("💰");
+                if (IsMapped) parts.Add("🌐"); // formerly 🗺
+                if (Scan?.Landable ?? false) parts.Add("🛬");
+
+                if (BodySignals != null)
                 {
-                    switch (signal.Type)
+                    foreach (var signal in BodySignals.Signals)
                     {
-                        case "$SAA_SignalType_Biological;":
-                            if (signal.Count > 0) parts.Add($"🧬 {signal.Count}");
-                            break;
-                        case "$SAA_SignalType_Geological;":
-                            if (signal.Count > 0) parts.Add($"🌋 {signal.Count}");
-                            break;
+                        switch (signal.Type)
+                        {
+                            case "$SAA_SignalType_Biological;":
+                                if (signal.Count > 0) parts.Add($"🧬 {signal.Count}");
+                                break;
+                            case "$SAA_SignalType_Geological;":
+                                if (signal.Count > 0) parts.Add($"🌋 {signal.Count}");
+                                break;
+                        }
                     }
                 }
             }

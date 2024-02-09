@@ -10,17 +10,26 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
     {
         public const string PLUGIN_SHORT_NAME = "Aggregator";
         public const string DETAIL_SEP = " | ";
+        public const string BODY_NESTING_INDICATOR = "└── ";
         public const string PRIMARY_STAR = "Primary star";
 
         public const string JOURNAL_ELW = "Earthlike body";
         public const string JOURNAL_AW = "Ammonia world";
         public const string JOURNAL_WW = "Water world";
 
+        public static readonly HashSet<string> Scoopables = new() {
+            "O", "B", "A", "F", "G", "K", "M",
+            "A_BlueWhiteSuperGiant", "B_BlueWhiteSuperGiant", "F_WhiteSuperGiant",
+            "G_WhiteSuperGiant", "K_OrangeGiant", "M_RedSuperGiant", "M_RedGiant" };
+
         public static readonly IList<string> HighValueNonTerraformablePlanetClasses = new string[] {
             JOURNAL_ELW,
             JOURNAL_AW,
             JOURNAL_WW,
         };
+
+        public const int SYSTEM_COALESCING_ID = -1;
+        public const int DEFAULT_COALESCING_ID = 1001; // After bodies.
 
         public static Dictionary<string, string> JournalTypeMap = new()
         {
