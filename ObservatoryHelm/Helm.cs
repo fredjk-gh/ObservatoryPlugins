@@ -31,14 +31,17 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         public object Settings
         {
             get => settings;
-            set
-            {
-                HelmSettings newSettings = (HelmSettings)value;
-                if (newSettings.GravityWarningThresholdx10 > newSettings.GravityAdvisoryThresholdx10)
-                {
-                    settings = newSettings;
-                };
-            }
+            set =>  settings = (HelmSettings)value;
+        }
+        public void Load(IObservatoryCore observatoryCore)
+        {
+            Core = observatoryCore;
+            ErrorLogger = Core.GetPluginErrorLogger(this);
+
+            gridCollection = new();
+            HelmGrid uiObject = new();
+            gridCollection.Add(uiObject);
+            pluginUI = new PluginUI(gridCollection);
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -53,17 +56,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 // Exiting read-all: Spit out summary of most recent session:
                 MaybeMakeGridItemForSummary(data.LastJumpEvent?.Timestamp ?? "");
             }
-        }
-
-        public void Load(IObservatoryCore observatoryCore)
-        {
-            Core = observatoryCore;
-            ErrorLogger = Core.GetPluginErrorLogger(this);
-
-            gridCollection = new();
-            HelmGrid uiObject = new();
-            gridCollection.Add(uiObject);
-            pluginUI = new PluginUI(gridCollection);
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -102,6 +94,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         Sender = ShortName,
                         ExtendedDetails = $"{data.JumpsRemainingInRoute} jumps to {data.Destination}",
                         Rendering = NotificationRendering.PluginNotifier,
+                        CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                     });
                     break;
                 case NavRouteClear clear:
@@ -156,6 +149,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             Sender = ShortName,
                             ExtendedDetails = arrivalStarScoopableStr,
                             Rendering = NotificationRendering.PluginNotifier,
+                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                         // This check is essential when travelling through areas where scans don't trigger (ie. known space).
                         if (data.FuelWarningNotifiedSystem != jump.StarSystem && data.FuelRemaining < (data.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
@@ -165,6 +159,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                                 Title = "Warning! Low fuel",
                                 Detail = $"Refuel soon! {arrivalStarScoopableStr}",
                                 Sender = ShortName,
+                                CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                             });
                             data.FuelWarningNotifiedSystem = jump.StarSystem;
                         }
@@ -258,7 +253,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             Detail = "There is no scoopable star in this system!",
                             ExtendedDetails = extendedDetails,
                             Sender = ShortName,
-                            CoalescingId = Constants.COALESCING_ID_SYSTEM,
+                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                     }
                     if (!data.AllBodiesFound)
@@ -269,34 +264,25 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             Detail = $"All {allFound.Count} bodies found",
                             Rendering = NotificationRendering.PluginNotifier,
                             Sender = ShortName,
-                            CoalescingId = Constants.COALESCING_ID_SYSTEM,
+                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                     }
                     data.AllBodiesFound = true;
                     break;
                 case ApproachBody approachBody:
                     Scan s;
-                    if (settings.GravityAdvisoryThreshold <= 0) break; // disabled
+                    if (!settings.EnableHighGravityAdvisory) break;
+
                     if (!data.Scans.TryGetValue(approachBody.Body, out s)) break;
 
                     string bodyShortName = BodyShortName(approachBody.Body, approachBody.StarSystem);
                     var gravityG = s.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
-                    if (gravityG >= settings.GravityWarningThreshold)
+                    if (gravityG > settings.GravityAdvisoryThreshold)
                     {
                         Core.SendNotification(new()
                         {
-                            Title = $"Body {bodyShortName}",
-                            Detail = $"Warning! High gravity: {gravityG:n1}g",
-                            Sender = ShortName,
-                            CoalescingId = approachBody.BodyID,
-                        });
-                    }
-                    else if (gravityG > settings.GravityAdvisoryThreshold)
-                    {
-                        Core.SendNotification(new()
-                        {
-                            Title = $"Body {bodyShortName}",
-                            Detail = $"Heads up! Relatively high gravity: {gravityG:n1}g",
+                            Title = $"Use caution when landing!",
+                            Detail = $"Relatively high gravity: {gravityG:n1}g",
                             Sender = ShortName,
                             CoalescingId = approachBody.BodyID,
                         });
@@ -330,7 +316,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         private static string BodyShortName(string bodyName, string systemName)
         {
             string shortName = bodyName.Replace(systemName, "").Trim();
-
+            // TODO handle barycenters
             return (string.IsNullOrEmpty(shortName) ? "Primary star" : shortName);
         }
 
