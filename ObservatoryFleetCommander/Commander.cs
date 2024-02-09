@@ -13,13 +13,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         private PluginUI pluginUI;
         private IObservatoryCore Core;
         ObservableCollection<object> GridCollection = new();
-        private FleetCommanderSettings settings = new()
-        {
-            NotifyJumpComplete = false,
-            NotifyJumpCooldown = true,
-            NotifyLowFuel = true,
-        };
-
+        private FleetCommanderSettings settings = FleetCommanderSettings.DEFAULT;
         private Grid _lastShown = new();
         private string _currentCommander;
         private Location _initialLocation = null;
@@ -34,6 +28,17 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             get => settings;
             set => settings = (FleetCommanderSettings)value;
+        }
+
+        public void Load(IObservatoryCore observatoryCore)
+        {
+            GridCollection = new();
+            Grid uiObject = new();
+
+            GridCollection.Add(uiObject);
+            pluginUI = new PluginUI(GridCollection);
+
+            Core = observatoryCore;
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -366,17 +371,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 _manager.Clear();
                 Core.ClearGrid(this, new Grid());
             }
-        }
-
-        public void Load(IObservatoryCore observatoryCore)
-        {
-            GridCollection = new();
-            Grid uiObject = new();
-
-            GridCollection.Add(uiObject);
-            pluginUI = new PluginUI(GridCollection);
-
-            Core = observatoryCore;
         }
 
         private void CarrierCooldownTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
