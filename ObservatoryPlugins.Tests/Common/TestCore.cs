@@ -47,6 +47,12 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests.Common
             gridItems.AddRange(items);
         }
 
+        public void SetGridItems(IObservatoryWorker worker, IEnumerable<object> items)
+        {
+            gridItems.Clear();
+            gridItems.AddRange(items);
+        }
+
         public void CancelNotification(Guid notificationId)
         { }
 
@@ -108,7 +114,7 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests.Common
         {
             // TODO...
         }
-#endregion
+        #endregion
 
 
         public List<string> Messages
