@@ -10,6 +10,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     internal class Constants
     {
+        public const string STATSCANNER_WIKI_URL = "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner";
+
         // Galactic Records source-of-truth -- combined and procgen only versions.
         public const string EDASTRO_GALACTIC_RECORDS_CSV_URL = "https://edastro.com/mapcharts/files/galactic-records.csv";
         public const string EDASTRO_GALACTIC_RECORDS_PG_CSV_URL = "https://edastro.com/mapcharts/files/galactic-records-procgen.csv";

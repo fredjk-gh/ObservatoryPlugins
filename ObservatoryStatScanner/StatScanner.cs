@@ -142,6 +142,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         private void MaybeFixUnsetSettings()
         {
             settings.ForceUpdateGalacticRecords = ForceRefreshGalacticRecords;
+            settings.OpenStatScannerWiki = OpenWikiUrl;
 
             if (settings.HighCardinalityTieSuppression == 0) settings.HighCardinalityTieSuppression = StatScannerSettings.DEFAULT.HighCardinalityTieSuppression;
             if (settings.ProcGenHandling == null) settings.ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING;
@@ -571,6 +572,16 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     break;
             }
             return rendering;
+        }
+
+        private void OpenWikiUrl()
+        {
+            OpenUrl(Constants.STATSCANNER_WIKI_URL);
+        }
+
+        private void OpenUrl(string url)
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }
 }
