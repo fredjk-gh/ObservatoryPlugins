@@ -1,6 +1,7 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
+using System;
 using System.Diagnostics;
 
 
@@ -19,11 +20,13 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
             "ObservatoryStatScanner",
         };
 
+        private static string WIKI_URL = "https://github.com/fredjk-gh/ObservatoryPlugins/wiki";
         internal const string CURRENT_RELEASES_URL = "https://raw.githubusercontent.com/fredjk-gh/ObservatoryPlugins/main/CurrentReleases.json";
         internal string PluginFolderPath = $"{AppDomain.CurrentDomain.BaseDirectory}plugins"; // Duplicated from Core. Maybe Core should expose this?
         internal IObservatoryCore Core;
         private AutoUpdaterSettings _settings = new();
         private List<NotificationArgs> _pendingNotifications = new List<NotificationArgs>();
+        IHttpClientWrapper httpClient;
 
         public string Name => "FredJKs Plugin AutoUpdater";
 
@@ -50,25 +53,23 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
         {
             if (eventArgs.NewState.HasFlag(LogMonitorState.Realtime) && _pendingNotifications.Count > 0)
             {
-                foreach(var n in _pendingNotifications)
-                {
-                    Core.SendNotification(n);
-                }
-                _pendingNotifications.Clear();
+                FlushPendingNotifications();
             }
         }
 
         public void Load(IObservatoryCore observatoryCore)
         {
             Core = observatoryCore;
-            IHttpClientWrapper httpClient = new HttpClientWrapper(Core, this);
+            httpClient = new HttpClientWrapper(Core, this);
 
+            UpdateSettings();
             CheckForUpdates(httpClient);
         }
 
         internal bool CheckForUpdates(IHttpClientWrapper httpClient)
         {
-            if (!_settings.Enabled) return false;
+            // TODO add support for installing missing items as well.
+
             if (string.IsNullOrEmpty(PluginFolderPath) || !GetPluginFolder().Exists)
             {
                 string title = "Configuration problem";
@@ -201,5 +202,35 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
             }
             return versions;
         }
+
+        internal void FlushPendingNotifications()
+        {
+            foreach (var n in _pendingNotifications)
+            {
+                Core.SendNotification(n);
+            }
+            _pendingNotifications.Clear();
+        }
+
+        private void UpdateSettings()
+        {
+            _settings.UpdateNow = delegate {
+                CheckForUpdates(httpClient);
+                FlushPendingNotifications();
+            };
+
+            _settings.OpenGitHub = ActionOpenGitHub;
+        }
+
+        private void ActionOpenGitHub()
+        {
+            OpenUrl(WIKI_URL);
+        }
+
+        private void OpenUrl(string url)
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+
     }
 }

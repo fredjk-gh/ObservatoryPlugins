@@ -23,10 +23,6 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         public void Setup()
         {
             _core = new Common.TestCore();
-            _settings = new()
-            {
-                Enabled = true,
-            };
             _httpClient = new();
 
             sutUpdater = new TestableAutoUpdater();
@@ -257,16 +253,6 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
             // Beta disallowed -- no new version.
             selected = PluginVersion.SelectVersion(local, latest, false, _core.Version);
             Assert.IsNull(selected);
-        }
-
-        [TestMethod]
-        public void TestCheckForUpdates_NotEnabled()
-        {
-            _settings.Enabled = false;
-
-            Assert.IsFalse(sutUpdater.CheckForUpdates(_httpClient));
-            Assert.AreEqual(0, _core.Messages.Count);
-            Assert.AreEqual(0, _httpClient.GetLatestVersionsCalls);
         }
 
         [TestMethod]
