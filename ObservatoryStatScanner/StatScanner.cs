@@ -295,14 +295,21 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void MaybeUpdateGalacticRecords()
         {
-            // If galactic records files are missing OR > 7 days, fetch a new one and freshen.
-            if (!File.Exists(_state.GalacticRecordsCsv) || File.GetLastWriteTimeUtc(_state.GalacticRecordsCsv) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
+            try
             {
-                FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, _state.GalacticRecordsCsv);
+                // If galactic records files are missing OR > 7 days, fetch a new one and freshen.
+                if (!File.Exists(_state.GalacticRecordsCsv) || File.GetLastWriteTimeUtc(_state.GalacticRecordsCsv) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
+                {
+                    FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, _state.GalacticRecordsCsv);
+                }
+                if (!File.Exists(_state.GalacticRecordsPGCsv) || File.GetLastWriteTimeUtc(_state.GalacticRecordsPGCsv) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
+                {
+                    FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, _state.GalacticRecordsPGCsv);
+                }
             }
-            if (!File.Exists(_state.GalacticRecordsPGCsv) || File.GetLastWriteTimeUtc(_state.GalacticRecordsPGCsv) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
+            catch (Exception ex)
             {
-                FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, _state.GalacticRecordsPGCsv);
+                ErrorLogger(ex, "Fetching updated records files from edastro.com");
             }
         }
 
