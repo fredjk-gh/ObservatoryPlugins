@@ -354,10 +354,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
             // HACK: Improve how we communicate "estimated" fuel levels.
             var displayFuel = string.IsNullOrEmpty(fuelLevel) ? "unknown" : (fuelLevel.Contains("estimated") ? fuelLevel : $"{fuelLevel} T");
-            if (string.IsNullOrEmpty(_lastShown.CurrentFuelLevel) && !string.IsNullOrEmpty(displayFuel)
-                || displayFuel != _lastShown.CurrentFuelLevel)
+            if (string.IsNullOrEmpty(_lastShown.FuelLevel) && !string.IsNullOrEmpty(displayFuel)
+                || displayFuel != _lastShown.FuelLevel)
             {
-                gridItem.CurrentFuelLevel = _lastShown.CurrentFuelLevel = displayFuel;
+                gridItem.FuelLevel = _lastShown.FuelLevel = displayFuel;
             }
 
             Core.AddGridItem(this, gridItem);
@@ -400,7 +400,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         [ColumnSuggestedWidth(350)]
         public string CurrentLocation { get; set; }
         [ColumnSuggestedWidth(200)]
-        public string CurrentFuelLevel { get; set; }
+        public string FuelLevel { get; set; }
         [ColumnSuggestedWidth(500)]
         public string Details { get; set; }
     }
