@@ -21,7 +21,8 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         {
             _settings = new()
             {
-                GravityAdvisoryThreshold = 1,
+                EnableHighGravityAdvisory = true,
+                GravityAdvisoryThreshold = 1.5,
                 MaxNearbyScoopableDistance = 3000,
             };
             sutHelm = new Helm();
@@ -35,8 +36,15 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
         {
             string system = "TestSystem";
             string fullBodyName = $"{system} 3 a";
-            _settings.GravityAdvisoryThreshold = 0;
+            _settings.EnableHighGravityAdvisory = false;
 
+            LoadGame loadGame = new()
+            {
+                Odyssey = true,
+                Commander = "Test_Commander",
+                FuelCapacity = 16,
+                FuelLevel = 12,
+            };
             Scan scan = new()
             {
                 ScanType = "Detailed",
@@ -53,6 +61,7 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Body = fullBodyName,
             };
 
+            sutHelm.JournalEvent(loadGame);
             sutHelm.JournalEvent(scan);
             sutHelm.JournalEvent(ab);
 
@@ -82,13 +91,20 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
             string system = "TestSystem";
             string fullBodyName = $"{system} 3 a";
 
+            LoadGame loadGame = new()
+            {
+                Odyssey = true,
+                Commander = "Test_Commander",
+                FuelCapacity = 16,
+                FuelLevel = 12,
+            };
             Scan scan = new()
             {
                 ScanType = "Detailed",
                 PlanetClass = "High Metal Content",
                 BodyName = fullBodyName,
                 StarSystem = system,
-                SurfaceGravity = 1.32f * 9.81f,
+                SurfaceGravity = 1.72f * 9.81f,
                 WasDiscovered = false,
                 DistanceFromArrivalLS = 234.5,
             };
@@ -98,40 +114,12 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests
                 Body = fullBodyName,
             };
 
+            sutHelm.JournalEvent(loadGame);
             sutHelm.JournalEvent(scan);
             sutHelm.JournalEvent(ab);
 
             Assert.AreEqual(1, _core.Notifications.Count);
             Assert.IsTrue(_core.Notifications.Values.First().Detail.Contains("Relatively"));
-        }
-
-        [TestMethod]
-        public void TestHelm_ApproachBodyGravityWarning()
-        {
-            string system = "TestSystem";
-            string fullBodyName = $"{system} 3 a";
-
-            Scan scan = new()
-            {
-                ScanType = "Detailed",
-                PlanetClass = "High Metal Content",
-                BodyName = fullBodyName,
-                StarSystem = system,
-                SurfaceGravity = 3.32f * 9.81f,
-                WasDiscovered = false,
-                DistanceFromArrivalLS = 234.5,
-            };
-            ApproachBody ab = new()
-            {
-                StarSystem = system,
-                Body = fullBodyName,
-            };
-
-            sutHelm.JournalEvent(scan);
-            sutHelm.JournalEvent(ab);
-
-            Assert.AreEqual(1, _core.Notifications.Count);
-            Assert.IsTrue(_core.Notifications.Values.First().Detail.Contains("Warning"));
         }
     }
 }

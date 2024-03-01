@@ -8,6 +8,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
 {
     internal class Constants
     {
+        public const int COALESCING_ID_HEADER = -2;
         public const int COALESCING_ID_POST_SYSTEM = 1001;
         public const int COALESCING_ID_SYSTEM = -1;
         public const double FuelWarningLevelFactor = 1.5;
