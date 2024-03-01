@@ -112,7 +112,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                             MaybeScheduleCooldownNotification(carrierData);
                         }
                     }
-                    AddToGrid(carrierJumpRequest.TimestampDateTime, carrierData, carrierData.Position.BodyName, $"{carrierData.CarrierFuel}", $"Requested a jump to {jumpTargetBody}.{departureTime}");
+                    AddToGrid(carrierJumpRequest.TimestampDateTime, carrierData, carrierData.Position?.BodyName, $"{carrierData.CarrierFuel}", $"Requested a jump to {jumpTargetBody}.{departureTime}");
                     break;
                 case CarrierJump carrierJump: // These have been broken in the past.
                     MaybeUpdateCarrierLocation(carrierJump.TimestampDateTime, carrierJump.StationName, new(carrierJump), true);
@@ -281,7 +281,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (!_manager.IsCallsignKnown(stats.Callsign))
             {
                 var data = _manager.RegisterCarrier(_currentCommander, stats);
-                AddToGrid(dateTime, data, data.Position.BodyName, $"{data.CarrierFuel}", $"Carrier detected: {data.CarrierName} {data.CarrierCallsign}. Configured notifications are active.");
+                AddToGrid(dateTime, data, data.Position?.BodyName, $"{data.CarrierFuel}", $"Carrier detected: {data.CarrierName} {data.CarrierCallsign}. Configured notifications are active.");
                 return true;
             }
             return false;
