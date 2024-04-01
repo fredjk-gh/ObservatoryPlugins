@@ -1,37 +1,49 @@
-﻿using Observatory.Framework.Files.Journal;
+﻿using Observatory.Framework.Files.Converters;
+using Observatory.Framework.Files.Journal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
-    internal class CarrierPositionData
+    public class CarrierPositionData
     {
         // A global cache of system positions to improve availability of these values and reduce the need to request.
-        private static Dictionary<string, (double, double, double)> _knownSystemPositions = new();
+        private static Dictionary<string, (double x, double y, double z)> _knownSystemPositions = new();
 
+        private bool _deserialized = false;
         private string _body = "";
 
-        public CarrierPositionData(Location location)
+        public static void CachePosition(string systemName, (double x, double y, double z) coords)
         {
-            SystemName = location.StarSystem;
-            SystemAddress = location.SystemAddress;
-            StarPos = location.StarPos;
+            if (!_knownSystemPositions.ContainsKey(systemName))
+                _knownSystemPositions[systemName] = coords;
+        }
 
-            _body = location.Body;
+        // Used only for deserialization.
+        public CarrierPositionData()
+        {
+            _deserialized = true;
+        }
+
+        public CarrierPositionData(Location location) : this(location.StarSystem, location.SystemAddress, location.Body)
+        {
+            StarPos = location.StarPos;
             BodyID = location.BodyID;
         }
 
-        public CarrierPositionData(CarrierJump carrierJump)
+        public CarrierPositionData(CarrierJump carrierJump) : this(carrierJump.StarSystem, carrierJump.SystemAddress, carrierJump.Body)
         {
-            SystemName = carrierJump.StarSystem;
-            SystemAddress = carrierJump.SystemAddress;
             StarPos = carrierJump.StarPos;
-
-            _body = carrierJump.Body;
             BodyID = carrierJump.BodyID;
+        }
+
+        public CarrierPositionData(CarrierJumpRequest jumpRequest) : this(jumpRequest.SystemName, jumpRequest.SystemAddress, jumpRequest.Body)
+        {
+            BodyID = jumpRequest.BodyID;
         }
 
         public CarrierPositionData(string carrierSystem, ulong systemAddress, string carrierBody = "")
@@ -43,7 +55,9 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         public string SystemName { get; set; }
         public ulong SystemAddress { get; set; }
-        public (double, double, double)? StarPos
+
+        [JsonConverter(typeof(CoordConverter))]
+        public (double x, double y, double z)? StarPos
         {
             get
             {

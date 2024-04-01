@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
-    internal class CarrierManager
+    public class CarrierManager
     {
         private Dictionary<string, CarrierData> _knownCarriersByCallsign = new();
 
@@ -33,6 +33,21 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             return data;
         }
 
+        public CarrierData RegisterCarrier(CarrierData deserializedData)
+        {
+            if (deserializedData != null
+                && !string.IsNullOrWhiteSpace(deserializedData.OwningCommander)
+                && !string.IsNullOrWhiteSpace(deserializedData.CarrierCallsign)
+                && deserializedData.CarrierId > 0
+                && deserializedData.CarrierFuel > 0)
+            {
+                _knownCarriersByCallsign.Add(deserializedData.CarrierCallsign, deserializedData);
+                return deserializedData;
+            }
+
+            return null;
+        }
+
         public bool IsCallsignKnown(string callSign)
         {
             return _knownCarriersByCallsign.ContainsKey(callSign);
@@ -52,12 +67,29 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         public CarrierData GetByTimer(System.Timers.Timer timer)
         {
-            return _knownCarriersByCallsign.Values.Where(c => c.CarrierCooldownTimer == timer).FirstOrDefault();
+            return _knownCarriersByCallsign.Values
+                .Where(c => c.CarrierCooldownTimer == timer || c.CarrierJumpTimer == timer)
+                .FirstOrDefault();
+        }
+
+        public CarrierData GetByCommander(string commander)
+        {
+            return _knownCarriersByCallsign.Values.Where(c => c.OwningCommander == commander).FirstOrDefault();
         }
 
         public void Clear()
         {
             _knownCarriersByCallsign.Clear();
+        }
+
+        public List<CarrierData> Carriers
+        {
+            get => _knownCarriersByCallsign.Values.ToList();
+        }
+
+        public int Count
+        {
+            get => _knownCarriersByCallsign.Count;
         }
     }
 }

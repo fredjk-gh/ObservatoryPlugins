@@ -7,76 +7,101 @@ using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
-    internal class CarrierData
+    public class CarrierData
     {
+        private const string UNNAMED = "(unnamed)";
+
+        private bool _deserialized = false;
         private CarrierStats _lastStats;
-        private CarrierBuy _buy;
+
+        // Only to be used for JSON Deserialization.
+        public CarrierData()
+        {
+            CarrierName = UNNAMED;
+            _deserialized = true;
+        }
 
         public CarrierData(string commander, CarrierBuy buy)
         {
             OwningCommander = commander;
             CarrierFuel = 500;
-            _buy = buy;
+            CarrierCallsign = buy.Callsign;
+            CarrierId = buy.CarrierID;
+            CarrierName = UNNAMED;
         }
 
         public CarrierData(string commander, CarrierStats stats)
         {
             OwningCommander = commander;
             CarrierFuel = stats.FuelLevel;
+            CarrierCallsign = stats.Callsign;
+            CarrierId = stats.CarrierID;
+            CarrierName = stats.Name;
             _lastStats = stats;
         }
 
-        public string OwningCommander { get; }
-        public string CarrierName { get => LastCarrierStats?.Name ?? "(unnamed)"; }
-        public ulong CarrierId
-        {
-            get
-            {
-                if (LastCarrierStats != null) return LastCarrierStats.CarrierID;
-                if (_buy != null) return _buy.CarrierID;
-                throw new InvalidOperationException("Unexpected CarrierData state: neither CarrierStats nor CarrierBuy is present!");
-            }
-        }
-        public string CarrierCallsign
-        {
-            get
-            {
-                if (LastCarrierStats != null) return LastCarrierStats.Callsign;
-                if (_buy != null) return _buy.Callsign;
-                throw new InvalidOperationException("Unexpected CarrierData state: neither CarrierStats nor CarrierBuy is present!");
-            }
-        }
-
+        public string OwningCommander { get; set;  }
+        public bool CommanderIsDockedOrOnFoot { get; set; }
+        public string CarrierName { get; set; }
+        public ulong CarrierId { get; set; }
+        public string CarrierCallsign { get; set; }
         public int CarrierFuel { get; set; }
+        public long CapacityUsed { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
         public CarrierStats LastCarrierStats {
             get => _lastStats;
             set
             {
-                if ((_lastStats?.CarrierID ?? _buy.CarrierID) == value.CarrierID)
+                if ((CarrierId == 0 && _deserialized) || CarrierId == value.CarrierID)
                 {
+                    CarrierName = value.Name;
+                    CapacityUsed = value.SpaceUsage.TotalCapacity - value.SpaceUsage.FreeSpace;
                     _lastStats = value;
+                    _deserialized = false;
                 }
             }
         }
 
+        public CarrierJumpRequest LastCarrierJumpRequest { get; set; }
+
+        public CarrierPositionData Position { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
         public bool IsPositionKnown
         {
             get => Position != null;
         }
 
-        public CarrierPositionData Position { get; set; }
-        public CarrierJumpRequest LastCarrierJumpRequest { get; set; }
-        public bool CooldownNotifyScheduled { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool CooldownNotifyScheduled { get => CarrierCooldownTimer != null; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
         internal System.Timers.Timer CarrierCooldownTimer { get; set; }
 
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool CarrierJumpTimerScheduled { get => CarrierJumpTimer != null; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        internal System.Timers.Timer CarrierJumpTimer { get; set; }
+        
         public void CancelCarrierJump()
         {
             LastCarrierJumpRequest = null;
-            CooldownNotifyScheduled = false;
+            ClearTimers();
+        }
+
+        public void ClearTimers()
+        {
             if (CarrierCooldownTimer != null)
             {
                 CarrierCooldownTimer.Stop();
                 CarrierCooldownTimer = null;
+            }
+            if (CarrierJumpTimer != null)
+            {
+                CarrierJumpTimer.Stop();
+                CarrierJumpTimer = null;
             }
         }
 
@@ -88,5 +113,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             Position = newPosition;
             return true;
         }
+
+        public CarrierRoute Route { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool HasRoute { get => Route != null; }
     }
 }
