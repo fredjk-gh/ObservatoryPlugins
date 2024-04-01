@@ -452,7 +452,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (scan.Rings == null || scan.Rings.IsEmpty || _data.AlreadyReportedScansSaaSignals.Contains(scan.BodyName) || !_settings.MentionPotentiallyMineableRings || !_settings.MentionableRings.HasValue) return;
 
             _data.AlreadyReportedScansSaaSignals.Add(scan.BodyName);
-            List<Tuple<string,string,string>> ringsOfInterest = new();
+            List<RingDetails> ringsOfInterest = new();
             RingType mentionableRings = _settings.MentionableRings.Value;
             foreach (Ring ring in scan.Rings)
             {
@@ -464,16 +464,21 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 {
                     if (mentionableRings.HasFlag(rt) && ring.RingClass.Contains(rt.MatchString()))
                     {
-                        double densityMTperkm2 = ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0)));
-                        if (densityMTperkm2 < minRingDensity)
+                        double densityMTperkm3 = ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0)));
+                        if (densityMTperkm3 < minRingDensity)
                         {
-                            Debug.WriteLineIf(enableDebug, $"Scan: Ignoring interesting ring with low density: {densityMTperkm2:n1}");
+                            Debug.WriteLineIf(enableDebug, $"Scan: Ignoring interesting ring with low density: {densityMTperkm3:n1}");
                             break;
                         }
                         string desiredCommodities = string.Join(", ", _settings.DesirableCommonditiesByRingType(rt).Select(c => c.ToString()));
-                        var tuple = new Tuple<string, string, string>(
-                            $"{rt.DisplayString()} Ring", $"[{desiredCommodities}]", $"Density: {densityMTperkm2:n1} mT/km^2");
-                        if (!ringsOfInterest.Contains(tuple)) ringsOfInterest.Add(tuple);
+                        var details = new RingDetails()
+                        {
+                            ShortName = _data.GetShortBodyName(ring.Name, scan.BodyName),
+                            RingType = $"{rt.DisplayString()} Ring",
+                            Commodities = $"[{desiredCommodities}]",
+                            Density = $"Density: {densityMTperkm3:n1} mT/km^3",
+                        };
+                        if (!ringsOfInterest.Contains(details)) ringsOfInterest.Add(details);
                         break;
                     }
                 }
@@ -481,7 +486,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (ringsOfInterest.Count == 0) return;
 
             var shortBodyName = _data.GetShortBodyName(scan.BodyName);
-            var detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => $"{t.Item1} {t.Item2}, {t.Item3}"));
+            var detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => t.ToString()));
             var bodyDistance = $", distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
             Debug.WriteLineIf(enableDebug, $"Scan: Interesting rings at body {shortBodyName}: {detailsCommaSeparated + bodyDistance}");
 
@@ -493,7 +498,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             Core.SendNotification(new NotificationArgs()
             {
                 Title = _data.GetBodyTitle(shortBodyName),
-                Detail = string.Join(Environment.NewLine, string.Join(", ", ringsOfInterest.Select(t => t.Item1))),
+                Detail = string.Join(", ", ringsOfInterest.Select(t => t.RingType)),
                 ExtendedDetails = detailsCommaSeparated + bodyDistance,
                 Sender = ShortName,
                 CoalescingId = scan.BodyID,

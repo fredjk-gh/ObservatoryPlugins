@@ -155,6 +155,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             return string.IsNullOrEmpty(baseName) ? bodyName.Replace(SystemName, "").Trim() : bodyName.Replace(baseName, "").Trim();
         }
 
+        // TODO Handle Barycenters?
         public string GetBodyTitle(string bodyName)
         {
             if (bodyName.Length == 0)
