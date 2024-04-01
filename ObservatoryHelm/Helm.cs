@@ -65,6 +65,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                     MaybeRestoreDestinations();
                 }
             }
+            // Exiting Preread
+            else if (args.PreviousState.HasFlag(LogMonitorState.PreRead)
+                && !args.NewState.HasFlag(LogMonitorState.PreRead))
+            {
+                MaybeRestoreDestinations();
+            }
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -388,7 +394,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
 
         private void MaybeMakeGridItemForSummary(string timestamp)
         {
-            if (data.CommanderData.JumpsCompleted == 0)
+            if ((data.CommanderData?.JumpsCompleted ?? 0) == 0)
             {
                 // Do nothing.
                 return;
@@ -422,6 +428,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
 
         private void MaybeSetDestinationInClipboard(bool forCommanderChange)
         {
+            if (Core.IsLogMonitorBatchReading) return;
             if (!string.IsNullOrWhiteSpace(data.CommanderData?.Destination))
             {
                 // We have a known destination; Set the current destination into the clipboard.

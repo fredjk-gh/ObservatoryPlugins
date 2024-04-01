@@ -38,7 +38,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 if (_lastNavRoute != null)
                 {
                     Destination = value.Route[value.Route.Count - 1].StarSystem;
-                    JumpsRemainingInRoute = value.Route.Count;
+                    JumpsRemainingInRoute = value.Route.Count - 1; // Route includes origin system.
                 }
             }
         }
@@ -62,6 +62,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             JumpsCompleted++;
             AllBodiesFound = false;
             UndiscoveredSystem = false;
+            IsDockedOnCarrier = false;
         }
 
         public void SystemResetDockedOnCarrier(string systemName, double distanceTravelled = 0)
