@@ -185,7 +185,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             if (args.Detail.Trim().Contains(Environment.NewLine))
             {
                 string[] details = args.Detail.Trim().Split(Environment.NewLine);
-                string[] extDetails = args.ExtendedDetails.Trim().Split(Environment.NewLine);
+                string[] extDetails = args.ExtendedDetails?.Trim().Split(Environment.NewLine) ?? new string[0];
 
                 for (int i = 0; i < details.Length; i++)
                 {
