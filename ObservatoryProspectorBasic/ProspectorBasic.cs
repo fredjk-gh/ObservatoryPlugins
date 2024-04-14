@@ -474,7 +474,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                         var details = new RingDetails()
                         {
                             ShortName = _data.GetShortBodyName(ring.Name, scan.BodyName),
-                            RingType = $"{rt.DisplayString()} Ring",
+                            RingType = rt.DisplayString(),
                             Commodities = $"[{desiredCommodities}]",
                             Density = $"Density: {densityMTperkm3:n1} mT/km^3",
                         };
@@ -487,8 +487,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
             var shortBodyName = _data.GetShortBodyName(scan.BodyName);
             var detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => t.ToString()));
-            var bodyDistance = $", distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
-            Debug.WriteLineIf(enableDebug, $"Scan: Interesting rings at body {shortBodyName}: {detailsCommaSeparated + bodyDistance}");
+            var bodyDistance = $"distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
+            Debug.WriteLineIf(enableDebug, $"Scan: Interesting rings at body {shortBodyName}: {detailsCommaSeparated}, {bodyDistance}");
 
             Core.AddGridItem(this, new ProspectorGrid()
             {
@@ -498,8 +498,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             Core.SendNotification(new NotificationArgs()
             {
                 Title = _data.GetBodyTitle(shortBodyName),
-                Detail = string.Join(", ", ringsOfInterest.Select(t => t.RingType)),
-                ExtendedDetails = detailsCommaSeparated + bodyDistance,
+                Detail = string.Join(", ", ringsOfInterest.Select(t => $"{t.RingType} Ring")),
+                ExtendedDetails = $"{detailsCommaSeparated}, {bodyDistance}",
                 Sender = ShortName,
                 CoalescingId = scan.BodyID,
             });
@@ -606,7 +606,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             // If we got here, we didn't find anything interesting.
             if (string.IsNullOrEmpty(highMaterialContent))
             {
-                AddOrUpdateProspectorNotification(prospectorId, MakeProspectorNotificationArgs("Nothing here", "", prospectorId, NotificationRendering.NativeVisual));
+                AddOrUpdateProspectorNotification(prospectorId, MakeProspectorNotificationArgs("Nothing of interest", "", prospectorId, NotificationRendering.NativeVisual));
             }
             else
             {
