@@ -41,11 +41,11 @@
             txtOutput = new TextBox();
             buttonLayoutPanel = new FlowLayoutPanel();
             btnSaveRoute = new Button();
+            btnClearRoute = new Button();
             btnCancel = new Button();
             nudUsedCapacity = new NumericUpDown();
             flowLayoutPanel1 = new FlowLayoutPanel();
             btnGenerateRoute = new Button();
-            btnClearRoute = new Button();
             mainLayoutPanel.SuspendLayout();
             buttonLayoutPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nudUsedCapacity).BeginInit();
@@ -55,8 +55,8 @@
             // mainLayoutPanel
             // 
             mainLayoutPanel.ColumnCount = 2;
-            mainLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30.959753F));
-            mainLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 69.0402451F));
+            mainLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30.9597511F));
+            mainLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 69.04025F));
             mainLayoutPanel.Controls.Add(lblCommander, 0, 0);
             mainLayoutPanel.Controls.Add(cbCommanders, 1, 0);
             mainLayoutPanel.Controls.Add(lblCarrier, 0, 1);
@@ -72,6 +72,7 @@
             mainLayoutPanel.Controls.Add(flowLayoutPanel1, 0, 5);
             mainLayoutPanel.Dock = DockStyle.Fill;
             mainLayoutPanel.Location = new Point(0, 0);
+            mainLayoutPanel.Margin = new Padding(2);
             mainLayoutPanel.Name = "mainLayoutPanel";
             mainLayoutPanel.RowCount = 7;
             mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 12F));
@@ -79,19 +80,19 @@
             mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 12F));
             mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 12F));
             mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 12F));
-            mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 28F));
-            mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 12F));
-            mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            mainLayoutPanel.Size = new Size(654, 450);
+            mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 27F));
+            mainLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 13F));
+            mainLayoutPanel.Size = new Size(458, 281);
             mainLayoutPanel.TabIndex = 0;
             // 
             // lblCommander
             // 
             lblCommander.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblCommander.AutoSize = true;
-            lblCommander.Location = new Point(84, 0);
+            lblCommander.Location = new Point(62, 0);
+            lblCommander.Margin = new Padding(2, 0, 2, 0);
             lblCommander.Name = "lblCommander";
-            lblCommander.Size = new Size(115, 54);
+            lblCommander.Size = new Size(77, 33);
             lblCommander.TabIndex = 0;
             lblCommander.Text = "Commander:";
             lblCommander.TextAlign = ContentAlignment.MiddleRight;
@@ -100,10 +101,10 @@
             // 
             cbCommanders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             cbCommanders.FormattingEnabled = true;
-            cbCommanders.Location = new Point(205, 10);
-            cbCommanders.Margin = new Padding(3, 10, 3, 3);
+            cbCommanders.Location = new Point(143, 6);
+            cbCommanders.Margin = new Padding(2, 6, 2, 2);
             cbCommanders.Name = "cbCommanders";
-            cbCommanders.Size = new Size(446, 33);
+            cbCommanders.Size = new Size(313, 23);
             cbCommanders.TabIndex = 1;
             cbCommanders.SelectedIndexChanged += cbCommanders_SelectedIndexChanged;
             // 
@@ -111,9 +112,10 @@
             // 
             lblCarrier.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblCarrier.AutoSize = true;
-            lblCarrier.Location = new Point(132, 54);
+            lblCarrier.Location = new Point(94, 33);
+            lblCarrier.Margin = new Padding(2, 0, 2, 0);
             lblCarrier.Name = "lblCarrier";
-            lblCarrier.Size = new Size(67, 54);
+            lblCarrier.Size = new Size(45, 33);
             lblCarrier.TabIndex = 2;
             lblCarrier.Text = "Carrier:";
             lblCarrier.TextAlign = ContentAlignment.MiddleRight;
@@ -122,9 +124,10 @@
             // 
             lblCarrierNameAndId.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             lblCarrierNameAndId.AutoSize = true;
-            lblCarrierNameAndId.Location = new Point(205, 54);
+            lblCarrierNameAndId.Location = new Point(143, 33);
+            lblCarrierNameAndId.Margin = new Padding(2, 0, 2, 0);
             lblCarrierNameAndId.Name = "lblCarrierNameAndId";
-            lblCarrierNameAndId.Size = new Size(172, 54);
+            lblCarrierNameAndId.Size = new Size(116, 33);
             lblCarrierNameAndId.TabIndex = 3;
             lblCarrierNameAndId.Text = "(Select Commander)";
             lblCarrierNameAndId.TextAlign = ContentAlignment.MiddleLeft;
@@ -133,9 +136,10 @@
             // 
             lblStartSystem.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblStartSystem.AutoSize = true;
-            lblStartSystem.Location = new Point(60, 108);
+            lblStartSystem.Location = new Point(47, 66);
+            lblStartSystem.Margin = new Padding(2, 0, 2, 0);
             lblStartSystem.Name = "lblStartSystem";
-            lblStartSystem.Size = new Size(139, 54);
+            lblStartSystem.Size = new Size(92, 33);
             lblStartSystem.TabIndex = 4;
             lblStartSystem.Text = "Starting System:";
             lblStartSystem.TextAlign = ContentAlignment.MiddleRight;
@@ -143,10 +147,10 @@
             // txtStartSystem
             // 
             txtStartSystem.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtStartSystem.Location = new Point(205, 118);
-            txtStartSystem.Margin = new Padding(3, 10, 10, 3);
+            txtStartSystem.Location = new Point(143, 72);
+            txtStartSystem.Margin = new Padding(2, 6, 7, 2);
             txtStartSystem.Name = "txtStartSystem";
-            txtStartSystem.Size = new Size(439, 31);
+            txtStartSystem.Size = new Size(308, 23);
             txtStartSystem.TabIndex = 5;
             txtStartSystem.TextChanged += txtStartSystem_TextChanged;
             // 
@@ -154,9 +158,10 @@
             // 
             lblDestinationSystem.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblDestinationSystem.AutoSize = true;
-            lblDestinationSystem.Location = new Point(31, 162);
+            lblDestinationSystem.Location = new Point(28, 99);
+            lblDestinationSystem.Margin = new Padding(2, 0, 2, 0);
             lblDestinationSystem.Name = "lblDestinationSystem";
-            lblDestinationSystem.Size = new Size(168, 54);
+            lblDestinationSystem.Size = new Size(111, 33);
             lblDestinationSystem.TabIndex = 6;
             lblDestinationSystem.Text = "Destination System:";
             lblDestinationSystem.TextAlign = ContentAlignment.MiddleRight;
@@ -164,10 +169,10 @@
             // txtDestSystem
             // 
             txtDestSystem.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtDestSystem.Location = new Point(205, 172);
-            txtDestSystem.Margin = new Padding(3, 10, 10, 3);
+            txtDestSystem.Location = new Point(143, 105);
+            txtDestSystem.Margin = new Padding(2, 6, 7, 2);
             txtDestSystem.Name = "txtDestSystem";
-            txtDestSystem.Size = new Size(439, 31);
+            txtDestSystem.Size = new Size(308, 23);
             txtDestSystem.TabIndex = 7;
             txtDestSystem.TextChanged += txtDestSystem_TextChanged;
             // 
@@ -175,9 +180,10 @@
             // 
             lblUsedCapacity.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblUsedCapacity.AutoSize = true;
-            lblUsedCapacity.Location = new Point(71, 216);
+            lblUsedCapacity.Location = new Point(54, 132);
+            lblUsedCapacity.Margin = new Padding(2, 0, 2, 0);
             lblUsedCapacity.Name = "lblUsedCapacity";
-            lblUsedCapacity.Size = new Size(128, 54);
+            lblUsedCapacity.Size = new Size(85, 33);
             lblUsedCapacity.TabIndex = 8;
             lblUsedCapacity.Text = "Used Capacity:";
             lblUsedCapacity.TextAlign = ContentAlignment.MiddleRight;
@@ -185,12 +191,13 @@
             // txtOutput
             // 
             txtOutput.Dock = DockStyle.Fill;
-            txtOutput.Location = new Point(205, 273);
+            txtOutput.Location = new Point(143, 167);
+            txtOutput.Margin = new Padding(2);
             txtOutput.Multiline = true;
             txtOutput.Name = "txtOutput";
             txtOutput.ReadOnly = true;
             txtOutput.ScrollBars = ScrollBars.Vertical;
-            txtOutput.Size = new Size(446, 120);
+            txtOutput.Size = new Size(313, 71);
             txtOutput.TabIndex = 10;
             // 
             // buttonLayoutPanel
@@ -199,29 +206,48 @@
             buttonLayoutPanel.Controls.Add(btnClearRoute);
             buttonLayoutPanel.Controls.Add(btnCancel);
             buttonLayoutPanel.Dock = DockStyle.Fill;
-            buttonLayoutPanel.Location = new Point(205, 399);
+            buttonLayoutPanel.Location = new Point(143, 242);
+            buttonLayoutPanel.Margin = new Padding(2);
             buttonLayoutPanel.Name = "buttonLayoutPanel";
-            buttonLayoutPanel.Padding = new Padding(3);
-            buttonLayoutPanel.Size = new Size(446, 48);
+            buttonLayoutPanel.Padding = new Padding(2);
+            buttonLayoutPanel.Size = new Size(313, 37);
             buttonLayoutPanel.TabIndex = 11;
             // 
             // btnSaveRoute
             // 
             btnSaveRoute.AutoSize = true;
             btnSaveRoute.Enabled = false;
-            btnSaveRoute.Location = new Point(6, 6);
+            btnSaveRoute.FlatStyle = FlatStyle.Flat;
+            btnSaveRoute.Location = new Point(4, 4);
+            btnSaveRoute.Margin = new Padding(2);
             btnSaveRoute.Name = "btnSaveRoute";
-            btnSaveRoute.Size = new Size(135, 35);
+            btnSaveRoute.Size = new Size(95, 27);
             btnSaveRoute.TabIndex = 0;
             btnSaveRoute.Text = "Save and Start";
             btnSaveRoute.UseVisualStyleBackColor = true;
             btnSaveRoute.Click += btnAccept_Click;
             // 
+            // btnClearRoute
+            // 
+            btnClearRoute.AutoSize = true;
+            btnClearRoute.FlatStyle = FlatStyle.Flat;
+            btnClearRoute.Location = new Point(103, 4);
+            btnClearRoute.Margin = new Padding(2);
+            btnClearRoute.Name = "btnClearRoute";
+            btnClearRoute.Size = new Size(82, 27);
+            btnClearRoute.TabIndex = 14;
+            btnClearRoute.Text = "Clear Route";
+            btnClearRoute.UseVisualStyleBackColor = true;
+            btnClearRoute.Click += btnClearRoute_Click;
+            // 
             // btnCancel
             // 
-            btnCancel.Location = new Point(265, 6);
+            btnCancel.AutoSize = true;
+            btnCancel.FlatStyle = FlatStyle.Flat;
+            btnCancel.Location = new Point(189, 4);
+            btnCancel.Margin = new Padding(2);
             btnCancel.Name = "btnCancel";
-            btnCancel.Size = new Size(112, 34);
+            btnCancel.Size = new Size(78, 27);
             btnCancel.TabIndex = 1;
             btnCancel.Text = "Cancel";
             btnCancel.UseVisualStyleBackColor = true;
@@ -229,11 +255,11 @@
             // 
             // nudUsedCapacity
             // 
-            nudUsedCapacity.Location = new Point(205, 226);
-            nudUsedCapacity.Margin = new Padding(3, 10, 3, 3);
+            nudUsedCapacity.Location = new Point(143, 138);
+            nudUsedCapacity.Margin = new Padding(2, 6, 2, 2);
             nudUsedCapacity.Maximum = new decimal(new int[] { 25000, 0, 0, 0 });
             nudUsedCapacity.Name = "nudUsedCapacity";
-            nudUsedCapacity.Size = new Size(180, 31);
+            nudUsedCapacity.Size = new Size(126, 23);
             nudUsedCapacity.TabIndex = 12;
             nudUsedCapacity.ValueChanged += nudUsedCapacity_ValueChanged;
             // 
@@ -241,9 +267,10 @@
             // 
             flowLayoutPanel1.Controls.Add(btnGenerateRoute);
             flowLayoutPanel1.FlowDirection = FlowDirection.RightToLeft;
-            flowLayoutPanel1.Location = new Point(3, 273);
+            flowLayoutPanel1.Location = new Point(2, 167);
+            flowLayoutPanel1.Margin = new Padding(2);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(196, 120);
+            flowLayoutPanel1.Size = new Size(137, 71);
             flowLayoutPanel1.TabIndex = 14;
             // 
             // btnGenerateRoute
@@ -251,32 +278,26 @@
             btnGenerateRoute.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnGenerateRoute.AutoSize = true;
             btnGenerateRoute.Enabled = false;
-            btnGenerateRoute.Location = new Point(50, 3);
+            btnGenerateRoute.FlatStyle = FlatStyle.Flat;
+            btnGenerateRoute.Location = new Point(33, 2);
+            btnGenerateRoute.Margin = new Padding(2);
             btnGenerateRoute.Name = "btnGenerateRoute";
-            btnGenerateRoute.Size = new Size(143, 35);
+            btnGenerateRoute.Size = new Size(102, 27);
             btnGenerateRoute.TabIndex = 13;
             btnGenerateRoute.Text = "Generate Route";
             btnGenerateRoute.UseVisualStyleBackColor = true;
             btnGenerateRoute.Click += btnGenerateRoute_Click;
             // 
-            // btnClearRoute
-            // 
-            btnClearRoute.Location = new Point(147, 6);
-            btnClearRoute.Name = "btnClearRoute";
-            btnClearRoute.Size = new Size(112, 34);
-            btnClearRoute.TabIndex = 14;
-            btnClearRoute.Text = "Clear Route";
-            btnClearRoute.UseVisualStyleBackColor = true;
-            btnClearRoute.Click += btnClearRoute_Click;
-            // 
             // SpanshCarrierRouterForm
             // 
-            AutoScaleDimensions = new SizeF(10F, 25F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(654, 450);
+            ClientSize = new Size(458, 281);
             Controls.Add(mainLayoutPanel);
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            Margin = new Padding(2);
             Name = "SpanshCarrierRouterForm";
+            ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Spansh Carrier Route Options";
             mainLayoutPanel.ResumeLayout(false);

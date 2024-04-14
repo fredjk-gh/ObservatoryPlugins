@@ -1,4 +1,5 @@
-﻿using Observatory.Framework.Files.ParameterTypes;
+﻿using com.github.fredjk_gh.ObservatoryFleetCommander.Data;
+using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -254,7 +255,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 else if (resultRoot.TryGetProperty("result", out property))
                 {
                     // We have a result!
-                    _carrierRoute = CarrierRoute.FromSpanshResultJson(property);
+                    _carrierRoute = CarrierRoute.FromSpanshResultJson(property, jobId);
                     txtOutput.Text = $"Route ready! {_carrierRoute.Jumps.Count - 1} jumps.";
                 }
                 else

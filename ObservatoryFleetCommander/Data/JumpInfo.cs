@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryFleetCommander
+namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
     public class JumpInfo
     {

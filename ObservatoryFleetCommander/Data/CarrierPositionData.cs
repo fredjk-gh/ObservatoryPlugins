@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryFleetCommander
+namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
     public class CarrierPositionData
     {
@@ -46,12 +46,18 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             BodyID = jumpRequest.BodyID;
         }
 
+        public CarrierPositionData(JumpInfo jumpInfo) : this(jumpInfo.SystemName, jumpInfo.SystemAddress)
+        {
+            StarPos = jumpInfo.Position;
+        }
+
         public CarrierPositionData(string carrierSystem, ulong systemAddress, string carrierBody = "")
         {
             SystemName = carrierSystem;
             SystemAddress = systemAddress;
             _body = string.IsNullOrEmpty(carrierBody) ? carrierSystem : carrierBody;
         }
+
 
         public string SystemName { get; set; }
         public ulong SystemAddress { get; set; }

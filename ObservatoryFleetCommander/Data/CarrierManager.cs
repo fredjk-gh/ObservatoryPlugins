@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryFleetCommander
+namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
     public class CarrierManager
     {

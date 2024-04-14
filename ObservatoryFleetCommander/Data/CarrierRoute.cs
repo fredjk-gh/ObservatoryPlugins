@@ -6,11 +6,13 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryFleetCommander
+namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
     public class CarrierRoute
     {
         private List<JumpInfo> _jumps = new();
+
+        public string JobID { get; set; }
 
         public string StartSystem { get; set; }
 
@@ -18,10 +20,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         public List<JumpInfo> Jumps { get => _jumps; set => _jumps = value; }
 
-        public static CarrierRoute FromSpanshResultJson(JsonElement resultElement)
+        public static CarrierRoute FromSpanshResultJson(JsonElement resultElement, string jobId = "")
         {
             CarrierRoute route = new CarrierRoute();
 
+            route.JobID = jobId;
             route.StartSystem =  resultElement.GetProperty("source").GetString();
             route.DestinationSystem = resultElement.GetProperty("destinations")[0].GetString();
 

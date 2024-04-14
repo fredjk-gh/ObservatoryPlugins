@@ -6,7 +6,9 @@
 	  <SignAssembly>false</SignAssembly>
 	  <UseWindowsForms>true</UseWindowsForms>
 	  <AssemblyOriginatorKeyFile>ObservatoryKey.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
+	  <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+	  <ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+	</PropertyGroup>
 
 	<PropertyGroup>
 		<VersionSuffix>0.$([System.DateTime]::UtcNow.Year.ToString().Substring(2)).$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0")).$([System.DateTime]::UtcNow.ToString(HHmm))</VersionSuffix>

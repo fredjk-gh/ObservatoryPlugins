@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryFleetCommander
+namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
     public class CoordConverter : JsonConverter<(double x, double y, double z)>
     {
