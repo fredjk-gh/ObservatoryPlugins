@@ -283,8 +283,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         MakeGridItem(scan.Timestamp, extendedDetails);
                         Core.SendNotification(new()
                         {
-                            Title = "Nearby scoopable secondary star",
-                            Detail = $"Body {BodyShortName(scan.BodyName, data.CommanderData.CurrentSystem)}{Environment.NewLine}Type: {data.CommanderData.ScoopableSecondaryCandidateScan?.StarType}{Environment.NewLine}{Math.Round(data.CommanderData.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls",
+                            Title = $"Body {BodyShortName(scan.BodyName, data.CommanderData.CurrentSystem)}",
+                            Detail = $"Nearby scoopable secondary star",
                             ExtendedDetails = extendedDetails,
                             Sender = ShortName,
                             CoalescingId = scan.BodyID,
