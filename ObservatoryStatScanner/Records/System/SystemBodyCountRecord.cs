@@ -10,7 +10,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
     internal class SystemBodyCountRecord : SystemRecord
     {
         public SystemBodyCountRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Body count")
+            : base(settings, recordKind, data, "Bodies")
         { }
 
         public override bool Enabled => Settings.EnableSystemBodyCountRecords;

@@ -13,7 +13,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         private readonly Dictionary<string, int> BodyBioSignals = new();
 
         public SystemOdysseyBiosRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Odyssey Bio count")
+            : base(settings, recordKind, data, "Odyssey Bios")
         { }
 
         public override bool Enabled => Settings.EnableOdysseySurfaceBioRecord;
