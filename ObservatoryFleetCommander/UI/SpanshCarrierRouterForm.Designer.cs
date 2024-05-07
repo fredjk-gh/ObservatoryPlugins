@@ -217,6 +217,7 @@
             // 
             btnSaveRoute.AutoSize = true;
             btnSaveRoute.Enabled = false;
+            btnSaveRoute.FlatAppearance.BorderSize = 0;
             btnSaveRoute.FlatStyle = FlatStyle.Flat;
             btnSaveRoute.Location = new Point(4, 4);
             btnSaveRoute.Margin = new Padding(2);
@@ -230,6 +231,7 @@
             // btnClearRoute
             // 
             btnClearRoute.AutoSize = true;
+            btnClearRoute.FlatAppearance.BorderSize = 0;
             btnClearRoute.FlatStyle = FlatStyle.Flat;
             btnClearRoute.Location = new Point(103, 4);
             btnClearRoute.Margin = new Padding(2);
@@ -243,6 +245,7 @@
             // btnCancel
             // 
             btnCancel.AutoSize = true;
+            btnCancel.FlatAppearance.BorderSize = 0;
             btnCancel.FlatStyle = FlatStyle.Flat;
             btnCancel.Location = new Point(189, 4);
             btnCancel.Margin = new Padding(2);
@@ -278,6 +281,7 @@
             btnGenerateRoute.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnGenerateRoute.AutoSize = true;
             btnGenerateRoute.Enabled = false;
+            btnGenerateRoute.FlatAppearance.BorderSize = 0;
             btnGenerateRoute.FlatStyle = FlatStyle.Flat;
             btnGenerateRoute.Location = new Point(33, 2);
             btnGenerateRoute.Margin = new Padding(2);

@@ -265,6 +265,7 @@
             // 
             // btnNewRoute
             // 
+            btnNewRoute.FlatAppearance.BorderSize = 0;
             btnNewRoute.FlatStyle = FlatStyle.Flat;
             btnNewRoute.Location = new Point(2, 2);
             btnNewRoute.Margin = new Padding(2);
@@ -277,6 +278,7 @@
             // 
             // btnClearRoute
             // 
+            btnClearRoute.FlatAppearance.BorderSize = 0;
             btnClearRoute.FlatStyle = FlatStyle.Flat;
             btnClearRoute.Location = new Point(84, 2);
             btnClearRoute.Margin = new Padding(2);

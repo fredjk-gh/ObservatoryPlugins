@@ -182,7 +182,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                             Detail = $"Jump is in {departureTimeMinutes:#.0} minutes",
                             Sender = ShortName,
                         });
-                        _ui.Get(carrierData)?.JumpScheduled();
+                        Core.ExecuteOnUIThread(() =>
+                        {
+                            _ui.Get(carrierData)?.JumpScheduled();
+                        });
                     }
 
                     break;
@@ -215,7 +218,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                         msg = $"Cancelled requested jump to {carrierData.LastCarrierJumpRequest.SystemName}";
 
                     carrierData.CancelCarrierJump();
-                    _ui.Get(carrierData)?.JumpCanceled(msg);
+                    Core.ExecuteOnUIThread(() =>
+                    {
+                        _ui.Get(carrierData)?.JumpCanceled(msg);
+                    });
                     break;
                 case CarrierDepositFuel carrierDepositFuel:
                     // Make sure the Cmdr is donating to their carrier for fuel updates as this event could trigger for
@@ -285,8 +291,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     }
                 }
 
-                _ui.Get(data)?.UpdatePosition(position, locationUpdateDetails);
-                _ui.Get(data)?.UpdateFuel();
+                Core.ExecuteOnUIThread(() =>
+                {
+                    _ui.Get(data)?.UpdatePosition(position, locationUpdateDetails);
+                    _ui.Get(data)?.UpdateFuel();
+                });
 
                 // Notify if not initial values and context requests it and user has this notification enabled.
                 if (notifyIfChanged)
@@ -333,7 +342,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 data.CarrierJumpTimer.Start();
                 Debug.WriteLine($"Carrier jump timer scheduled for {carrierDepartureTime}.");
             }
-            _ui.Get(data)?.InitCountdown(data.LastCarrierJumpRequest);
+            Core.ExecuteOnUIThread(() =>
+            {
+                _ui.Get(data)?.InitCountdown(data.LastCarrierJumpRequest);
+            });
         }
 
         private bool MaybeInitializeCarrierInfo(DateTime dateTime, CarrierStats stats)
@@ -341,8 +353,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (!_manager.IsCallsignKnown(stats.Callsign))
             {
                 var data = _manager.RegisterCarrier(_currentCommander, stats);
-                _ui.Add(stats.Callsign)?.Draw($"Carrier detected: {data.CarrierName} {data.CarrierCallsign}. Configured notifications are active.");
-
+                Core.ExecuteOnUIThread(() =>
+                {
+                    _ui.Add(stats.Callsign)?.Draw($"Carrier detected: {data.CarrierName} {data.CarrierCallsign}. Configured notifications are active.");
+                });
                 return true;
             }
             return false;
@@ -369,7 +383,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     : $"Fuel level has changed{(fuel != null ? " (deposited fuel)" : "")}.";
                 // Only add "Fuel level has changed" output if we have a value for it already. At startup, the carrier detected line includes it and thus,
                 // this line appears redundant.
-                _ui.Get(data)?.UpdateFuel(fuelDetails);
+                Core.ExecuteOnUIThread(() =>
+                {
+                    _ui.Get(data)?.UpdateFuel(fuelDetails);
+                });
 
                 if (lowFuel)
                 {
@@ -384,7 +401,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
 
             if (stats != null) data.LastCarrierStats = stats;
-            _ui.Get(data)?.UpdateStats();
+            Core.ExecuteOnUIThread(() =>
+            {
+                _ui.Get(data)?.UpdateStats();
+            });
             SerializeDataCache();
         }
 
@@ -418,18 +438,21 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 carrierData.Route = null;
                 SerializeDataCache();
-                _ui.Get(carrierData)?.UpdatePosition(carrierData.Position);
+                Core.ExecuteOnUIThread(() =>
+                {
+                    _ui.Get(carrierData)?.UpdatePosition(carrierData.Position);
+                });
                 return;
             }
 
             var nextJumpInfo = carrierData.Route.GetNextJump(carrierData.Position.SystemName);
             if (nextJumpInfo != null && carrierData.LastCarrierJumpRequest == null)
             {
-                Core.ExecuteOnUIThread(() => {
+                Core.ExecuteOnUIThread(() =>
+                {
                     Clipboard.SetText(nextJumpInfo.SystemName);
+                    _ui.Get(carrierData)?.SetMessage("System name for the next jump in your carrier route is in the clipboard.");
                 });
-
-                _ui.Get(carrierData)?.SetMessage("System name for the next jump in your carrier route is in the clipboard.");
             }
         }
 
@@ -471,7 +494,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             var data = _manager.GetByTimer((System.Timers.Timer)sender);
             if (data == null) return;
 
-            _ui.Get(data)?.SetMessage("Carrier jump cooldown is over. You may now schedule a new jump.");
+            Core.ExecuteOnUIThread(() =>
+            {
+                _ui.Get(data)?.SetMessage("Carrier jump cooldown is over. You may now schedule a new jump.");
+            });
             Core.SendNotification(new()
             {
                 Title = "Carrier Status Update",

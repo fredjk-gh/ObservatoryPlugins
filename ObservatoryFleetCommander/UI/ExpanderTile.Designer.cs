@@ -67,6 +67,7 @@
             // btnToggle
             // 
             btnToggle.Dock = DockStyle.Fill;
+            btnToggle.FlatAppearance.BorderSize = 0;
             btnToggle.FlatStyle = FlatStyle.Flat;
             btnToggle.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
             btnToggle.Location = new Point(5, 5);

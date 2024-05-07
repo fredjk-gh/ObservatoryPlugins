@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,10 +16,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
         private IObservatoryCore _core;
         private Commander _worker;
         private CarrierManager _manager;
+        private TableLayoutPanel _tablePanel;
         private FlowLayoutPanel _flowLayoutPanel;
         private Dictionary<string /* callsign */, CarrierUI> _uiByCallsign = new();
 
         private bool _initialized = false;
+        private bool _hasNewControl = false;
 
         public CommanderUI(IObservatoryCore core, Commander worker, CarrierManager manager)
         {
@@ -30,9 +33,43 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             DoubleBuffered = true;
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
-            Controls.Add(_flowLayoutPanel = new FlowLayoutPanel());
+            Controls.Add(_tablePanel = new TableLayoutPanel());
+            _tablePanel.Dock = DockStyle.Fill;
+            _tablePanel.ColumnStyles.Clear();
+            _tablePanel.ColumnStyles.Add(new()
+            {
+                SizeType = SizeType.Percent,
+                Width = 100,
+            });
+
+            _tablePanel.RowStyles.Clear();
+            _tablePanel.RowStyles.Add(new()
+            {
+                SizeType = SizeType.Percent,
+                Height = 100,
+            });
+            _tablePanel.RowStyles.Add(new()
+            {
+                SizeType = SizeType.Absolute,
+                Height = 50,
+            });
+
+            // First row: Controls for each carrier.
+            _tablePanel.Controls.Add(_flowLayoutPanel = new FlowLayoutPanel());
             _flowLayoutPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             _flowLayoutPanel.AutoScroll = true;
+
+            // Second row: Settings button.
+            var btnSettingsCog = new Button()
+            {
+                FlatStyle = FlatStyle.Flat,
+                Margin = new(5),
+                AutoSize = true,
+                Text = "Settings",
+            };
+            btnSettingsCog.FlatAppearance.BorderSize = 0;
+            btnSettingsCog.Click += btnSettingsCog_Click;
+            _tablePanel.Controls.Add(btnSettingsCog);
         }
 
         public bool IsReadAll { get => _core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch); }
@@ -42,6 +79,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             if (IsReadAll) return;
 
             Clear(); // Remove placeholders label or existing ui controls, if present.
+
             if (_manager.Count > 0)
             {
                 _initialized = true; // Avoid infinite recursion.
@@ -59,6 +97,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             }
         }
 
+        private void btnSettingsCog_Click(object sender, EventArgs e)
+        {
+            _core.OpenSettings(_worker);
+        }
+
         public void Repaint()
         {
             if (IsReadAll) return;
@@ -67,6 +110,15 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             foreach (var ui in _uiByCallsign.Values)
             {
                 ui.Draw();
+            }
+
+            if (_hasNewControl)
+            {
+                // Whenever we add a new control after initial load, we need to re-register ourself with core
+                // to re-apply the theme correctly.
+                _core.UnregisterControl(this);
+                _core.RegisterControl(this);
+                _hasNewControl = false;
             }
         }
 
@@ -113,12 +165,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             ui.Width = Convert.ToInt32(600 * (ui.DeviceDpi / 96.0));
             ui.Height = Convert.ToInt32(350 * (ui.DeviceDpi / 96.0));
             ui.Margin = new(4);
+            ui.BorderStyle = BorderStyle.FixedSingle;
 
             _uiByCallsign.Add(callsign, ui);
 
             var expander = new ExpanderTile(ui, ui.ShortName, _worker.settings.UICardsAreDefaultExpanded);
 
             _flowLayoutPanel.Controls.Add(expander);
+            _hasNewControl = true;
 
             return ui;
         }

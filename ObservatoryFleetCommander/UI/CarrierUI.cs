@@ -257,6 +257,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             SpanshCarrierRouterForm dlgSpanshOptions = new(_core, _commanderPlugin, _data.OwningCommander, _manager);
 
+            _core.RegisterControl(dlgSpanshOptions);
+
             DialogResult result = dlgSpanshOptions.ShowDialog();
 
             if (result == DialogResult.OK)
@@ -294,6 +296,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
                 ClearRoute("Route cleared.");
             }
+
+            _core.UnregisterControl(dlgSpanshOptions);
             dlgSpanshOptions.Dispose();
         }
 
