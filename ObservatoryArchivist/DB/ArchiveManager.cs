@@ -135,6 +135,29 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         {
             VisitedSystemsCol.DeleteAll();
         }
+
+        public CurrentSystemInfo LoadOrInitSystemInfo(FileHeaderInfo lastFileHeaderInfo, string starSystem, ulong systemAddress, DateTime timestampDateTime)
+        {
+            CurrentSystemInfo systemInfo = null;
+            VisitedSystem systemData = Get(starSystem, lastFileHeaderInfo.Commander);
+            if (systemData != null)
+            {
+                systemInfo = new(systemData);
+                systemInfo.VisitCount++;
+            }
+            else
+            {
+                systemInfo = new(lastFileHeaderInfo, starSystem, systemAddress, timestampDateTime);
+            }
+            return systemInfo;
+        }
+
+        public  void FlushSystemData(CurrentSystemInfo currentSystemInfo)
+        {
+            if (currentSystemInfo == null) return;
+
+            Upsert(currentSystemInfo.ToSystemInfo(true));
+        }
     }
 
     class DBNotConnectedException : Exception

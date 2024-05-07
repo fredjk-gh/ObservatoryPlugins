@@ -14,6 +14,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         private DateTime? _latestDateTime = null;
         private EntryDeduper _entryDeduper = new();
 
+        private bool _isDirty = false;
+
         public CurrentSystemInfo(FileHeaderInfo fileHeaderInfo, string systemName, UInt64 systemId64, DateTime firstVisit)
         {
             _internalData = new();
@@ -23,6 +25,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             _internalData.SystemId64 = systemId64;
             _internalData.FirstVisitDateTime = firstVisit;
             _internalData.VisitCount = 1;
+            _isDirty = true;
         }
 
         public CurrentSystemInfo(VisitedSystem dataFromDb)
@@ -51,22 +54,23 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public int VisitCount
         {
             get => _internalData.VisitCount;
-            set => _internalData.VisitCount = value;
+            set {
+                _internalData.VisitCount = value;
+                _isDirty = true;
+            }
         }
+
         public List<string> SystemJournalEntries { get => _internalData.SystemJournalEntries; }
 
         public void AddSystemJournalJson(string jsonStr, DateTime? timestamp = null)
         {
             DateTime? latestTimestamp = timestamp ?? ExtractTimestamp(jsonStr);
-            if (latestTimestamp != null && LatestDateTime != null && latestTimestamp <= LatestDateTime)
-            {
-                return; // Old or duplicate record.
-            }
 
             if (_entryDeduper.IsThisADuplicate(jsonStr)) return;
 
             _internalData.SystemJournalEntries.Add(jsonStr);
             _latestDateTime = latestTimestamp;
+            _isDirty = true;
         }
 
         private DateTime? ExtractTimestamp(string jsonStr)
@@ -80,9 +84,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             return entryDateTime;
         }
 
-        public VisitedSystem ToSystemInfo()
+        public VisitedSystem ToSystemInfo(bool forFlush = false)
         {
+            if (forFlush) _isDirty = false;
             return _internalData;
         }
+
+        public bool IsDirty { get => _isDirty; }
+
     }
 }
