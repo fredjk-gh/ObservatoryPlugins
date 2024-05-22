@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0-windows</TargetFramework>
+		<TargetFramework>net8.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
@@ -18,11 +18,13 @@
 		<RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
 
+	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)DB\dll\LiteDB.dll&quot; &quot;$(ProjectDir)$(OutDir)&quot; /y" />
+	</Target>
+	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net6.0-windows\plugins\&quot; /y" />
-		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(TargetPath)&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/&quot; -f" />
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net6.0-windows\plugins\deps\&quot; /y" />
-		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="cp &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)../../ObservatoryCore/ObservatoryCore/$(OutDir)plugins/deps/&quot; -f" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\deps\&quot; /y" />
 	</Target>
 	
 	<ItemGroup>
