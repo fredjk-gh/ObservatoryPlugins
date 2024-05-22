@@ -193,20 +193,20 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 // - VisitCount
                 // - SystemJournalEntries
                 // ??? Premable?
-                (string Commander, string SystemName, int VisitCount, List<string> SystemJournalEntries) msgValue =
-                (
-                    _context.Data.ForCommander().CurrentSystem.Commander,
-                    _context.Data.ForCommander().CurrentSystem.SystemName,
-                    _context.Data.ForCommander().CurrentSystem.VisitCount,
-                    _context.Data.ForCommander().CurrentSystem.SystemJournalEntries
-                );
+                //(string Commander, string SystemName, int VisitCount, List<string> SystemJournalEntries) msgValue =
+                //(
+                //    _context.Data.ForCommander().CurrentSystem.Commander,
+                //    _context.Data.ForCommander().CurrentSystem.SystemName,
+                //    _context.Data.ForCommander().CurrentSystem.VisitCount,
+                //    _context.Data.ForCommander().CurrentSystem.SystemJournalEntries
+                //);
 
-                Tuple<string, object> msg = new("archivist_known_system_data", msgValue);
+                //Tuple<string, object> msg = new("archivist_known_system_data", msgValue);
 
-                _context.Core.SendPluginMessage(this, msg);
+                //_context.Core.SendPluginMessage(this, msg);
                 _context.Core.ExecuteOnUIThread(() =>
                 {
-                    _context.UI.SetMessage($"Found {_context.Data.ForCommander().CurrentSystem.SystemJournalEntries.Count} records from a previous visit; shared via inter-plugin message.");
+                    _context.UI.SetMessage($"Found {_context.Data.ForCommander().CurrentSystem.SystemJournalEntries.Count} records from a previous visit; In the future this may be shared via inter-plugin message.");
                 });
             }
         }

@@ -15,7 +15,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         };
 
         [SettingNewGroup("Plugin Interop")]
-        [SettingDisplayName("Share data for known systems")]
+        [SettingDisplayName("Share data for known systems (WIP)")]
         public bool ShareSystemData { get; set; }
     }
 }
