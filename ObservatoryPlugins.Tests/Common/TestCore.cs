@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Drawing;
 
 namespace com.github.fredjk_gh.ObservatoryPlugins.Tests.Common
 {
@@ -111,9 +112,37 @@ namespace com.github.fredjk_gh.ObservatoryPlugins.Tests.Common
         }
 
         public void SendPluginMessage(IObservatoryPlugin plugin, object message)
+        { }
+
+        public void RegisterControl(object control)
+        { }
+
+        public void UnregisterControl(object control)
+        { }
+
+        public string GetCurrentThemeName()
         {
-            // TODO...
+            return "Dark";
         }
+
+        public Dictionary<string, Color> GetCurrentThemeDetails()
+        {
+            return new();
+        }
+
+        public void SaveSettings(IObservatoryPlugin plugin)
+        { }
+
+        public void OpenSettings(IObservatoryPlugin plugin)
+        { }
+
+        public JournalEventArgs DeserializeEvent(string json, bool replay = false)
+        {
+            return null;
+        }
+
+        public void FocusPlugin(string pluginName)
+        { }
         #endregion
 
 
