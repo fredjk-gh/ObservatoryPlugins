@@ -6,6 +6,7 @@ using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using System.Timers;
 
@@ -245,6 +246,33 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     MaybeUpdateCarrierFuel(carrierStats.TimestampDateTime, carrierStats);
                     break;
             }
+        }
+
+        public byte[] ExportContent(string delimiter, ref string filetype)
+        {
+            StringBuilder content = new();
+            content.AppendLine("Carrier Name\tCallsign\tOwner\tFuel Level (T)\tLocation\tNext Jump");
+
+            foreach (var c in _manager.Carriers)
+            {
+                var nextJumpDetail = "(none scheduled)";
+                if (c.HasRoute && c.IsPositionKnown)
+                {
+                    var nextJumpInfo = c.Route.GetNextJump(c.Position?.SystemName);
+                    string departureTime = "";
+                    if (c.LastCarrierJumpRequest != null && !string.IsNullOrWhiteSpace(c.LastCarrierJumpRequest.DepartureTime))
+                    {
+                        departureTime = $"@ {c.LastCarrierJumpRequest.DepartureTimeDateTime}";
+                    }
+                    nextJumpDetail = $"{nextJumpInfo.SystemName}{departureTime}";
+
+                }
+
+                content.AppendLine(
+                    $"{c.CarrierName}\t{c.CarrierCallsign}\t{c.OwningCommander}\t{c.CarrierFuel}\t{c.Position?.BodyName}\t{nextJumpDetail}");
+            }
+
+            return Encoding.UTF8.GetBytes(content.ToString());
         }
 
         #endregion
