@@ -14,7 +14,6 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
         public VersionDetail Production { get; set; }
         public VersionDetail Beta { get; set; }
 
-        // Boolean response is "isBeta".
         public static VersionPair SelectVersion(PluginVersion local, PluginVersion latest, bool allowBeta, string coreVersionStr)
         {
             List<VersionPair> availableVersions = new();
@@ -23,7 +22,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
                 availableVersions.Add(new()
                 {
                     Name = "Beta",
-                    Local = local.Beta ?? local.Production,
+                    Local = local?.Beta ?? local?.Production,
                     Latest = latest.Beta
                 });
             }
@@ -32,7 +31,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
                 availableVersions.Add(new()
                 {
                     Name = "Production",
-                    Local = local.Production,
+                    Local = local?.Production,
                     Latest = latest.Production,
                 });
             }
@@ -46,7 +45,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
                     // Core version is too old; incompatible release.
                     continue;
                 }
-                var localVersion = considered.Local.VersionParsed;
+                var localVersion = considered.Local?.VersionParsed ?? VersionDetail.NO_VERSION_PARSED;
                 var latestVersion = considered.Latest.VersionParsed;
 
                 if (VersionDetail.Compare(localVersion, latestVersion) < 0)
