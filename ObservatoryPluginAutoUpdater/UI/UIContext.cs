@@ -16,6 +16,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
         private List<string> _messages = new();
         private string _latestVersionCacheFilename;
         private DateTime? _latestVersionsFetchedDateTime = null;
+        private bool hasCheckedForUpdates = false;
 
         public readonly HashSet<string> KnownPlugins = new()
         {
@@ -103,8 +104,10 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             return new DirectoryInfo(PluginFolderPath);
         }
 
-        internal bool CheckForUpdates()
+        internal bool CheckForUpdates(bool isExplicit = false)
         {
+            if (!isExplicit && hasCheckedForUpdates) return false;
+
             ClearMessages();
 
             if (string.IsNullOrEmpty(PluginFolderPath) || !GetPluginFolder().Exists)
@@ -209,6 +212,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             }
 
             UI.ShowMessages(string.Join(Environment.NewLine, GetMessages()));
+            hasCheckedForUpdates = true;
 
             return true;
         }

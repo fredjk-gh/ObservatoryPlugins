@@ -15,10 +15,11 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
             DoubleBuffered = true;
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            AutoScroll = true;
 
             this.Controls.Add(_context.UI);
 
-            _context.UI.Dock = DockStyle.Fill;
+            _context.UI.Anchor = AnchorStyles.Top | AnchorStyles.Left;
         }
     }
 }

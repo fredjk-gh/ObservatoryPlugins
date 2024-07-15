@@ -12,13 +12,14 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
     {
         private AutoUpdaterSettings _settings = new();
         private UIContext _context;
+        private PluginUI _pluginUI;
 
         public string Name => "FredJKs Plugin AutoUpdater";
         public string ShortName => "FredJK AutoUpdater";
 
         public string Version => typeof(FredJKsPluginAutoUpdater).Assembly.GetName().Version.ToString();
 
-        public PluginUI PluginUI => new PluginUI(PluginUI.UIType.Panel, new PluginUpdaterPanel(_context));
+        public PluginUI PluginUI => _pluginUI;
 
         public object Settings {
             get => _settings;
@@ -39,10 +40,16 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
             }
         }
 
+        public void ObservatoryReady()
+        {
+            _context.CheckForUpdates();
+        }
+
         public void Load(IObservatoryCore observatoryCore)
         {
             _context = new(observatoryCore, this);
             _context.UI = new(_context);
+            _pluginUI = new PluginUI(PluginUI.UIType.Panel, new PluginUpdaterPanel(_context));
         }
     }
 }

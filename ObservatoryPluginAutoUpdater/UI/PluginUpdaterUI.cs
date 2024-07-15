@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -25,8 +26,6 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
         {
             InitializeComponent();
 
-            DoubleBuffered = true;
-
             _context = context;
 
             // build a dictionary of controls reflecting the current state and populate the layout table.
@@ -39,23 +38,23 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 Label nameLabel = new()
                 {
                     Text = p,
-                    AutoSize = true,
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 };
                 Label installedVersionLabel = new()
                 {
                     Text = "",
-                    AutoSize = true,
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 };
                 Label statusLabel = new()
                 {
                     Text = "",
-                    AutoSize = true,
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 };
                 Button actionButton = new()
                 {
                     Text = "",
                     Visible = false,
-                    AutoSize = true,
+                    Size = new Size(150, 45),
                     Tag = p,
                 };
                 actionButton.Click += InstallOrUpdatePlugin_Click;
@@ -72,7 +71,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 var controls = _context.GetRowControls(pluginName);
                 controls.InstalledVersionLabel.Text = installedVersion;
                 controls.StatusLabel.Text = status;
-                switch(action)
+                switch (action)
                 {
                     case PluginAction.Install:
                         controls.Action.Text = "Install";
@@ -99,7 +98,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
         private void CheckForUpdates_Click(object sender, EventArgs e)
         {
-            _context.CheckForUpdates();
+            _context.CheckForUpdates(true);
         }
 
         private void InstallOrUpdatePlugin_Click(object sender, EventArgs e)
@@ -123,7 +122,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 // Upgrade.
                 selectedVersion = PluginVersion.SelectVersion(_context.LocalVersions[pluginName], latest, _context.Settings.UseBeta, _context.Core.Version);
             }
-            
+
             if (selectedVersion != null)
             {
                 if (_context.DownloadLatestPlugin(_context.HttpClient, selectedVersion.Latest.DownloadURL, latest))

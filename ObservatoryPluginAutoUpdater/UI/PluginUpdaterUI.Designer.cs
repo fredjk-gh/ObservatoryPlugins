@@ -46,19 +46,19 @@
             // 
             tblLayout.SetColumnSpan(txtMessages, 3);
             txtMessages.Dock = DockStyle.Fill;
-            txtMessages.Location = new Point(250, 328);
+            txtMessages.Location = new Point(305, 328);
             txtMessages.Multiline = true;
             txtMessages.Name = "txtMessages";
             txtMessages.ReadOnly = true;
             txtMessages.ScrollBars = ScrollBars.Vertical;
-            txtMessages.Size = new Size(453, 172);
+            txtMessages.Size = new Size(581, 172);
             txtMessages.TabIndex = 26;
             // 
             // label3
             // 
             label3.AutoSize = true;
             label3.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label3.Location = new Point(426, 1);
+            label3.Location = new Point(506, 1);
             label3.Name = "label3";
             label3.Size = new Size(57, 21);
             label3.TabIndex = 2;
@@ -68,7 +68,7 @@
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label2.Location = new Point(250, 1);
+            label2.Location = new Point(305, 1);
             label2.Name = "label2";
             label2.Size = new Size(136, 21);
             label2.TabIndex = 1;
@@ -88,7 +88,7 @@
             // 
             label25.AutoSize = true;
             label25.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label25.Location = new Point(567, 1);
+            label25.Location = new Point(707, 1);
             label25.Name = "label25";
             label25.Size = new Size(67, 21);
             label25.TabIndex = 24;
@@ -96,12 +96,13 @@
             // 
             // tblLayout
             // 
+            tblLayout.AutoSize = true;
             tblLayout.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
             tblLayout.ColumnCount = 4;
-            tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
-            tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
-            tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-            tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300F));
+            tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
+            tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
+            tblLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160F));
             tblLayout.Controls.Add(label25, 3, 0);
             tblLayout.Controls.Add(label1, 0, 0);
             tblLayout.Controls.Add(label2, 1, 0);
@@ -109,7 +110,6 @@
             tblLayout.Controls.Add(txtMessages, 1, 9);
             tblLayout.Controls.Add(flowLayoutPanel1, 0, 9);
             tblLayout.Controls.Add(lblMessages, 1, 8);
-            tblLayout.Dock = DockStyle.Fill;
             tblLayout.Location = new Point(0, 0);
             tblLayout.Name = "tblLayout";
             tblLayout.RowCount = 10;
@@ -123,7 +123,7 @@
             tblLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F));
             tblLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F));
             tblLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
-            tblLayout.Size = new Size(707, 504);
+            tblLayout.Size = new Size(890, 504);
             tblLayout.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -134,7 +134,7 @@
             flowLayoutPanel1.FlowDirection = FlowDirection.TopDown;
             flowLayoutPanel1.Location = new Point(4, 328);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(239, 172);
+            flowLayoutPanel1.Size = new Size(294, 172);
             flowLayoutPanel1.TabIndex = 27;
             // 
             // btnCheckForUpdates
@@ -165,7 +165,7 @@
             // 
             lblMessages.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblMessages.AutoSize = true;
-            lblMessages.Location = new Point(250, 309);
+            lblMessages.Location = new Point(305, 309);
             lblMessages.Name = "lblMessages";
             lblMessages.Size = new Size(61, 15);
             lblMessages.TabIndex = 28;
@@ -176,13 +176,15 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(tblLayout);
+            DoubleBuffered = true;
             Name = "PluginUpdaterUI";
-            Size = new Size(707, 504);
+            Size = new Size(910, 504);
             tblLayout.ResumeLayout(false);
             tblLayout.PerformLayout();
             flowLayoutPanel1.ResumeLayout(false);
             flowLayoutPanel1.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
