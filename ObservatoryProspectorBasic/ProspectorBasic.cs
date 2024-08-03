@@ -15,7 +15,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
     {
         private bool enableDebug = false; // Not const to avoid unreachable code warnings.
 
-        private const int minRingDensity = 5;  // mT/km^3
+        private const int minRingDensity = 5;  // MT/km^3
         private const string LimpetDronesKey = "drones";
         private const string LimpetDronesName = "Limpets";
         private const string TritiumKey = "tritium";
@@ -476,7 +476,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                             ShortName = _data.GetShortBodyName(ring.Name, scan.BodyName),
                             RingType = rt.DisplayString(),
                             Commodities = $"[{desiredCommodities}]",
-                            Density = $"Density: {densityMTperkm3:n1} mT/km^3",
+                            Density = $"Density: {densityMTperkm3:n1} MT/km^3",
                         };
                         if (!ringsOfInterest.Contains(details)) ringsOfInterest.Add(details);
                         break;
