@@ -17,6 +17,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             CarrierData data = new(commander, buyData); // Sets fuel too.
             data.MaybeUpdateLocation(new(buyData.Location, buyData.SystemAddress));
 
+            maybeRemoveExistingCarrier(commander);
+
             _knownCarriersByCallsign.Add(buyData.Callsign, data);
             return data;
         }
@@ -29,12 +31,31 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                 data.MaybeUpdateLocation(new(initialLocation));
             }
 
+            maybeRemoveExistingCarrier(commander);
+
             _knownCarriersByCallsign.Add(stats.Callsign, data);
             return data;
         }
 
+        private void maybeRemoveExistingCarrier(string commander)
+        {
+            // Check if we already have a carrier for this commander. It could be we've crossed the June 2020 boundary
+            // where Frontier deployed a patch that re-rolled the carrier call-signs. If we have an existing carrier for
+            // this commander, remove it before adding the new one.
+            // Assumptions:
+            // - Commanders can have at most one carrier.
+            // - Journals are processed in date order, oldest to latest.
+            CarrierData existing = GetByCommander(commander);
+            if (existing != null)
+            {
+                _knownCarriersByCallsign.Remove(existing.CarrierCallsign);
+            }
+        }
+
         public CarrierData RegisterCarrier(CarrierData deserializedData)
         {
+            // We're deserializing here; let's assume we don't have > 1 carrier per commander (as that has already been
+            // checked, and we don't have the benefit of time-ordering guarantees).
             if (deserializedData != null
                 && !string.IsNullOrWhiteSpace(deserializedData.OwningCommander)
                 && !string.IsNullOrWhiteSpace(deserializedData.CarrierCallsign)
