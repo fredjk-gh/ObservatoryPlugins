@@ -16,7 +16,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public override bool Enabled => Settings.EnableRingDensityRecord;
 
         public override string ValueFormat { get => "{0:n4}"; }
-        public override string Units { get => "Mt/km^3"; }
+        public override string Units { get => "MT/km^3"; }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
