@@ -49,19 +49,23 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
             // * -> ReadAll
-            if (args.NewState.HasFlag(LogMonitorState.Batch))
+            if ((args.NewState & LogMonitorState.Batch) != 0)
             {
                 _context.Data.ResetForReadAll();
 
                 // Re-connect in Direct mode for performance.
                 _context.Manager.Connect(ConnectionMode.Direct);
                 _context.Manager.Clear();
+                _context.Manager.BatchModeProcessing = true;
                 _context.UI.SetMessage("Read All started");
             }
             // ReadAll -> *
-            else if (args.PreviousState.HasFlag(LogMonitorState.Batch))
+            else if ((args.PreviousState & LogMonitorState.Batch) != 0)
             {
                 _context.FlushIfDirty(/* force= */ true);
+                _context.Manager.BatchModeProcessing = false;
+                _context.Manager.FlushDeferred();
+
                 _context.Manager.Connect(ConnectionMode.Shared);
                 _context.Core.ExecuteOnUIThread(() =>
                 {
@@ -70,7 +74,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 });
                 _context.SerializeState();
             }
-            else if (args.NewState.HasFlag(LogMonitorState.Realtime))
+            // -> Realtime TODO: Use a better trigger for this?
+            else if ((args.NewState & LogMonitorState.Realtime) != 0)
             {
                 _context.Core.ExecuteOnUIThread(() =>
                 {
@@ -103,10 +108,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
                     if (isNewCommander || isDifferentCommander)
                     {
-                        _context.Core.ExecuteOnUIThread(() =>
+                        if (!_context.IsReadAll)
                         {
-                            _context.UI.Draw($"Switched to Cmdr {loadGame.Commander}.{(isNewCommander ? " o7!" : "")}");
-                        });
+                            _context.Core.ExecuteOnUIThread(() =>
+                            {
+                                _context.UI.Draw($"Switched to Cmdr {loadGame.Commander}.{(isNewCommander ? " o7!" : "")}");
+                            });
+                        }
                         _context.SerializeState();
                     }
                     break;
@@ -132,17 +140,20 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 case SAASignalsFound saaSignalsFound:
                 case SAAScanComplete saaScanComplete:
                 case CodexEntry codexEntry:
-                    if (_context.Data.ForCommander()?.CurrentSystem != null && !_context.Core.CurrentLogMonitorState.HasFlag(LogMonitorState.PreRead))
+                    if (_context.Data.ForCommander()?.CurrentSystem != null && (_context.Core.CurrentLogMonitorState & LogMonitorState.PreRead) == 0)
                     {
                         _context.Data.ForCommander().CurrentSystem.AddSystemJournalJson(journal.Json, journal.TimestampDateTime);
                         _context.FlushIfDirty();
                     }
 
-                    _context.Core.ExecuteOnUIThread(() =>
+                    if (!_context.IsReadAll)
                     {
-                        _context.UI.PopulateLatestRecord();
-                        _context.UI.SetMessage($"Captured journal event of type: {journal.Event}.{Environment.NewLine}{_context.Data.ForCommander().CurrentSystem.SystemJournalEntries.Count} entries captured so far...");
-                    });
+                        _context.Core.ExecuteOnUIThread(() =>
+                        {
+                            _context.UI.PopulateLatestRecord();
+                            _context.UI.SetMessage($"Captured journal event of type: {journal.Event}.{Environment.NewLine}{_context.Data.ForCommander().CurrentSystem.SystemJournalEntries.Count} entries captured so far...");
+                        });
+                    }
                     break;
                 case Shutdown shutdown:
                     _context.FlushIfDirty();
@@ -152,7 +163,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         private void ProcessNewLocation(string newSystemName, ulong newSystemAddress, DateTime timestamp, string json)
         {
-            if (!_context.Core.CurrentLogMonitorState.HasFlag(LogMonitorState.PreRead)
+            if (((_context.Core.CurrentLogMonitorState & LogMonitorState.PreRead) == 0)
                 && _context.Data.ForCommander()?.CurrentSystem != null
                 && newSystemName != _context.Data.ForCommander()?.CurrentSystem.SystemName)
             {
@@ -175,11 +186,14 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             else
                 MaybeShareSystemData();
 
-            _context.Core.ExecuteOnUIThread(() =>
+            if (!_context.IsReadAll)
             {
-                _context.UI.PopulateCurrentSystem();
-                _context.UI.SetMessage($"New system detected.");
-            });
+                _context.Core.ExecuteOnUIThread(() =>
+                {
+                    _context.UI.PopulateCurrentSystem();
+                    _context.UI.SetMessage($"New system detected.");
+                });
+            }
         }
 
         private void MaybeShareSystemData()

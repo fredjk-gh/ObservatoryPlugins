@@ -36,7 +36,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public ArchivistUI UI { get; set; }
 
-        public bool IsReadAll { get => Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch); }
+        public bool IsReadAll { get => (Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0; }
 
         public void FlushIfDirty(bool forceFlush = false)
         {
@@ -46,7 +46,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             {
                 if (c.CurrentSystem != null && c.CurrentSystem.IsDirty)
                 {
-                    Manager.FlushSystemData(c.CurrentSystem);
+                    Manager.UpsertSystemData(c.CurrentSystem);
                 }
             }
         }
@@ -75,11 +75,12 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
                 foreach (var cmdrData in Data.KnownCommanders)
                 {
-                    // Fetch current system data from DB (not serialized for brevity/simplicity).
+                    // Fetch current system data from DB (not serialized to the cache for brevity/simplicity).
                     if (!string.IsNullOrWhiteSpace(cmdrData.Value.CurrentSystemName) && cmdrData.Value.CurrentSystem == null)
                     {
                         var currentSystem = Manager.Get(cmdrData.Value.CurrentSystemName, cmdrData.Key);
-                        cmdrData.Value.CurrentSystem = new(currentSystem);
+                        if (currentSystem != null) // This may happen after an aborted Read-all.
+                            cmdrData.Value.CurrentSystem = new(currentSystem);
                     }
                 }
             }

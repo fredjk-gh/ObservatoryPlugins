@@ -31,12 +31,16 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         private ConnectionMode connectionMode = ConnectionMode.Direct;
 #endif
 
+        private Dictionary<Tuple<string, string>, CurrentSystemInfo> _deferredChanges = new();
+
+
         public ArchiveManager(string pluginDataPath, Action<Exception, string> errorLogger)
         {
             ErrorLogger = errorLogger;
             dbPath = $"{pluginDataPath}{ARCHIVE_DB_FILENAME}";
 
             Connect(connectionMode);
+            BatchModeProcessing = false;
         }
 
         public void Connect(ConnectionMode newConnectionMode)
@@ -69,6 +73,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public bool Connected { get => ArchivistMainDB != null; }
 
+        public bool BatchModeProcessing { get; set; }
+
         public ConnectionMode CurrentConnectionMode { get => connectionMode; }
 
         public int CountSystems(string commanderName = "")
@@ -95,15 +101,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public List<VisitedSystem> Get(string systemName)
         {
             if (!Connected) throw new DBNotConnectedException();
+            if (BatchModeProcessing) return new(); // Shouldn't be possible, but the database is likely to be empty.
 
             return VisitedSystemsCol.Find(sys => sys.SystemName == systemName).ToList();
-        }
-
-        public List<VisitedSystem> Get(UInt64 systemId64)
-        {
-            if (!Connected) throw new DBNotConnectedException();
-
-            return VisitedSystemsCol.Find(sys => sys.SystemId64 == systemId64).ToList();
         }
 
         public VisitedSystem Get(string systemName, string commanderName)
@@ -113,14 +113,15 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             //var bsonKeyDoc = new BsonDocument() { ["cmdr"] = commanderName, ["sysname"] = systemName };
             //var bsonExpr = Query.EQ("unique_cmdr_sysname", bsonKeyDoc);
             //return VisitedSystemsCol.FindOne(bsonExpr);
-            return VisitedSystemsCol.FindOne(sys => sys.SystemName == systemName && sys.Commander == commanderName);
-        }
-
-        public VisitedSystem Get(UInt64 systemId64, string commanderName)
-        {
-            if (!Connected) throw new DBNotConnectedException();
-
-            return VisitedSystemsCol.FindOne(sys => sys.SystemId64 == systemId64 && sys.Commander == commanderName);
+            if (BatchModeProcessing)
+            {
+                var key = new Tuple<string, string>(systemName, commanderName);
+                if (_deferredChanges.ContainsKey(key))
+                    return _deferredChanges[key].ToSystemInfo();
+                return null;
+            }
+            else
+                return VisitedSystemsCol.FindOne(sys => sys.SystemName == systemName && sys.Commander == commanderName);
         }
 
         public void Upsert(VisitedSystem system)
@@ -152,11 +153,28 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             return systemInfo;
         }
 
-        public  void FlushSystemData(CurrentSystemInfo currentSystemInfo)
+        public void UpsertSystemData(CurrentSystemInfo currentSystemInfo)
         {
             if (currentSystemInfo == null) return;
 
-            Upsert(currentSystemInfo.ToSystemInfo(true));
+            if (BatchModeProcessing)
+            {
+                if (currentSystemInfo.SystemJournalEntries.Count > 0 || currentSystemInfo.PreambleJournalEntries.Count > 0)
+                {
+                    _deferredChanges[new(currentSystemInfo.Commander, currentSystemInfo.SystemName)] = currentSystemInfo;
+                }
+            }
+            else
+            {
+                Upsert(currentSystemInfo.ToSystemInfo(true));
+            }
+        }
+
+        public void FlushDeferred()
+        {
+            if (_deferredChanges.Count == 0) return;
+
+            VisitedSystemsCol.Upsert(_deferredChanges.Select(csi => csi.Value.ToSystemInfo(true)));
         }
     }
 

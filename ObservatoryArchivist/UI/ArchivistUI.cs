@@ -15,6 +15,12 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 {
     public partial class ArchivistUI : UserControl
     {
+        private JsonSerializerOptions PRETTY_PRINT_OPTIONS = new()
+        {
+            WriteIndented = true,
+            AllowTrailingCommas = true,
+        };
+
         private ArchivistContext _context;
         private int _selectedIndex = ListBox.NoMatches;
         private System.Windows.Forms.Timer _filterTimer = new();
@@ -126,14 +132,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
         private string PrettyPrintJson(string rawJson)
         {
-            JsonSerializerOptions opts = new()
-            {
-                WriteIndented = true,
-                AllowTrailingCommas = true,
-            };
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(rawJson);
 
-            return JsonSerializer.Serialize(jsonElement, opts);
+            return JsonSerializer.Serialize(jsonElement, PRETTY_PRINT_OPTIONS);
         }
 
         private void DoSearch()
