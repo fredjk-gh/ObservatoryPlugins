@@ -19,6 +19,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING,
             FirstDiscoveriesOnly = false,
             EnablePersonalBests = true,
+            EnableGridOutputAfterReadAll = false,
             NotifyPossibleNewGalacticRecords = true,
             NotifyMatchedGalacticRecords = true,
             NotifyVisitedGalacticRecords = true,
@@ -79,7 +80,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public bool FirstDiscoveriesOnly { get; set; }
         [SettingDisplayName("Track Personal Bests, Tallies and new Codex Entries")]
         public bool EnablePersonalBests { get; set; }
-
+        [SettingDisplayName("Show ALL results after a read-all")]
+        public bool EnableGridOutputAfterReadAll { get; set; }
 
         // Notification settings
         //

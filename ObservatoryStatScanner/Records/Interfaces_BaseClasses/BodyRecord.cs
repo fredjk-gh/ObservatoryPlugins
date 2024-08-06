@@ -69,7 +69,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             Data.Init(manager);
         }
 
-        public void Reset()
+        public virtual void Reset()
         {
             Data.ResetMutable();
         }
@@ -123,7 +123,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             if (RecordKind == RecordKind.Personal)
             {
-                if (!FilterPersonalRecordForProcGenAndFirstDiscovered(bodyName, isUndiscovered)) return results;
+                if (!IncludeBodyForPersonalRecord(bodyName, isUndiscovered)) return results;
                 if (!Data.HasMax || observedValue > Data.MaxValue)
                 {
                     var gridItem = MakeGridItem(Outcome.PersonalNew, MaxFunction, observedValue, timestamp, bodyName, bodyId, isUndiscovered);
@@ -155,7 +155,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             if (RecordKind == RecordKind.Personal)
             {
-                if (!FilterPersonalRecordForProcGenAndFirstDiscovered(bodyName, isUndiscovered)) return results;
+                if (!IncludeBodyForPersonalRecord(bodyName, isUndiscovered)) return results;
                 if (!Data.HasMin || observedValue < Data.MinValue)
                 {
                     var gridItem = MakeGridItem(Outcome.PersonalNew, MinFunction, observedValue, timestamp, bodyName, bodyId, isUndiscovered);
@@ -266,10 +266,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             return new(notificationClass, gridRow, bodyId);
         }
 
-        private bool FilterPersonalRecordForProcGenAndFirstDiscovered(string bodyName, bool isUndiscovered)
+        private bool IncludeBodyForPersonalRecord(string bodyName, bool isUndiscovered)
         {
             var procGenHandling = (StatScannerSettings.ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
-            if ((procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly && !Constants.RE.IsMatch(bodyName))
+            if ((procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly && !Constants.PROCGEN_NAME_RE.IsMatch(bodyName))
                     || (Settings.FirstDiscoveriesOnly && !isUndiscovered))
                 return false;
             return true;
@@ -279,7 +279,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         {
             if (!string.IsNullOrEmpty(scan.PlanetClass) && scan.PlanetClass == Constants.SCAN_EARTHLIKE)
             {
-                return !Constants.RE.IsMatch(scan.BodyName) || !string.IsNullOrEmpty(scan.TerraformState);
+                return !Constants.PROCGEN_NAME_RE.IsMatch(scan.BodyName) || !string.IsNullOrEmpty(scan.TerraformState);
             }
             return false;
         }

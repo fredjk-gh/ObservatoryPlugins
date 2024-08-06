@@ -4,6 +4,9 @@ using Observatory.Framework.Interfaces;
 using com.github.fredjk_gh.ObservatoryStatScanner.Records;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using com.github.fredjk_gh.ObservatoryStatScanner.StateManagement;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
@@ -11,16 +14,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
     {
         private StatScannerSettings settings = StatScannerSettings.DEFAULT;
 
-        private IObservatoryCore Core;
-        /// <summary>
-        /// Error logger; string param is an arbitrary context hint.
-        /// </summary>
-        private Action<Exception, string> ErrorLogger;
+        private const string STATE_CACHE_FILENAME = "stateCache.json";
+
         private PluginUI pluginUI;
         ObservableCollection<object> gridCollection = new();
         private bool HasHeaderRows = false;
         private StatScannerState _state = null;
-        private string currentCommander = "";
+        private List<Result> _batchResults = new List<Result>();
+
 
         public string Name => "Observatory Stat Scanner";
         public string ShortName => "Stat Scanner";
@@ -41,14 +42,28 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
             // * -> ReadAll
-            if (args.NewState.HasFlag(LogMonitorState.Batch))
+            if ((args.NewState & LogMonitorState.Batch) != 0)
             {
                 _state.ResetForReadAll();
-                Core.ClearGrid(this, new StatScannerGrid());
+                _state.Core.ClearGrid(this, new StatScannerGrid());
+                _batchResults.Clear();
                 HasHeaderRows = false;
             }
             // ReadAll -> *
-            else if (args.PreviousState.HasFlag(LogMonitorState.Batch) || args.PreviousState.HasFlag(LogMonitorState.PreRead))
+            else if ((args.PreviousState & LogMonitorState.Batch) != 0)
+            {
+                if (!_state.Settings.EnableGridOutputAfterReadAll) 
+                    _batchResults.Clear(); // Dump what we have accumulated until now.
+
+                ShowPersonalBestSummary();
+                AddResultsToGrid_(_batchResults, false);
+                _batchResults.Clear();
+
+                _state.ReadAllComplete();
+                SerializeState(true);
+            }
+            // Preread -> *
+            else if ((args.PreviousState & LogMonitorState.PreRead) != 0)
             {
                 ShowPersonalBestSummary();
             }
@@ -59,32 +74,35 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             switch (journal)
             {
                 case FileHeader fileHeader:
-                    _state.ResetForNewFile();
                     _state.IsOdyssey = fileHeader.Odyssey;
                     break;
                 case LoadGame loadGame:
+                    var previousCommanderName = _state.CommanderName;
                     _state.LastLoadGame = loadGame;
-                    if (loadGame.Commander != currentCommander)
+                    if (previousCommanderName != _state.CommanderName)
                     {
-                        Debug.WriteLine($"Switching commanders: {loadGame.Commander}");
-                        currentCommander = loadGame.Commander;
-                        Core.AddGridItem(
-                            this,
-                            new StatScannerGrid
-                            {
-                                ObjectClass = "Plugin message",
-                                Variable = "Commander",
-                                Function = "Changed to",
-                                BodyOrItem = currentCommander,
-                            });
+                        Debug.WriteLine($"Switching commanders: {_state.CommanderName}");
+                        AddResultsToGrid(new()
+                        {
+                            new(NotificationClass.None,
+                                new StatScannerGrid
+                                {
+                                    ObjectClass = "Plugin message",
+                                    Variable = "Commander",
+                                    Function = "Changed to",
+                                    BodyOrItem = _state.CommanderName,
+                                },
+                                Constants.HEADER_COALESCING_ID)
+                        });
+
                     }
                     break;
                 case Statistics statistics:
                     // TODO: do more with this?
                     _state.LastStats = statistics;
-                    if (!Core.IsLogMonitorBatchReading)
+                    if (!_state.Core.IsLogMonitorBatchReading)
                     {
-                        AddResultsToGrid(MaybeAddStats());
+                        AddResultsToGrid(MaybeAddStats(statistics));
                     }
                     break;
                 case FSDJump fsdJump:
@@ -115,21 +133,21 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         {
             MaybeFixUnsetSettings();
 
+            StateCache cached = DeserializeCachedState(observatoryCore);
+            cached.CheckForNewAssemblyVersion();
+            _state = new(cached, observatoryCore, settings, this);
+
             gridCollection = new();
             StatScannerGrid uiObject = new();
             gridCollection.Add(uiObject);
             pluginUI = new PluginUI(gridCollection);
 
-            Core = observatoryCore;
-            ErrorLogger = Core.GetPluginErrorLogger(this);
-
-            _state = new(settings, Core.PluginStorageFolder, ErrorLogger);
-
             MaybeUpdateGalacticRecords();
 
-            if (_state.KnownCommanderFIDs.Count == 0)
+            if (_state.Cacheable.KnownCommanders.Count == 0)
             {
-                Core.AddGridItem(
+                _state.Cacheable.SetReadAllRequired("No known commanders.");
+                _state.Core.AddGridItem(
                     this,
                     new StatScannerGrid
                     {
@@ -137,6 +155,37 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         Variable = $"Please run 'Read All' to initialize database(s)",
                     });
             }
+
+            SerializeState(true);
+        }
+
+        // Requires core explicitly because _state is not initialized yet when this is first called.
+        private StateCache DeserializeCachedState(IObservatoryCore core)
+        {
+            string dataCacheFile = $"{core.PluginStorageFolder}{STATE_CACHE_FILENAME}";
+            if (!File.Exists(dataCacheFile)) return new();
+
+            StateCache stateCache = new();
+            try
+            {
+                string jsonString = File.ReadAllText(dataCacheFile);
+                stateCache = JsonSerializer.Deserialize<StateCache>(jsonString)!;
+            }
+            catch (Exception ex)
+            {
+                _state.Core.GetPluginErrorLogger(this)(ex, "Deserializing state cache");
+            }
+            return stateCache;
+        }
+
+        public void SerializeState(bool forceWrite = false)
+        {
+            if (((_state.Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0 && !forceWrite) || !_state.Cacheable.IsDirty) return;
+
+                string dataCacheFile = $"{_state.Core.PluginStorageFolder}{STATE_CACHE_FILENAME}";
+            string jsonString = JsonSerializer.Serialize(_state.Cacheable,
+                new JsonSerializerOptions() { AllowTrailingCommas = true, WriteIndented = true });
+            File.WriteAllText(dataCacheFile, jsonString);
         }
 
         private void MaybeFixUnsetSettings()
@@ -150,11 +199,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void MaybeAddHeaderRows()
         {
-            if (Core.IsLogMonitorBatchReading || HasHeaderRows || _state.KnownCommanderFIDs.Count == 0) return;
+            if (_state.Core.IsLogMonitorBatchReading || HasHeaderRows || _state.Cacheable.KnownCommanders.Count == 0) return;
 
-            if (!_state.Initialized || _state.NeedsReadAll)
+            if (!_state.IsCommanderFidKnown || _state.NeedsReadAll)
             {
-                Core.AddGridItem(
+                _state.Core.AddGridItem(
                     this,
                     new StatScannerGrid
                     {
@@ -228,27 +277,27 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         },
                         Constants.SUMMARY_COALESCING_ID));
             }
-            gridItems.AddRange(MaybeAddStats());
+            gridItems.AddRange(MaybeAddStats(_state.LastStats));
             AddResultsToGrid(gridItems);
             HasHeaderRows = true;
         }
 
-        private List<Result> MaybeAddStats()
+        private List<Result> MaybeAddStats(Statistics stats)
         {
             var gridItems = new List<Result>();
-            if (_state.Initialized)
+            if (_state.IsCommanderFidKnown && stats != null)
             {
                 gridItems.Add(
                     new(
                         NotificationClass.None,
                         new StatScannerGrid
                         {
-                            Timestamp = _state.LastStats.Timestamp,
+                            Timestamp = stats.Timestamp,
                             ObjectClass = "Game stats",
                             Variable = "Time played",
                             BodyOrItem = _state.CommanderName,
                             Function = Function.Count.ToString(),
-                            ObservedValue = $"{(_state.LastStats.Exploration.TimePlayed / Constants.CONV_S_TO_HOURS_DIVISOR):N0}",
+                            ObservedValue = $"{(stats.Exploration.TimePlayed / Constants.CONV_S_TO_HOURS_DIVISOR):N0}",
                             Units = "hr",
                         },
                         Constants.STATS_COALESCING_ID));
@@ -258,7 +307,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void ShowPersonalBestSummary()
         {
-            if (!_state.Initialized || _state.NeedsReadAll) return;
+            if (!_state.IsCommanderFidKnown || _state.NeedsReadAll) return;
 
             var recordBook = _state.GetRecordBook();
             MaybeAddHeaderRows();
@@ -309,7 +358,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             }
             catch (Exception ex)
             {
-                ErrorLogger(ex, "Fetching updated records files from edastro.com");
+                _state.ErrorLogger(ex, "Fetching updated records files from edastro.com");
             }
         }
 
@@ -320,12 +369,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(csvUrl),
             };
-            var requestTask = Core.HttpClient.SendAsync(request);
+            var requestTask = _state.Core.HttpClient.SendAsync(request);
             requestTask.Wait(1000);
 
             if (requestTask.IsFaulted)
             {
-                ErrorLogger(requestTask.Exception, $"Error while refreshing {localCSVFilename}; using copy stale records for now...");
+                _state.ErrorLogger(requestTask.Exception, $"Error while refreshing {localCSVFilename}; using copy stale records for now...");
                 return false;
             }
 
@@ -336,7 +385,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             }
             catch (HttpRequestException ex)
             {
-                ErrorLogger(ex, $"Error while downloading updated {localCSVFilename}; using stale records (if available)");
+                _state.ErrorLogger(ex, $"Error while downloading updated {localCSVFilename}; using stale records (if available)");
                 return false;
             }
 
@@ -355,7 +404,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             }
             catch (Exception ex)
             {
-                ErrorLogger(ex, $"While writing updated {localCSVFilename}");
+                _state.ErrorLogger(ex, $"While writing updated {localCSVFilename}");
                 return false;
             }
 
@@ -398,20 +447,17 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private List<Result> CheckScanForRecords(Scan scan, List<IRecord> records)
         {
-            var readMode = Core.CurrentLogMonitorState;
+            var readMode = _state.Core.CurrentLogMonitorState;
             List<Result> results = new();
             foreach (var record in records)
             {
                 try
                 {
-                    if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
+                    if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                         results.AddRange(record.CheckScan(scan, _state.CurrentSystem));
                 }
                 catch (Exception ex)
                 {
-                    // TODO: Replace "this.ShortName" with just "this" after next update
-                    // ... or update PluginEventHandler's RecordError method(s) to include version for us
-                    //     and just remove this try-catch.
                     throw new PluginException(this.ShortName, $"Failure while processing record {record.DisplayName} while processing scan: {scan.Json}", ex);
                 }
             }
@@ -420,13 +466,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void OnFssBodySignals(FSSBodySignals bodySignals)
         {
-            var readMode = Core.CurrentLogMonitorState;
+            var readMode = _state.Core.CurrentLogMonitorState;
             List<Result> results = new();
             foreach (var t in Constants.PB_RecordTypesForFssScans)
             {
                 foreach (var record in _state.GetRecordBook().GetRecords(t.Item1, t.Item2))
                 {
-                    if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
+                    if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                         results.AddRange(record.CheckFSSBodySignals(bodySignals, _state.IsOdyssey));
                 }
             }
@@ -435,13 +481,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void OnFssAllBodiesFound(FSSAllBodiesFound fssAllBodies, List<Scan> scans)
         {
-            var readMode = Core.CurrentLogMonitorState;
+            var readMode = _state.Core.CurrentLogMonitorState;
             List<Result> results = new();
             foreach (var t in Constants.PB_RecordTypesForFssScans)
             {
                 foreach (var record in _state.GetRecordBook().GetRecords(t.Item1, t.Item2))
                 {
-                    if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
+                    if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                         results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, scans));
                 }
             }
@@ -454,18 +500,18 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 || !codexEntry.IsNewEntry) return;
 
             var recordBook = _state.GetRecordBook();
-            var readMode = Core.CurrentLogMonitorState;
+            var readMode = _state.Core.CurrentLogMonitorState;
             string regionNameByJournalValue = Constants.RegionNamesByJournalId[codexEntry.Region];
             List<Result> results = new();
 
             foreach (var record in recordBook.GetRecords(RecordTable.Regions, Constants.OBJECT_TYPE_REGION))
             {
-                if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
+                if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                     results.AddRange(record.CheckCodexEntry(codexEntry));
             }
             foreach (var record in recordBook.GetRecords(RecordTable.Regions, regionNameByJournalValue))
             {
-                if (!record.DisallowedLogMonitorStates.Any(s => readMode.HasFlag(s)))
+                if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                     results.AddRange(record.CheckCodexEntry(codexEntry));
             }
             AddResultsToGrid(results, /* notify */ true);
@@ -488,10 +534,21 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             return $"Body {bodyName}";
         }
 
-
         private void AddResultsToGrid(List<Result> results, bool maybeNotify = false)
         {
-            Core.AddGridItems(this, results.Select(r => r.ResultItem));
+            if ((_state.Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0)
+            {
+                _batchResults.AddRange(results);
+            }
+            else
+            {
+                AddResultsToGrid_(results, maybeNotify);
+            }
+        }
+
+        private void AddResultsToGrid_(List<Result> results, bool maybeNotify = false)
+        {
+            _state.Core.AddGridItems(this, results.Select(r => r.ResultItem));
             if (!maybeNotify || !settings.NotifySilentFallback)
                 return;
 
@@ -510,7 +567,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     else
                         title = GetBodyTitle(GetShortBodyName(r.ResultItem.BodyOrItem));
 
-                    Core.SendNotification(new()
+                    _state.Core.SendNotification(new()
                     {
                         Title = title,
                         Detail = $"{pbs.Count()} personal bests: {r.ResultItem.ObjectClass}",
@@ -537,7 +594,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     else
                         title = GetBodyTitle(GetShortBodyName(r.ResultItem.BodyOrItem));
 
-                    Core.SendNotification(new()
+                    _state.Core.SendNotification(new()
                     {
                         Title = title,
                         Detail = $"{r.ResultItem.Details}: {r.ResultItem.ObjectClass}; {r.ResultItem.Variable}; {r.ResultItem.Function}",

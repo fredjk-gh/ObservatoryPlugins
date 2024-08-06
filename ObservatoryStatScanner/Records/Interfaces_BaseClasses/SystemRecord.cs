@@ -123,7 +123,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             var procGenHandlingMode = (StatScannerSettings.ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
             if ((!HasMax || observedValue >= MaxValue)
-                && (procGenHandlingMode != StatScannerSettings.ProcGenHandlingMode.ProcGenOnly || Constants.RE.IsMatch(systemName)))
+                && (procGenHandlingMode != StatScannerSettings.ProcGenHandlingMode.ProcGenOnly || Constants.PROCGEN_NAME_RE.IsMatch(systemName)))
             {
                 StatScannerGrid gridRow = new()
                 {

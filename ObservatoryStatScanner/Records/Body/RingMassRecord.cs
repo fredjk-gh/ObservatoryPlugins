@@ -16,7 +16,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public override bool Enabled => Settings.EnableRingMassRecord;
 
         public override string ValueFormat { get => "{0:n0}"; }
-        public override string Units { get => "Mt"; }
+        public override string Units { get => "MT"; }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {

@@ -14,6 +14,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.DB
         private ILiteCollection<PersonalBest> PersonalBestsCol;
         private Action<Exception, string> ErrorLogger;
 
+        private HashSet<PersonalBest> _dirtyObjects = new();
+
         public PersonalBestManager(string pluginDataPath, Action<Exception, string> errorLogger, string commanderId)
         {
             ErrorLogger = errorLogger;
@@ -28,8 +30,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.DB
             PersonalBestsCol.EnsureIndex(pb => pb.Variable);
         }
 
+        public bool BatchProcessingMode { get; set; }
+
         public void Load(PersonalBest pbMetadata)
         {
+            // We're in read-all. The DB was cleared. Do nothing to avoid a read from an empty DB.
+            // We also defer updates until we're done (working effectively from memory).
+            if (BatchProcessingMode) return;
+
             PersonalBest result = null;
             if (pbMetadata._id > 0)
             {
@@ -50,7 +58,20 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.DB
 
         public void Upsert(PersonalBest updatedData)
         {
-            PersonalBestsCol.Upsert(updatedData);
+            if (BatchProcessingMode)
+            {
+                _dirtyObjects.Add(updatedData);
+            }
+            else
+            {
+                PersonalBestsCol.Upsert(updatedData);
+            }
+        }
+
+        public void Flush()
+        {
+            PersonalBestsCol.Upsert(_dirtyObjects);
+            _dirtyObjects.Clear();
         }
 
         public void Clear()

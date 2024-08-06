@@ -116,7 +116,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         public const string FSS_BODY_SIGNAL_BIOLOGICAL = "$SAA_SignalType_Biological;";
 
-        // Key: EDSM body type => Value: Journal body type.
+        // Key: EDAstro body type => Value: Journal body type.
         public static Dictionary<string, string> JournalTypeMap = new()
         {
             // RecordType: planets
@@ -243,8 +243,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             { "$Codex_Category_StellarBodies;", V_CODEX_CATEGORY_ASTRO },
         };
 
-        public const string PROCGEN_NAME_RE = @"\s+[A-Z][A-Z]-[A-Z]\s+[a-z]\d+(-\d+)?";
-        public static readonly Regex RE = new(PROCGEN_NAME_RE);
+        public const string PROCGEN_NAME_RE_STRING = @"\s+[A-Z][A-Z]-[A-Z]\s+[a-z]\d+(-\d+)?";
+        public static readonly Regex PROCGEN_NAME_RE = new(PROCGEN_NAME_RE_STRING);
 
         // Pseudo EDAstro/Journal Object type names for aggregate personal bests.
         public const string OBJECT_TYPE_REGION = "Galactic Region";
