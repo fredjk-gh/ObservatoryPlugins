@@ -221,7 +221,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
                         {
                             foreach (var fid in fids)
                             {
-                                RecordBook recordBook = GetRecordBookForFID(fid);
+                                // Don't load records for this potentially new record book. This is literally what we're doing here.
+                                RecordBook recordBook = GetRecordBookForFID(fid, true /* deferLoadRecords */ );
 
                                 record = RecordFactory.CreateRecord(fields, Settings, recordKind);
                                 if (record == null) continue;
@@ -274,7 +275,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
             {
                 foreach (string fid in fids)
                 {
-                    var recordBook = GetRecordBookForFID(fid);
+                    // Don't load records for this potentially new record book. This is literally what we're doing here.
+                    var recordBook = GetRecordBookForFID(fid, true /* deferLoadRecords */);
 
                     var record = RecordFactory.CreateRecord(pbData.Clone(), Settings);
                     if (record == null) continue;

@@ -536,6 +536,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void AddResultsToGrid(List<Result> results, bool maybeNotify = false)
         {
+            if (results.Count == 0) return;
             if ((_state.Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0)
             {
                 _batchResults.AddRange(results);
