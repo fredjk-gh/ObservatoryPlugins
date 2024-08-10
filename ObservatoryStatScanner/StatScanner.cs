@@ -50,23 +50,31 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 HasHeaderRows = false;
             }
             // ReadAll -> *
-            else if ((args.PreviousState & LogMonitorState.Batch) != 0)
+            else if ((args.PreviousState & LogMonitorState.Batch) != 0 && (args.NewState & LogMonitorState.Batch) == 0)
             {
                 if (!_state.Settings.EnableGridOutputAfterReadAll) 
                     _batchResults.Clear(); // Dump what we have accumulated until now.
+
+                if ((args.NewState & LogMonitorState.BatchCancelled) != 0)
+                {
+                    _state.Cacheable.SetReadAllRequired("Read-all was cancelled; incomplete data.");
+                }
+                else
+                {
+                    _state.ReadAllComplete();
+                }
 
                 ShowPersonalBestSummary();
                 AddResultsToGrid_(_batchResults, false);
                 _batchResults.Clear();
 
-                _state.ReadAllComplete();
                 SerializeState(true);
             }
-            // Preread -> *
-            else if ((args.PreviousState & LogMonitorState.PreRead) != 0)
-            {
-                ShowPersonalBestSummary();
-            }
+        }
+
+        public void ObservatoryReady()
+        {
+            ShowPersonalBestSummary();
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -102,7 +110,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     _state.LastStats = statistics;
                     if (!_state.Core.IsLogMonitorBatchReading)
                     {
-                        AddResultsToGrid(MaybeAddStats(statistics));
+                        AddResultsToGrid(MaybeAddStats(_state.CommanderName, statistics));
                     }
                     break;
                 case FSDJump fsdJump:
@@ -147,13 +155,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             if (_state.Cacheable.KnownCommanders.Count == 0)
             {
                 _state.Cacheable.SetReadAllRequired("No known commanders.");
-                _state.Core.AddGridItem(
-                    this,
-                    new StatScannerGrid
-                    {
-                        ObjectClass = "Plugin message",
-                        Variable = $"Please run 'Read All' to initialize database(s)",
-                    });
+                _state.Core.AddGridItems(this, _state.GetPluginStateMessages());
             }
 
             SerializeState(true);
@@ -199,22 +201,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void MaybeAddHeaderRows()
         {
-            if (_state.Core.IsLogMonitorBatchReading || HasHeaderRows || _state.Cacheable.KnownCommanders.Count == 0) return;
+            if (_state.Core.IsLogMonitorBatchReading || HasHeaderRows) return;
 
-            if (!_state.IsCommanderFidKnown || _state.NeedsReadAll)
+            if (!_state.IsCommanderFidKnown || _state.NeedsReadAll || _state.Cacheable.KnownCommanders.Count == 0)
             {
-                _state.Core.AddGridItem(
-                    this,
-                    new StatScannerGrid
-                    {
-                        ObjectClass = "Plugin message",
-                        Variable = $"Please run 'Read All' to initialize database(s)",
-                    });
-                HasHeaderRows = true;
-                return;
+                _state.Core.AddGridItems(this, _state.GetPluginStateMessages());
             }
 
-            var recordBook = _state.GetRecordBook();
             var devModeWarning = (settings.DevMode ? "!!DEV mode!!" : "");
             var handlingMode = (StatScannerSettings.ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling];
             var gridItems = new List<Result>
@@ -235,7 +228,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         ObservedValue = $"{settings.FirstDiscoveriesOnly}",
                     },
                     Constants.HEADER_COALESCING_ID),
-                new (NotificationClass.None,
+            };
+            foreach (var Cmdr in _state.Cacheable.KnownCommanders)
+            {
+                var recordBook = _state.GetRecordBookForFID(Cmdr.Key);
+
+                gridItems.Add(new(
+                    NotificationClass.None,
                     new StatScannerGrid
                     {
                         ObjectClass = "Plugin stats",
@@ -243,49 +242,55 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         Function = Function.Count.ToString(),
                         BodyOrItem = "Total",
                         ObservedValue = $"{recordBook.Count}",
+                        RecordHolder = Cmdr.Value.Name,
                         RecordValue = devModeWarning,
                     },
-                    Constants.HEADER_COALESCING_ID),
-            };
-            foreach (RecordKind kind in Enum.GetValues(typeof(RecordKind))) {
-                var count = recordBook.CountByKind(kind);
-                var details = "";
-                switch (kind)
-                {
-                    case RecordKind.Personal:
-                        details = (count == 0 ? (!settings.EnablePersonalBests ? "Disabled via settings" : "Not yet implemented") : "");
-                        break;
-                    case RecordKind.GalacticProcGen:
-                        details = (handlingMode == StatScannerSettings.ProcGenHandlingMode.ProcGenIgnore ? "Ignored via settings" : "");
-                        break;
-                    case RecordKind.Galactic:
-                        details = (handlingMode == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly ? "Ignored except for identifying known record-holders" : "");
-                        break;
-                }
+                    Constants.HEADER_COALESCING_ID));
 
-                gridItems.Add(
-                    new (NotificationClass.None,
-                        new StatScannerGrid
-                        {
-                            ObjectClass = "Plugin stats",
-                            Variable = $"Tracked Record(s)",
-                            Function = Function.Count.ToString(),
-                            BodyOrItem = $"{kind}",
-                            ObservedValue = $"{count}",
-                            RecordValue = devModeWarning,
-                            Details = details,
-                        },
-                        Constants.SUMMARY_COALESCING_ID));
+                foreach (RecordKind kind in Enum.GetValues(typeof(RecordKind)))
+                {
+                    var count = recordBook.CountByKind(kind);
+                    var details = "";
+                    switch (kind)
+                    {
+                        case RecordKind.Personal:
+                            details = (count == 0 ? (!settings.EnablePersonalBests ? "Disabled via settings" : "Not yet implemented") : "");
+                            break;
+                        case RecordKind.GalacticProcGen:
+                            details = (handlingMode == StatScannerSettings.ProcGenHandlingMode.ProcGenIgnore ? "Ignored via settings" : "");
+                            break;
+                        case RecordKind.Galactic:
+                            details = (handlingMode == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly ? "Ignored except for identifying known record-holders" : "");
+                            break;
+                    }
+
+                    gridItems.Add(
+                        new(NotificationClass.None,
+                            new StatScannerGrid
+                            {
+                                ObjectClass = "Plugin stats",
+                                Variable = $"Tracked Record(s)",
+                                Function = Function.Count.ToString(),
+                                BodyOrItem = $"{kind}",
+                                ObservedValue = $"{count}",
+                                RecordValue = devModeWarning,
+                                RecordHolder = Cmdr.Value.Name,
+                                Details = details,
+                            },
+                            Constants.SUMMARY_COALESCING_ID));
+                }
+                gridItems.AddRange(MaybeAddStats(Cmdr.Value.Name, Cmdr.Value.LastStatistics));
+
             }
-            gridItems.AddRange(MaybeAddStats(_state.LastStats));
+
             AddResultsToGrid(gridItems);
             HasHeaderRows = true;
         }
 
-        private List<Result> MaybeAddStats(Statistics stats)
+        private List<Result> MaybeAddStats(string cmdrName, Statistics stats)
         {
             var gridItems = new List<Result>();
-            if (_state.IsCommanderFidKnown && stats != null)
+            if (stats != null)
             {
                 gridItems.Add(
                     new(
@@ -295,7 +300,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                             Timestamp = stats.Timestamp,
                             ObjectClass = "Game stats",
                             Variable = "Time played",
-                            BodyOrItem = _state.CommanderName,
+                            BodyOrItem = cmdrName,
                             Function = Function.Count.ToString(),
                             ObservedValue = $"{(stats.Exploration.TimePlayed / Constants.CONV_S_TO_HOURS_DIVISOR):N0}",
                             Units = "hr",
@@ -307,10 +312,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void ShowPersonalBestSummary()
         {
-            if (!_state.IsCommanderFidKnown || _state.NeedsReadAll) return;
-
-            var recordBook = _state.GetRecordBook();
             MaybeAddHeaderRows();
+
+            if (!_state.IsCommanderFidKnown || _state.NeedsReadAll) return;
+            var recordBook = _state.GetRecordBook();
+
             List<RecordTable> tableOrder  = new()
             {
                 RecordTable.Regions,

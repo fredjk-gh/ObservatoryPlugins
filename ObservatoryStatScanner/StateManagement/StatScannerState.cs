@@ -131,6 +131,27 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
             return GetRecordBookForFID(CommanderFID);
         }
 
+        public RecordBook GetRecordBookForFID(string fid, bool deferLoadRecords = false)
+        {
+            if (!_stateCache.IsCommanderKnown(fid))
+            {
+                _stateCache.AddCommander(fid, _lastSeenIsOdyssey, (Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0);
+            }
+            if (!_managers.ContainsKey(fid))
+            {
+                _managers.Add(fid, new PersonalBestManager(_storagePath, _errorLogger, fid));
+            }
+            if (!_recordBooks.ContainsKey(fid))
+            {
+                _recordBooks.Add(fid, new(_managers[fid]));
+
+                if (!deferLoadRecords)
+                    LoadRecords(new() { fid });
+            }
+
+            return _recordBooks[fid];
+        }
+
         public void ResetForReadAll()
         {
             foreach (var book in _recordBooks)
@@ -150,6 +171,24 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
 
             }
             _stateCache.ClearReadAllRequired();
+        }
+
+        public List<StatScannerGrid> GetPluginStateMessages()
+        {
+            List<StatScannerGrid> messages = new();
+
+            if (Cacheable.ReadAllRequired)
+            {
+                messages.Add(
+                    new StatScannerGrid
+                    {
+                        ObjectClass = "Plugin message",
+                        Variable = $"Please run 'Read All' to initialize database(s)",
+                        Details = Cacheable.ReadAllReason,
+                    });
+            }
+
+            return messages;
         }
 
         public void ReloadGalacticRecords()
@@ -290,27 +329,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         }
 
         #endregion
-
-        private RecordBook GetRecordBookForFID(string fid, bool deferLoadRecords = false)
-        {
-            if (!_stateCache.IsCommanderKnown(fid))
-            {
-                _stateCache.AddCommander(fid, _lastSeenIsOdyssey, (Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0);
-            }
-            if (!_managers.ContainsKey(fid))
-            {
-                _managers.Add(fid, new PersonalBestManager(_storagePath, _errorLogger, fid));
-            }
-            if (!_recordBooks.ContainsKey(fid))
-            {
-                _recordBooks.Add(fid, new(_managers[fid]));
-
-                if (!deferLoadRecords)
-                    LoadRecords(new() { fid });
-            }
-
-            return _recordBooks[fid];
-        }
 
         private void FindExistingDBs()
         {
