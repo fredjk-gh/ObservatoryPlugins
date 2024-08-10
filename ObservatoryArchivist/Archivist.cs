@@ -60,29 +60,41 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 _context.UI.SetMessage("Read All started");
             }
             // ReadAll -> *
-            else if ((args.PreviousState & LogMonitorState.Batch) != 0)
+            else if ((args.PreviousState & LogMonitorState.Batch) != 0 && (args.NewState & LogMonitorState.Batch) == 0)
             {
                 _context.FlushIfDirty(/* force= */ true);
                 _context.Manager.BatchModeProcessing = false;
                 _context.Manager.FlushDeferred();
-
                 _context.Manager.Connect(ConnectionMode.Shared);
-                _context.Core.ExecuteOnUIThread(() =>
+
+                // ReadAll -> Cancelled
+                if ((args.NewState & LogMonitorState.BatchCancelled) != 0)
                 {
-                    _context.UI.Draw();
-                    _context.DisplaySummary("Read All completed");
-                });
+                    _context.Core.ExecuteOnUIThread(() =>
+                    {
+                        _context.UI.Draw();
+                        _context.DisplaySummary("Read All Cancelled; data is incomplete.");
+                    });
+                }
+                else
+                {
+                    _context.Core.ExecuteOnUIThread(() =>
+                    {
+                        _context.UI.Draw();
+                        _context.DisplaySummary("Read All completed");
+                    });
+                }
                 _context.SerializeState();
             }
-            // -> Realtime TODO: Use a better trigger for this?
-            else if ((args.NewState & LogMonitorState.Realtime) != 0)
+        }
+
+        public void ObservatoryReady()
+        {
+            _context.Core.ExecuteOnUIThread(() =>
             {
-                _context.Core.ExecuteOnUIThread(() =>
-                {
-                    _context.UI.Draw();
-                    _context.DisplaySummary();
-                });
-            }
+                _context.UI.Draw();
+                _context.DisplaySummary();
+            });
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase

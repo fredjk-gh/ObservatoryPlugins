@@ -270,7 +270,7 @@
             // cboCommanderFilter
             // 
             cboCommanderFilter.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            cboCommanderFilter.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point);
+            cboCommanderFilter.Font = new Font("Segoe UI", 11F);
             cboCommanderFilter.FormattingEnabled = true;
             cboCommanderFilter.Location = new Point(152, 69);
             cboCommanderFilter.MaximumSize = new Size(500, 0);
@@ -283,7 +283,7 @@
             // 
             lblCommanderFilterTitle.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblCommanderFilterTitle.AutoSize = true;
-            lblCommanderFilterTitle.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            lblCommanderFilterTitle.Font = new Font("Segoe UI", 9F);
             lblCommanderFilterTitle.Location = new Point(40, 66);
             lblCommanderFilterTitle.Name = "lblCommanderFilterTitle";
             lblCommanderFilterTitle.Size = new Size(106, 33);
