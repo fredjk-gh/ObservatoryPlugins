@@ -29,7 +29,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             foreach (var ring in scan.Rings.Where(r => r.RingClass == JournalObjectName && r.Name.Contains("Ring")))
             {
                 var outerRadKm = ring.OuterRad / Constants.CONV_M_TO_KM_DIVISOR;
-                results.AddRange(CheckMax(outerRadKm, scan.Timestamp, ring.Name, scan.BodyID, IsUndiscovered(scan)));
+                results.AddRange(CheckMax(outerRadKm, scan.TimestampDateTime, ring.Name, scan.BodyID, IsUndiscovered(scan)));
             }
             return results;
         }

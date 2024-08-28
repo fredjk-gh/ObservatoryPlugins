@@ -41,7 +41,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             // This is a new entry.
             var newValue = (Data.HasMax? Data.MaxValue + 1 : 1);
 
-            return CheckMax(NotificationClass.NewCodex, newValue, codexEntry.Timestamp, codexEntry.Name_Localised, Constants.UI_CODEX_CONFIRMATION);
+            return CheckMax(NotificationClass.NewCodex, newValue, codexEntry.TimestampDateTime, codexEntry.Name_Localised, Constants.UI_CODEX_CONFIRMATION);
         }
     }
 }

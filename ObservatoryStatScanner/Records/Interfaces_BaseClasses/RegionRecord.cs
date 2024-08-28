@@ -44,12 +44,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public string MaxHolder => Data.MaxHolder;
         public long MaxCount => Data.MaxCount;
         public double MaxValue => Data.MaxValue;
+        public DateTime MaxRecordDateTime => Data.MaxRecordDateTime;
         public virtual Function MaxFunction { get => Function.Count; }
 
         public bool HasMin => Data.HasMin;
         public string MinHolder => Data.MinHolder;
         public long MinCount => Data.MinCount;
         public double MinValue => Data.MinValue;
+        public DateTime MinRecordDateTime => Data.MinRecordDateTime;
         public virtual Function MinFunction { get => Function.Minimum; }
 
         public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
@@ -81,7 +83,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     NotificationClass.None,
                     new()
                         {
-                            Timestamp = "Summary",
+                            Timestamp = Data.MaxRecordDateTime.ToString(),
                             ObjectClass = EDAstroObjectName,
                             Variable = DisplayName,
                             Function = MaxFunction.ToString(),
@@ -89,6 +91,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             Units = Units,
                             RecordHolder = MaxHolder,
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
+                            DiscoveryStatus = "-",
                             RecordKind = RecordKind.ToString(),
                         },
                         Constants.SUMMARY_COALESCING_ID));
@@ -106,7 +109,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             Data.ResetMutable();
         }
 
-        protected List<Result> CheckMax(NotificationClass notificationClass, double observedValue, string timestamp, string objectName, string discoveryStatus = "", string extraData = "")
+        protected List<Result> CheckMax(NotificationClass notificationClass, double observedValue, DateTime timestamp, string objectName, string discoveryStatus = "", string extraData = "")
         {
             List<Result> results = new();
 
@@ -114,7 +117,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             {
                 StatScannerGrid gridRow = new()
                 {
-                    Timestamp = timestamp,
+                    Timestamp = timestamp.ToString(),
                     BodyOrItem = objectName,
                     ObjectClass = EDAstroObjectName,
                     Variable = DisplayName,
@@ -131,7 +134,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
                 // Update the record *AFTER* generating the GridRow to ensure we have access to the previous value.
                 // When there's a tie, this increments the count only.
-                Data.SetOrUpdateMax(objectName, observedValue, 1, extraData);
+                Data.SetOrUpdateMax(objectName, observedValue, timestamp, 1, extraData);
             }
             return results;
         }

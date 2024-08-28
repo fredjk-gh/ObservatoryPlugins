@@ -22,7 +22,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                 || (string.IsNullOrEmpty(scan.StarType) && (string.IsNullOrEmpty(scan.PlanetClass) || IsNonProcGenOrTerraformedELW(scan))))
                 return new();
 
-            return CheckMax(scan.Eccentricity, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
+            return CheckMax(scan.Eccentricity, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
         }
     }
 }

@@ -14,11 +14,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         private DB.PersonalBestManager manager;
 
         // For creating non EDAstro-based records.
-        public PersonalBestData(RecordTable table, string objectName, string variable)
+        public PersonalBestData(RecordTable table, string objectName, string variable, string journalObjectName = null)
         {
             dbRow.Table = table;
             dbRow.EDAstroObjectName = objectName;
-            dbRow.JournalObjectName = objectName;
+            dbRow.JournalObjectName = journalObjectName ?? objectName;
             dbRow.Variable = variable;
         }
 
@@ -45,10 +45,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public override string MaxHolder { get => dbRow.MaxHolder; protected set => dbRow.MaxHolder = value; }
         public override long MaxCount { get => dbRow.MaxCount; protected set => dbRow.MaxCount = value; }
         public override double MaxValue { get => dbRow.MaxValue; protected set => dbRow.MaxValue = value; }
+        public override DateTime MaxRecordDateTime { get => dbRow.MaxRecordDateTime; protected set => dbRow.MaxRecordDateTime = value; }
 
         public override string MinHolder { get => dbRow.MinHolder; protected set => dbRow.MinHolder = value; }
         public override long MinCount { get => dbRow.MinCount; protected set => dbRow.MinCount = value; }
         public override double MinValue { get => dbRow.MinValue; protected set => dbRow.MinValue = value; }
+        public override DateTime MinRecordDateTime { get => dbRow.MinRecordDateTime; protected set => dbRow.MinRecordDateTime = value; }
 
         public override string ExtraData { get => dbRow.ExtraData; set => dbRow.ExtraData = value; }
 

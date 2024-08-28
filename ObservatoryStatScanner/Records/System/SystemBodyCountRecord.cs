@@ -22,7 +22,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         {
             if (!Enabled) return new();
 
-            return CheckMax(NotificationClass.PersonalBest, allBodiesFound.Count, allBodiesFound.Timestamp, allBodiesFound.SystemName);
+            return CheckMax(NotificationClass.PersonalBest, allBodiesFound.Count, allBodiesFound.TimestampDateTime, allBodiesFound.SystemName);
         }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)

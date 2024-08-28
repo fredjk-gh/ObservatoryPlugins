@@ -35,7 +35,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             var newValue = (Data.HasMax ? Data.MaxValue + 1 : 1);
             visitedRegions.Add(regionName);
 
-            return CheckMax(NotificationClass.Tally, newValue, codexEntry.Timestamp, regionName, Constants.UI_FIRST_VISIT, string.Join(SEPARATOR, visitedRegions));
+            return CheckMax(NotificationClass.Tally, newValue, codexEntry.TimestampDateTime, regionName, Constants.UI_FIRST_VISIT, string.Join(SEPARATOR, visitedRegions));
         }
     }
 }

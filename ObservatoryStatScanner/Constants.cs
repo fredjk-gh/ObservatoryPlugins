@@ -86,6 +86,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         // Personal best variable names
         public const string V_BODY_BIO_COUNT = "bodyBioCount";
+        public const string V_BODY_TYPE_COUNT = "bodyTypeCount";
         public const string V_SYS_BIO_COUNT = "sysBioCount";
         public const string V_SYS_BODY_COUNT = "sysBodyCount";
         public const string V_SYS_UNDISCOVERED_COUNT = "sysUndiscoveredCount";
@@ -102,6 +103,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string EDASTRO_STAR_Y_DWARF = "Y (Brown dwarf) Star";
         public const string EDASTRO_METAL_RICH_BODY = "Metal-rich body";
         public const string EDASTRO_STAR_BLACK_HOLE = "Black Hole";
+        public const string EDASTRO_STAR_SM_BLACK_HOLE = "Supermassive BH";
 
         // Values from the Scan which are used in multiple places.
         public const string SCAN_EARTHLIKE = "Earthlike body";
@@ -144,7 +146,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             { "B (Blue-White super giant) Star", "B_BlueWhiteSuperGiant" }, // Undocumented, but present in my journals.
             { "B (Blue-White) Star", "B" },
             { EDASTRO_STAR_BLACK_HOLE, "H" },
-            { "Supermassive BH", "SupermassiveBlackHole" },
+            { EDASTRO_STAR_SM_BLACK_HOLE, "SupermassiveBlackHole" },
             { "C Star", "C" },
             { "CJ Star", "CJ" },
             { "CN Star", "﻿CN" },
@@ -285,6 +287,17 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     records.Add(new(RecordTable.Codex, regionName, codexCategory));
                 }
             }
+
+            // Generate BodyTypeTally records for each body type.
+            foreach (var bodyType in JournalTypeMap)
+            {
+                if (bodyType.Key.Contains("Ring")) continue;
+                var rt = RecordTable.Planets;
+                if (bodyType.Key.Contains("Star") || bodyType.Key == EDASTRO_STAR_BLACK_HOLE || bodyType.Key == EDASTRO_STAR_SM_BLACK_HOLE)
+                    rt = RecordTable.Stars;
+                records.Add(new(rt, bodyType.Key, V_BODY_TYPE_COUNT, bodyType.Value));
+            }
+
             return records;
         }
 
@@ -305,6 +318,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string UI_FIRST_DISCOVERY = "1st Discovery";
         public const string UI_FIRST_VISIT = "First visit";
         public const string UI_ALREADY_DISCOVERED = "Discovered";
+        public const string UI_DISCOVERY_STATE_ANY = "Any";
 
         public const int HEADER_COALESCING_ID = Int32.MinValue;
         public const int SUMMARY_COALESCING_ID = -11;

@@ -27,8 +27,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             // convert seconds -> days
             var periodDays = scan.OrbitalPeriod / Constants.CONV_S_TO_DAYS_DIVISOR;
-            var results = CheckMax(periodDays, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
-            results.AddRange(CheckMin(periodDays, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
+            var results = CheckMax(periodDays, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
+            results.AddRange(CheckMin(periodDays, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
 
             return results;
         }

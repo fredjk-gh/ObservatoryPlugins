@@ -23,8 +23,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             if (!Enabled || string.IsNullOrEmpty(scan.StarType) && scan.StellarMass <= 0.0)
                 return new();
 
-            var results = CheckMax(scan.StellarMass, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
-            results.AddRange(CheckMin(scan.StellarMass, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
+            var results = CheckMax(scan.StellarMass, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
+            results.AddRange(CheckMin(scan.StellarMass, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
 
             return results;
         }

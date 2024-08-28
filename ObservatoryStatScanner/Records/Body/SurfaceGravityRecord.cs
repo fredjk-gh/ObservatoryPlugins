@@ -25,8 +25,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             // Convert m/s^2 -> g's
             var gravityG = scan.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
-            var results = CheckMax(gravityG, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
-            results.AddRange(CheckMin(gravityG, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
+            var results = CheckMax(gravityG, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
+            results.AddRange(CheckMin(gravityG, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
 
             return results;
         }

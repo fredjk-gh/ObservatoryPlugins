@@ -22,15 +22,17 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public virtual string MaxHolder { get; protected set; }
         public virtual long MaxCount { get; protected set; }
         public virtual double MaxValue { get; protected set; }
+        public virtual DateTime MaxRecordDateTime { get; protected set; }
 
         public bool HasMin { get => MinValue != 0.0 && MinHolder?.Length > 0; }
         public virtual string MinHolder { get; protected set; }
         public virtual long MinCount { get; protected set; }
         public virtual double MinValue { get; protected set; }
+        public virtual DateTime MinRecordDateTime { get; protected set; }
 
         // An arbitrary string value.
         public virtual string ExtraData { get; set; }
-
+        
         public virtual void Init(DB.PersonalBestManager manager) { }
 
         public virtual void ResetMutable()
@@ -50,7 +52,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         internal virtual void Save() { }
 
-        public void SetOrUpdateMax(string maxHolder, double maxValue, int maxCount = 1, string extraData = "")
+        public void SetOrUpdateMax(string maxHolder, double maxValue, DateTime recordDateTime, int maxCount = 1, string extraData = "")
         {
             if (!IsMutable || (HasMax && maxValue < MaxValue)) return;
             if (maxValue == MaxValue)  // It's a tie, increment the counter.
@@ -61,12 +63,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             MaxValue = maxValue;
             MaxHolder = maxHolder;
             MaxCount = maxCount;
+            MaxRecordDateTime = recordDateTime;
             if (extraData.Length > 0) ExtraData = extraData;
 
             Save();
         }
 
-        public void SetOrUpdateMin(string minHolder, double minValue, int minCount = 1, string extraData = "")
+        public void SetOrUpdateMin(string minHolder, double minValue, DateTime recordDateTime, int minCount = 1, string extraData = "")
         {
             if (!IsMutable || (HasMin && minValue > MinValue)) return;
             if (minValue == MinValue)  // It's a tie, increment the counter.
@@ -77,6 +80,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             MinHolder = minHolder;
             MinValue = minValue;
             MinCount = minCount;
+            MinRecordDateTime = recordDateTime;
             if (extraData.Length > 0) ExtraData = extraData;
 
             Save();

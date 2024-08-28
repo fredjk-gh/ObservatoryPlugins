@@ -39,12 +39,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public long MaxCount { get => Data.MaxCount; }
         public double MaxValue { get => (Settings.DevMode ? Data.MaxValue * Settings.DevModeMaxScaleFactor : Data.MaxValue); }
         public string MaxHolder { get => Data.MaxHolder; }
+        public DateTime MaxRecordDateTime => Data.MaxRecordDateTime;
         public virtual Function MaxFunction { get => Function.Maximum; }
 
         public bool HasMin => Data.HasMin;
         public long MinCount { get => Data.MinCount; }
         public double MinValue { get => (Settings.DevMode ? Data.MinValue * Settings.DevModeMinScaleFactor : Data.MinValue); }
         public string MinHolder { get => Data.MinHolder; }
+        public DateTime MinRecordDateTime => Data.MinRecordDateTime;
         public virtual Function MinFunction { get => Function.Minimum; }
  
         public virtual List<Result> CheckScan(Scan scan, string currentSystem)
@@ -84,7 +86,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     new(NotificationClass.None,
                         new()
                         {
-                            Timestamp = "Summary",
+                            Timestamp = Data.MaxRecordDateTime.ToString(),
                             ObjectClass = EDAstroObjectName,
                             Variable = DisplayName,
                             Function = MaxFunction.ToString(),
@@ -92,6 +94,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             Units = Units,
                             RecordHolder = (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder),
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
+                            DiscoveryStatus = Settings.FirstDiscoveriesOnly ? Constants.UI_FIRST_DISCOVERY : Constants.UI_DISCOVERY_STATE_ANY,
                             RecordKind = RecordKind.ToString(),
                         },
                         Constants.SUMMARY_COALESCING_ID));
@@ -102,7 +105,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     new(NotificationClass.None,
                         new()
                         {
-                            Timestamp = "Summary",
+                            Timestamp = Data.MinRecordDateTime.ToString(),
                             ObjectClass = EDAstroObjectName,
                             Variable = DisplayName,
                             Function = MinFunction.ToString(),
@@ -110,6 +113,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             Units = Units,
                             RecordHolder = (MinCount > 1 ? $"{MinHolder} (and {MinCount} more)" : MinHolder),
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
+                            DiscoveryStatus = Settings.FirstDiscoveriesOnly ? Constants.UI_FIRST_DISCOVERY : Constants.UI_DISCOVERY_STATE_ANY,
                             RecordKind = RecordKind.ToString(),
                         },
                         Constants.SUMMARY_COALESCING_ID));
@@ -117,7 +121,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             return results;
         }
 
-        protected List<Result> CheckMax(double observedValue, string timestamp, string bodyName, int bodyId, bool isUndiscovered)
+        protected List<Result> CheckMax(double observedValue, DateTime timestamp, string bodyName, int bodyId, bool isUndiscovered)
         {
             List<Result> results = new();
 
@@ -131,7 +135,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     if (gridItem != null) results.Add(gridItem);
                 }
                 // Setting or tying a new personal best. Set *after* making the grid item to preserve previous.
-                Data.SetOrUpdateMax(bodyName, observedValue);
+                Data.SetOrUpdateMax(bodyName, observedValue, timestamp);
                 return results;
             }
 
@@ -149,7 +153,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             return results;
         }
 
-        protected List<Result> CheckMin(double observedValue, string timestamp, string bodyName, int bodyId, bool isUndiscovered)
+        protected List<Result> CheckMin(double observedValue, DateTime timestamp, string bodyName, int bodyId, bool isUndiscovered)
         {
             List<Result> results = new();
 
@@ -163,7 +167,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     if (gridItem != null) results.Add(gridItem);
                 }
                 // Setting a new personal best. Set *after* making the grid item to preserve previous.
-                Data.SetOrUpdateMin(bodyName, observedValue);
+                Data.SetOrUpdateMin(bodyName, observedValue, timestamp);
                 return results; // Done with personal records.
             }
 
@@ -183,7 +187,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         }
 
         protected Result MakeGridItem(
-            Outcome outcome, Function function, double observedValue, string timestamp, string bodyName, int bodyId, bool isUndiscovered)
+            Outcome outcome, Function function, double observedValue, DateTime timestamp, string bodyName, int bodyId, bool isUndiscovered)
         {
             string recordValueStr;
             double recordTieCount;
@@ -219,6 +223,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                 case Outcome.PersonalNew:
                     details = Constants.UI_NEW_PERSONAL_BEST;
                     notificationClass = NotificationClass.PersonalBest;
+                    if (function == Function.Count) notificationClass = NotificationClass.None; // Bodies are too common to notify. Summary use only.
                     break;
                 case Outcome.PotentialNew:
                     details = Constants.UI_POTENTIAL_NEW_RECORD + (Settings.DevMode ? " (dev mode)" : "");
@@ -250,7 +255,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             StatScannerGrid gridRow = new()
             {
-                Timestamp = timestamp,
+                Timestamp = timestamp.ToString(),
                 BodyOrItem = bodyName,
                 ObjectClass = EDAstroObjectName,
                 Variable = DisplayName,

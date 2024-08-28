@@ -22,6 +22,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override string ValueFormat { get => "{0}"; }
         public override string Units { get => "systems"; }
+        public override Function MaxFunction { get => Function.Count; }
+
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
@@ -33,7 +35,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             {
                 _visitedSystems.Add(currentSystem);
                 var newValue = (Data.HasMax ? Data.MaxValue + 1 : 1);
-                return CheckMax(NotificationClass.Tally, newValue, scan.Timestamp, currentSystem);
+                return CheckMax(NotificationClass.Tally, newValue, scan.TimestampDateTime, currentSystem);
             }
             return new();
         }

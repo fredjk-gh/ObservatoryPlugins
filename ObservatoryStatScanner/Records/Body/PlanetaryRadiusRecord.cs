@@ -25,8 +25,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             // Convert m -> km
             var radiusKm = scan.Radius / Constants.CONV_M_TO_KM_DIVISOR;
-            var results = CheckMax(radiusKm, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
-            results.AddRange(CheckMin(radiusKm, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
+            var results = CheckMax(radiusKm, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
+            results.AddRange(CheckMin(radiusKm, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
 
             return results;
         }

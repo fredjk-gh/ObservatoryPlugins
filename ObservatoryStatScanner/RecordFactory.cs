@@ -1,4 +1,5 @@
 ﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records.Body;
 using System.Diagnostics;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
@@ -98,7 +99,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 case Constants.V_ROTATIONAL_PERIOD:
                     typeToCreate = typeof(RotationalPeriodRecord);
                     break;
-
+                case Constants.V_BODY_TYPE_COUNT:
+                    typeToCreate = typeof(BodyTypeTally);
+                    break;
 
                 // Rings
                 case Constants.V_RING_OUTER_RADIUS:

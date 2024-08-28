@@ -376,18 +376,26 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 RequestUri = new Uri(csvUrl),
             };
             var requestTask = _state.Core.HttpClient.SendAsync(request);
-            requestTask.Wait(1000);
+            while (!requestTask.IsCompleted)
+            {
+                requestTask.Wait(500);
+            }
 
             if (requestTask.IsFaulted)
             {
                 _state.ErrorLogger(requestTask.Exception, $"Error while refreshing {localCSVFilename}; using copy stale records for now...");
                 return false;
             }
+            else if (requestTask.IsCanceled)
+            {
+                Debug.WriteLine($"Request to update {localCSVFilename} was cancelled; using copy stale records for now...");
+                return false;
+            }
 
             var response = requestTask.Result;
             try
             {
-                response.EnsureSuccessStatusCode(); // Maybe try EnsureSuccessStatusCode instead?
+                response.EnsureSuccessStatusCode();
             }
             catch (HttpRequestException ex)
             {

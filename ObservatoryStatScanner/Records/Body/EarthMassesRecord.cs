@@ -23,8 +23,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             if (!Enabled || scan.PlanetClass?.Length > 0 || IsNonProcGenOrTerraformedELW(scan))
                 return new();
 
-            var results = CheckMax(scan.MassEM, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
-            results.AddRange(CheckMin(scan.MassEM, scan.Timestamp, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
+            var results = CheckMax(scan.MassEM, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
+            results.AddRange(CheckMin(scan.MassEM, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
 
             return results;
         }

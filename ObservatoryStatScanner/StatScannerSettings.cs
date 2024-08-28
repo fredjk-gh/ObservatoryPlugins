@@ -221,9 +221,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public bool DevMode { get => false; }
 
         [SettingIgnore]
-        public double DevModeMaxScaleFactor = 0.8;
+        public double DevModeMaxScaleFactor = 1.0; //0.8;
 
         [SettingIgnore]
-        public double DevModeMinScaleFactor = 1.2;
+        public double DevModeMinScaleFactor = 1.0; //1.2;
     }
 }

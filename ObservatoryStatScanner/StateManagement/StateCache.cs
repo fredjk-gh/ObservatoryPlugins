@@ -1,14 +1,6 @@
-﻿using Microsoft.VisualBasic;
-using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using Observatory.Framework.Files.Journal;
 using System.Reflection;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Xml.Xsl;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
 {
