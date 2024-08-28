@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using Observatory.Framework;
 using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Sorters;
 using Observatory.Framework.Interfaces;
 
 namespace com.github.fredjk_gh.ObservatoryAggregator
@@ -28,6 +29,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public PluginUI PluginUI => pluginUI;
 
+        public IObservatoryComparer ColumnSorter => new NoOpColumnSorter();
+
         public object Settings
         {
             get => settings;
@@ -47,16 +50,22 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
             // * -> ReadAll
-            if (args.NewState.HasFlag(LogMonitorState.Batch))
+            if ((args.NewState & LogMonitorState.Batch) != 0)
             {
                 _readAllGridItems.Clear();
                 Core.ClearGrid(this, new AggregatorGrid());
             }
             // ReadAll -> *
-            else if (args.PreviousState.HasFlag(LogMonitorState.Batch))
+            else if ((args.PreviousState & LogMonitorState.Batch) != 0)
             {
                 _readAllGridItems.AddRange(data.ToGrid(true));
                 Core.AddGridItems(this, _readAllGridItems);
+            }
+            // PreRead -> *
+            // -> Realtime
+            else if ((args.PreviousState & LogMonitorState.PreRead) != 0 || (args.NewState & LogMonitorState.Realtime) != 0)
+            {
+                RedrawGrid();
             }
         }
 
