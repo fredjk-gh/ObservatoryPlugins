@@ -493,7 +493,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             Core.AddGridItem(this, new ProspectorGrid()
             {
                 Location = scan.BodyName,
-                Details = detailsCommaSeparated + bodyDistance,
+                Details = $"{detailsCommaSeparated}, {bodyDistance}",
             });
             Core.SendNotification(new NotificationArgs()
             {
