@@ -19,7 +19,8 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
             this.Controls.Add(_context.UI);
 
-            _context.UI.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            //_context.UI.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            _context.UI.Dock = DockStyle.Fill;
         }
     }
 }

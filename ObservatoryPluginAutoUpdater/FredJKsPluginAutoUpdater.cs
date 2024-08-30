@@ -26,7 +26,6 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
             set => _settings = (AutoUpdaterSettings)value;
         }
 
-
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
             // Nothing doing here.

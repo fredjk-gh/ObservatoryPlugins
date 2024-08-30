@@ -28,8 +28,12 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
             _context = context;
 
-            // build a dictionary of controls reflecting the current state and populate the layout table.
+            // From: https://stackoverflow.com/questions/3339300/net-tablelayoutpanel-clearing-controls-is-very-slow
+            typeof(TableLayoutPanel)
+                .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .SetValue(tblLayout, true, null);
 
+            // build a dictionary of controls reflecting the current state and populate the layout table.
             int gridRow = 0;
             foreach (var p in _context.KnownPlugins)
             {

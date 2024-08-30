@@ -51,7 +51,7 @@
             txtMessages.Name = "txtMessages";
             txtMessages.ReadOnly = true;
             txtMessages.ScrollBars = ScrollBars.Vertical;
-            txtMessages.Size = new Size(581, 172);
+            txtMessages.Size = new Size(601, 172);
             txtMessages.TabIndex = 26;
             // 
             // label3
@@ -110,6 +110,7 @@
             tblLayout.Controls.Add(txtMessages, 1, 9);
             tblLayout.Controls.Add(flowLayoutPanel1, 0, 9);
             tblLayout.Controls.Add(lblMessages, 1, 8);
+            tblLayout.Dock = DockStyle.Fill;
             tblLayout.Location = new Point(0, 0);
             tblLayout.Name = "tblLayout";
             tblLayout.RowCount = 10;
@@ -123,7 +124,7 @@
             tblLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F));
             tblLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F));
             tblLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
-            tblLayout.Size = new Size(890, 504);
+            tblLayout.Size = new Size(910, 504);
             tblLayout.TabIndex = 0;
             // 
             // flowLayoutPanel1
