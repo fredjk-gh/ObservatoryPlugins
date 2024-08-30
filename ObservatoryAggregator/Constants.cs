@@ -8,6 +8,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 {
     internal class Constants
     {
+        public const string TAG_HEADER_1_PREFIX = "H1_";
+        public const string TAG_HEADER_2_PREFIX = "H2_";
+        public const string TAG_HEADER_3_PREFIX = "H3_";
+
         public const string PLUGIN_SHORT_NAME = "Aggregator";
         public const string DETAIL_SEP = " | ";
         public const string BODY_NESTING_INDICATOR = "└── ";
@@ -30,6 +34,30 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public const int SYSTEM_COALESCING_ID = -1;
         public const int DEFAULT_COALESCING_ID = 1001; // After bodies.
+
+        public static Dictionary<string, string> EmojiToolTips = new()
+        {
+            // System
+            { "🆕", "System is undiscovered" },  // or 🥇??
+            { "💯", "All bodies have been scanned" }, // ⚛, 💯, ✔, 💫 or 🎇 as alternatives?
+            // System & Body
+            { "⛽", "Scoopable fuel star found" },
+            // Body
+            { "💰", "Body has high scan value" },
+            { "🌐", "Body has been mapped (DSS) by the current commander" }, // formerly 🗺
+            { "🛬", "Body is landable" },
+            { "🧬", "Body has biological signals" },
+            { "🌋", "Body has geological signals" },
+            // May not useful...
+            { "☀", "Body is a star" },
+            { "🪐", "Body is a gas giant" },
+            { "🌏", "Body is an Earth-like world" },
+            { "🌑", "Body is another type of terrestrial planet (WW, AW, RB, IB, MR, etc.)" },
+            // VisitedState
+            { "🔍", "Mark as interesting for a closer look" }, // 🔭 as alt?
+            { "🔲", "Not yet visited" },
+            { "✅", "Visited" },
+        };
 
         public static Dictionary<string, string> JournalTypeMap = new()
         {
@@ -102,5 +130,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             { "eRingClass_Metalic", "Metallic" },
             { "eRingClass_Rocky", "Rocky" },
         };
+
+
     }
 }

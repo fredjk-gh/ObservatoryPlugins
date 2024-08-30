@@ -7,6 +7,7 @@ using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Sorters;
 using Observatory.Framework.Interfaces;
+using com.github.fredjk_gh.ObservatoryAggregator.UI;
 
 namespace com.github.fredjk_gh.ObservatoryAggregator
 {
@@ -14,11 +15,11 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
     {
         private static string AGGREGATOR_WIKI_URL = "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator";
 
-        private PluginUI pluginUI;
         private IObservatoryCore Core;
-        ObservableCollection<object> GridCollection = new();
         private AggregatorSettings settings = AggregatorSettings.DEFAULT;
-        internal TrackedData data = new();
+        private PluginUI _pluginUI;
+        private TrackedData _data = new();
+        private AggregatorUIPanel _ui;
         private List<AggregatorGrid> _readAllGridItems = new();
 
         public string Name => "Observatory Aggregator";
@@ -27,24 +28,27 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public string Version => typeof(Aggregator).Assembly.GetName().Version.ToString();
 
-        public PluginUI PluginUI => pluginUI;
+        public PluginUI PluginUI => _pluginUI;
 
         public IObservatoryComparer ColumnSorter => new NoOpColumnSorter();
 
         public object Settings
         {
             get => settings;
-            set => settings = (AggregatorSettings)value;
+            set {
+                settings = (AggregatorSettings)value;
+                settings.OpenAggregatorWiki = OpenWikiUrl;
+
+                _data.ApplySettings(settings);
+            }
         }
 
         public void Load(IObservatoryCore observatoryCore)
         {
             Core = observatoryCore;
-            AggregatorGrid uiObject = new();
-            GridCollection = new() { uiObject };
-            pluginUI = new PluginUI(GridCollection);
-            data.Settings = (AggregatorSettings)Settings;
-            settings.OpenAggregatorWiki = OpenWikiUrl;
+            _data.Load(Core, this, settings);
+            _ui = new AggregatorUIPanel(_data);
+            _pluginUI = new PluginUI(PluginUI.UIType.Panel, _ui);
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -53,13 +57,18 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             if ((args.NewState & LogMonitorState.Batch) != 0)
             {
                 _readAllGridItems.Clear();
-                Core.ClearGrid(this, new AggregatorGrid());
+                //Core.ClearGrid(this, new AggregatorGrid());
+                _ui.Clear();
             }
             // ReadAll -> *
             else if ((args.PreviousState & LogMonitorState.Batch) != 0)
             {
-                _readAllGridItems.AddRange(data.ToGrid(true));
-                Core.AddGridItems(this, _readAllGridItems);
+                _readAllGridItems.AddRange(_data.ToGrid(true));
+                //Core.AddGridItems(this, _readAllGridItems);
+                Core.ExecuteOnUIThread(() =>
+                {
+                    _ui.SetGridItems(_readAllGridItems);
+                });
             }
             // PreRead -> *
             // -> Realtime
@@ -91,35 +100,35 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     MaybeChangeSystem(location.StarSystem);
                     break;
                 case LoadGame loadGame:
-                    data.CurrentCommander = loadGame.Commander;
-                    data.CurrentShip = loadGame.ShipName;
+                    _data.CurrentCommander = loadGame.Commander;
+                    _data.CurrentShip = loadGame.ShipName;
                     break;
                 case Loadout loadout:
-                    data.CurrentShip = loadout.ShipName;
+                    _data.CurrentShip = loadout.ShipName;
                     break;
                 case FSSDiscoveryScan dScan:
-                    data.CurrentSystem.DiscoveryScan = dScan;
+                    _data.CurrentSystem.DiscoveryScan = dScan;
                     RedrawGrid();
                     break;
                 case FSSAllBodiesFound allFound:
-                    data.CurrentSystem.AllBodiesFound = allFound;
+                    _data.CurrentSystem.AllBodiesFound = allFound;
                     RedrawGrid();
                     break;
                 case FSSBodySignals bodySignals:
-                    data.AddBodySignals(bodySignals);
+                    _data.AddBodySignals(bodySignals);
                     // No redraw -- no body info yet, typically.
                     break;
                 case Scan scan:
                     if (!scan.BodyName.Contains("belt", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        data.AddScan(scan);
-                        if (data.CurrentSystem != null
+                        _data.AddScan(scan);
+                        if (_data.CurrentSystem != null
                             && scan.DistanceFromArrivalLS == 0
                             && scan.ScanType != "NavBeaconDetail"
                             && scan.PlanetClass != "Barycentre"
                             && !scan.WasDiscovered)
                         {
-                            data.CurrentSystem.IsUndiscovered = true;
+                            _data.CurrentSystem.IsUndiscovered = true;
                         }
                         // This generates a ton of flicker. Maybe this can be handled by Core (suppressing re-paints?)
                         // Make this somewhat conditional or only if data is "dirty"?
@@ -127,7 +136,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     }
                     break;
                 case SAAScanComplete scanComplete:
-                    data.AddScanComplete(scanComplete);
+                    _data.AddScanComplete(scanComplete);
                     RedrawGrid();
                     break;
             }
@@ -139,7 +148,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
             foreach (var n in nList)
             {
-                data.AddNotification(n);
+                _data.AddNotification(n);
             }
             RedrawGrid();
         }
@@ -170,21 +179,21 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
             if (msgTuple == null) return; // Unrecognized msg from Archivist!
 
-            switch (msgTuple.Item1)
-            {
-                case "archivist_known_system_journal_json":
-                    // In this event, the value is an tuple of data.
-                    var value = ((string Commander, string SystemName, int VisitCount, List<string> SystemJournalEntries))msgTuple.Item2;
+            //switch (msgTuple.Item1)
+            //{
+            //    case "archivist_known_system_journal_json":
+            //        // In this event, the value is an tuple of data.
+            //        var value = ((string Commander, string SystemName, int VisitCount, List<string> SystemJournalEntries))msgTuple.Item2;
 
-                    // Deserialize and pump into data for current system.
-                    foreach (var line in value.SystemJournalEntries)
-                    {
-                        var eventType = JournalUtilities.GetEventType(line);
+            //        // Deserialize and pump into data for current system.
+            //        foreach (var line in value.SystemJournalEntries)
+            //        {
+            //            var eventType = JournalUtilities.GetEventType(line);
 
-                        // TODO rehydrate object from this JSON.
-                    }
-                    break;
-            }
+            //            // TODO rehydrate object from this JSON.
+            //        }
+            //        break;
+            //}
         }
 
         private List<NotificationData> MaybeSplitMultilineArgs(NotificationArgs args)
@@ -202,7 +211,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
                     // Clone the core bits we care about but split the detail/extdetails.
                     NotificationData split = new(
-                        data.CurrentSystem.Name, args.Sender, args.Title, details[i], (i < extDetails.Length ? extDetails[i] : ""), args.CoalescingId ?? Constants.DEFAULT_COALESCING_ID);
+                        _data.CurrentSystem.Name, args.Sender, args.Title, details[i], (i < extDetails.Length ? extDetails[i] : ""), args.CoalescingId ?? Constants.DEFAULT_COALESCING_ID);
 
                     if (shouldShow(split))
                         notifications.Add(split);
@@ -210,7 +219,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             }
             else
             {
-                NotificationData nData = new(data.CurrentSystem.Name, args);
+                NotificationData nData = new(_data.CurrentSystem.Name, args);
                 if (shouldShow(nData))
                     notifications.Add(nData);
             }
@@ -221,9 +230,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private void RedrawGrid()
         {
             // Check for Pre-read too?
-            if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Realtime))
+            if ((Core.CurrentLogMonitorState & LogMonitorState.Realtime) != 0)
             {
-                Core.SetGridItems(this, data.ToGrid(false));
+                var gridItems = _data.ToGrid(false);
+                _ui.SetGridItems(gridItems);
             }
         }
 
@@ -247,16 +257,16 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         private void MaybeChangeSystem(string newSystem)
         {
-            if ((data.CurrentSystem?.Name ?? "") != newSystem)
+            if ((_data.CurrentSystem?.Name ?? "") != newSystem)
             {
-                if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
+                if ((Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0)
                 {
-                    if (data.CurrentSystem != null) _readAllGridItems.AddRange(data.ToGrid(true));
-                    data.ChangeSystem(newSystem);
+                    if (_data.CurrentSystem != null) _readAllGridItems.AddRange(_data.ToGrid(true));
+                    _data.ChangeSystem(newSystem);
                 }
                 else
                 {
-                    data.ChangeSystem(newSystem);
+                    _data.ChangeSystem(newSystem);
                     RedrawGrid();
                 }
             }

@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualBasic;
+﻿using com.github.fredjk_gh.ObservatoryAggregator.UI;
+using Microsoft.VisualBasic;
 using Observatory.Framework.Files.Journal;
 using System;
 using System.Collections.Generic;
@@ -73,19 +74,6 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             get => Scan != null && (Scan.StarType != null && Constants.Scoopables.Contains(Scan.StarType));
         }
 
-        public AggregatorGrid ToGridItem()
-        {
-            var gridItem = new AggregatorGrid()
-            {
-                Flags = GetFlagsStr(),
-                Title = $"{Constants.BODY_NESTING_INDICATOR}{GetBodyNameDisplayString()}",
-                Detail = GetBodyType(),
-                ExtendedDetails = GetDetailsString(),
-                Sender = Constants.PLUGIN_SHORT_NAME,
-            };
-            return gridItem;
-        }
-
         public string GetBodyNameDisplayString()
         {
             // TODO: Suppart Barycenters
@@ -131,7 +119,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             else if (!string.IsNullOrEmpty(Scan?.PlanetClass))
             {
 
-                if (Scan.PlanetClass.Contains("giant"))
+                if (Scan.PlanetClass.ToLower().Contains("giant"))
                 {
                     return $"🪐 {Constants.JournalTypeMap[Scan.PlanetClass]}";
                 }
@@ -143,18 +131,18 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             return "";
         }
 
-        public string GetFlagsStr()
+        public List<EmojiSpec> GetFlagEmoji()
         {
-            List<string> parts = new();
+            List<EmojiSpec> parts = new();
             if (Scan?.StarType != null)
             {
-                if (IsScoopableStar) parts.Add("⛽");
+                if (IsScoopableStar) parts.Add(new("⛽"));
             }
             else if (Scan?.PlanetClass != null)
             {
-                if (IsValuable) parts.Add("💰");
-                if (IsMapped) parts.Add("🌐"); // formerly 🗺
-                if (Scan?.Landable ?? false) parts.Add("🛬");
+                if (IsValuable) parts.Add(new("💰"));
+                if (IsMapped) parts.Add(new("🌐"));
+                if (Scan?.Landable ?? false) parts.Add(new("🛬"));
 
                 if (BodySignals != null)
                 {
@@ -163,16 +151,16 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                         switch (signal.Type)
                         {
                             case "$SAA_SignalType_Biological;":
-                                if (signal.Count > 0) parts.Add($"🧬 {signal.Count}");
+                                if (signal.Count > 0) parts.Add(new($"🧬 {signal.Count}"));
                                 break;
                             case "$SAA_SignalType_Geological;":
-                                if (signal.Count > 0) parts.Add($"🌋 {signal.Count}");
+                                if (signal.Count > 0) parts.Add(new($"🌋 {signal.Count}"));
                                 break;
                         }
                     }
                 }
             }
-            return string.Join(Constants.DETAIL_SEP, parts);
+            return parts;
         }
     }
 }

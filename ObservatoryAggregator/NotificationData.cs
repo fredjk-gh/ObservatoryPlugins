@@ -1,4 +1,5 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.ObservatoryAggregator.UI;
+using Observatory.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,8 +23,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             Detail = detail;
             ExtendedDetails = extDetails;
             CoalescingID = coalescingId;
-            IsInteresting = false;
-            IsVisited = false;
+            VisitedState = VisitedState.MarkForVisit;
         }
 
         public DateTime Timestamp { get; }
@@ -33,27 +33,11 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public string Detail { get; }
         public string ExtendedDetails { get; }
         public int CoalescingID { get; }
-        public bool IsInteresting { get; set; }
-        public bool IsVisited { get; set; }
+        public VisitedState VisitedState { get; set; }
 
-        public AggregatorGrid ToGridItem(string suppressTitle = "")
+        public string GetTitleDisplayString(string suppressTitle = "")
         {
-            return new AggregatorGrid()
-            {
-                Flags = GetFlagsString(),
-                Title = !string.IsNullOrWhiteSpace(suppressTitle) && suppressTitle.Equals(Title, StringComparison.CurrentCultureIgnoreCase) ? "" : Title,
-                Detail = Detail,
-                ExtendedDetails = ExtendedDetails,
-                Sender = Sender,
-            };
-        }
-
-        public string GetFlagsString()
-        {
-            var result = "";
-            if (IsInteresting) result = "🔎"; // 🔭 as alt?
-            if (IsVisited) result += (IsInteresting ? $"{Constants.DETAIL_SEP}✔" : "✔");
-            return result;
+            return !string.IsNullOrWhiteSpace(suppressTitle) && suppressTitle.Equals(Title, StringComparison.CurrentCultureIgnoreCase) ? "" : Title;
         }
     }
 }

@@ -15,13 +15,30 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
     {
         private Dictionary<int, List<NotificationData>> _notifications = new();
         private Dictionary<int, BodySummary> _bodies = new();
+        private Aggregator _worker;
+        private AggregatorSettings _settings;
+
+        public void Load(IObservatoryCore core, Aggregator worker, AggregatorSettings settings)
+        {
+            Core = core;
+            _worker = worker;
+            _settings = settings;
+        }
+
+        public IObservatoryCore Core { get; private set; }
+        public bool IsDirty { get; internal set; }
+
+        public AggregatorSettings Settings { get => _settings; }
+        public void ApplySettings(AggregatorSettings newSettings)
+        {
+            // TODO Wire up events for when specific settings values change so I can trigger re-draw when those change.
+            _settings = newSettings;
+            IsDirty = true;
+        }
 
         public SystemSummary CurrentSystem { get; private set; }
         public string CurrentCommander { get; set; }
         public string CurrentShip { get; set; }
-        public AggregatorSettings Settings { get; set; }
-
-        public bool IsDirty { get; internal set; }
 
         public Dictionary<int, List<NotificationData>> Notifications { get => _notifications; }
         public Dictionary<int, BodySummary> BodyData { get => _bodies; }
@@ -34,49 +51,18 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             _bodies.Clear();
             IsDirty = true;
         }
-        
-        public List<AggregatorGrid> ToGridItem()
+
+        public string GetCommanderAndShipString()
         {
-            List<AggregatorGrid> items = new() {
-                new AggregatorGrid()
-                {
-                    Flags = GetFlagsString(),
-                    Title = CurrentSystem.Name,
-                    Detail = GetDetailString(),
-                    ExtendedDetails = $"{CurrentCommander} - {CurrentShip}",
-                    Sender = Constants.PLUGIN_SHORT_NAME,
-                }
-            };
-            return items;
-        }
-
-        public string GetFlagsString()
-        {
-            List<string> parts = new();
-
-            if (CurrentSystem.IsUndiscovered) parts.Add("🆕"); // or 🥇??
-            // ⚛, 💯, ✔, 💫 or 🎇 as alternatives?
-            if (CurrentSystem.AllBodiesFound != null) parts.Add("💯");
-            if (_bodies.Values.Any(b => b.IsScoopableStar)) parts.Add("⛽");
-
-            return string.Join(Constants.DETAIL_SEP, parts);
-        }
-
-        public string GetDetailString()
-        {
-            if (CurrentSystem.DiscoveryScan != null)
-                return $"{CurrentSystem.DiscoveryScan.BodyCount} bodies";
-
-            return "";
+            return $"{CurrentCommander} - {CurrentShip}";
         }
 
         public List<AggregatorGrid> ToGrid(bool isBatchMode)
         {
+            bool haveCatchAllHeader = false;
             List<AggregatorGrid> gridItems = new();
 
-            gridItems.AddRange(ToGridItem());
-
-            //if (_bodies.Count == 0) return gridItems;
+            gridItems.Add(new AggregatorGrid(this));
 
             List<int> cIds;
             if (Settings.ShowAllBodySummaries)
@@ -91,17 +77,24 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 {
                     var bData = GetBody(cId);
                     bodyDisplayString = bData.GetBodyNameDisplayString();
-                    gridItems.Add(bData.ToGridItem());
-                } else if (cId == Constants.SYSTEM_COALESCING_ID)
+                    gridItems.Add(new AggregatorGrid(this, bData));
+                }
+                else if (cId == Constants.SYSTEM_COALESCING_ID)
                 {
+                    // No H2 summary row!
                     bodyDisplayString = "System";
+                }
+                else if (!haveCatchAllHeader)
+                {
+                    gridItems.Add(new AggregatorGrid(this, "Other notifications"));
+                    haveCatchAllHeader = true;
                 }
 
                 if (Notifications.ContainsKey(cId))
                 {
                     foreach (var n in GetNotifications(cId))
                     {
-                        gridItems.Add(n.ToGridItem(bodyDisplayString));
+                        gridItems.Add(new AggregatorGrid(this, n, bodyDisplayString));
                     }
                 }
             }
