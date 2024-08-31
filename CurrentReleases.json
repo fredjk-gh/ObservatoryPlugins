@@ -43,8 +43,8 @@
             "MinRequiredCoreVersion": "0.2.22141.1531"
         },
         "Beta":{
-            "Version": "0.24.143.0120",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.143.0120-beta/ObservatoryPluginAutoUpdater-v0.24.143.0120.eop",
+            "Version": "0.24.244.0345",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.244.0345/ObservatoryPluginAutoUpdater-v0.24.244.0345.eop",
             "MinRequiredCoreVersion": "0.3.24141.2140"
         }
     },
