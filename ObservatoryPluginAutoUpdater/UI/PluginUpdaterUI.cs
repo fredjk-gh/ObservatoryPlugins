@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -14,82 +13,118 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
     public enum PluginAction
     {
         None,
-        Install,
-        Update,
+        InstallStable,
+        InstallBeta,
+        UpdateStable,
+        UpdateBeta,
     }
 
     internal partial class PluginUpdaterUI : UserControl
     {
-        private UIContext _context;
+        // Properties of PluginRowUI which are not listed here will be hidden.
+        private readonly Dictionary<string, string> ColumnHeaderText = new()
+        {
+            { "PluginName" , "Plugin Name" },
+            { "InstalledVersion" , "Installed Version" },
+            { "StableVersion" , "Stable Version" },
+            { "BetaVersion" , "Beta Version" },
+            { "Status" , "Status" },
+        };
+        private const string COL_ACTION = "Action";
+
+        private readonly UIContext _context;
+        private readonly Dictionary<string, PluginRowUI> _pluginUI = new();
+        private readonly BindingList<PluginRowUI> _rows = new();
 
         public PluginUpdaterUI(UIContext context)
         {
             InitializeComponent();
 
             _context = context;
+            _context.Settings.PropertyChanged += Settings_PropertyChanged;
 
             // From: https://stackoverflow.com/questions/3339300/net-tablelayoutpanel-clearing-controls-is-very-slow
             typeof(TableLayoutPanel)
                 .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
                 .SetValue(tblLayout, true, null);
 
-            // build a dictionary of controls reflecting the current state and populate the layout table.
-            int gridRow = 0;
+            chkAllowBeta.Checked = _context.Settings.UseBeta;
+            chkAllowBeta.CheckedChanged += chkAllowBeta_CheckedChanged;
+
+            dgvPlugins.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            dgvPlugins.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
+            dgvPlugins.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvPlugins.EnableHeadersVisualStyles = false;
+            dgvPlugins.BackgroundColorChanged += Grid_BackgroundColorChanged;
+            dgvPlugins.ForeColorChanged += Grid_ForeColorChanged;
+            dgvPlugins.CellClick += Grid_CellClick;
+
+            // build a dictionary of plugins to grid rows.
             foreach (var p in _context.KnownPlugins)
             {
-                gridRow++; // pre-increment to skip header row.
-
-                Label nameLabel = new()
-                {
-                    Text = p,
-                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                };
-                Label installedVersionLabel = new()
-                {
-                    Text = "",
-                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                };
-                Label statusLabel = new()
-                {
-                    Text = "",
-                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                };
-                Button actionButton = new()
-                {
-                    Text = "",
-                    Visible = false,
-                    Size = new Size(150, 45),
-                    Tag = p,
-                };
-                actionButton.Click += InstallOrUpdatePlugin_Click;
-
-                var controls = new PluginRowUI(p, gridRow, nameLabel, installedVersionLabel, statusLabel, actionButton, tblLayout);
-                _context.AddRowControls(controls);
+                var rowUi = new PluginRowUI(p);
+                _rows.Add(rowUi);
+                _pluginUI.Add(rowUi.PluginName, rowUi);
             }
+            ApplyCellStyle();
+            dgvPlugins.DataSource = _rows;
+
+            foreach (DataGridViewColumn c in dgvPlugins.Columns)
+            {
+                if (ColumnHeaderText.ContainsKey(c.Name))
+                {
+                    c.HeaderText = ColumnHeaderText[c.Name];
+                }
+                else
+                {
+                    c.Visible = false;
+                }
+            }
+            int colIndex = dgvPlugins.Columns.Add(new DataGridViewButtonColumn()
+            {
+                Name = COL_ACTION,
+                HeaderText = "Action",
+                FlatStyle = FlatStyle.Flat,
+            });
         }
 
-        public void UpdatePluginState(string pluginName, string installedVersion, string status, PluginAction action)
+        public void UpdatePluginState(string pluginName, string installedVersion, string status, PluginVersion latest, PluginAction action)
         {
-            _context.Core.ExecuteOnUIThread(() =>
+            var controls = _pluginUI[pluginName];
+            if (controls.PendingRestart) return; // Do nothing, we've already downloaded this one.
+
+            controls.InstalledVersion = installedVersion;
+            controls.StableVersion = latest.Production?.Version ?? "";
+            controls.BetaVersion = latest.Beta?.Version ?? "";
+            controls.Status = status;
+            controls.PluginAction = action;
+
+            var row = dgvPlugins.Rows.Cast<DataGridViewRow>().Where(r => r.DataBoundItem == controls).FirstOrDefault();
+            if (row == null)
             {
-                var controls = _context.GetRowControls(pluginName);
-                controls.InstalledVersionLabel.Text = installedVersion;
-                controls.StatusLabel.Text = status;
-                switch (action)
-                {
-                    case PluginAction.Install:
-                        controls.Action.Text = "Install";
-                        controls.Action.Visible = true;
-                        break;
-                    case PluginAction.Update:
-                        controls.Action.Text = "Update";
-                        controls.Action.Visible = true;
-                        break;
-                    default:
-                        controls.Action.Visible = false;
-                        break;
-                }
-            });
+                return; // This is unexpected.
+            }
+            DataGridViewButtonCell buttonCell = (DataGridViewButtonCell)row.Cells[COL_ACTION];
+
+            switch (action)
+            {
+                case PluginAction.InstallStable:
+                    buttonCell.Value = "Install Stable";
+                    break;
+                case PluginAction.InstallBeta:
+                    buttonCell.Value = "Install Beta";
+                    break;
+                case PluginAction.UpdateStable:
+                    buttonCell.Value = "Update Stable";
+                    break;
+                case PluginAction.UpdateBeta:
+                    buttonCell.Value = "Update Beta";
+                    break;
+                default:
+                    buttonCell.Value = "";
+                    break;
+            }
+            dgvPlugins.AutoResizeColumns();
         }
 
         public void ShowMessages(string messages)
@@ -97,7 +132,60 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             _context.Core.ExecuteOnUIThread(() =>
             {
                 txtMessages.Text = messages;
+                txtMessages.Select(txtMessages.Text.Length, 0);
+                txtMessages.ScrollToCaret();
             });
+        }
+
+        public override void Refresh()
+        {
+            _context.Core.ExecuteOnUIThread(() =>
+            {
+                base.Refresh();
+            });
+        }
+
+        private void ApplyCellStyle()
+        {
+            dgvPlugins.DefaultCellStyle = new()
+            {
+                BackColor = dgvPlugins.BackgroundColor,
+            };
+        }
+        private void Settings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            _context.Core.ExecuteOnUIThread(() =>
+            {
+                switch (e.PropertyName)
+                {
+                    case "UseBeta":
+                        chkAllowBeta.Checked = _context.Settings.UseBeta;
+                        break;
+                }
+            });
+        }
+
+        private void chkAllowBeta_CheckedChanged(object sender, EventArgs e)
+        {
+            _context.Settings.UseBeta = chkAllowBeta.Checked;
+            _context.Core.SaveSettings(_context.Worker);
+        }
+
+        private void Grid_BackgroundColorChanged(object sender, EventArgs e)
+        {
+            dgvPlugins.SuspendLayout();
+            dgvPlugins.ColumnHeadersDefaultCellStyle.BackColor = dgvPlugins.BackgroundColor;
+            dgvPlugins.RowHeadersDefaultCellStyle.BackColor = dgvPlugins.BackgroundColor;
+
+            // Propagate to Default cell style.
+            ApplyCellStyle();
+            dgvPlugins.ResumeLayout();
+        }
+
+        private void Grid_ForeColorChanged(object sender, EventArgs e)
+        {
+            dgvPlugins.ColumnHeadersDefaultCellStyle.ForeColor = dgvPlugins.ForeColor;
+            dgvPlugins.RowHeadersDefaultCellStyle.ForeColor = dgvPlugins.ForeColor;
         }
 
         private void CheckForUpdates_Click(object sender, EventArgs e)
@@ -105,35 +193,54 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             _context.CheckForUpdates(true);
         }
 
-        private void InstallOrUpdatePlugin_Click(object sender, EventArgs e)
+        private void Grid_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            Button btn = sender as Button;
-            if (btn == null) return;
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
 
-            string pluginName = btn.Tag as string;
-            if (string.IsNullOrWhiteSpace(pluginName)) return;
-            if (!_context.LatestVersions.ContainsKey(pluginName)) return; // No info!
+            DataGridViewRow row = dgvPlugins.Rows[e.RowIndex];
+            DataGridViewButtonCell buttonCell = row.Cells[e.ColumnIndex] as DataGridViewButtonCell;
+
+            if (buttonCell == null) return; // Not a button cell.
+            PluginRowUI data = row.DataBoundItem as PluginRowUI;
+            if (data == null || data.PluginAction == PluginAction.None) return;
+
+            string pluginName = data.PluginName;
+            if (!_context.LatestVersions.ContainsKey(pluginName))
+            {
+                _context.AddMessage("No applicable version found to download!");
+                return; // No info!
+            }
 
             PluginVersion latest = _context.LatestVersions[pluginName];
-            VersionPair selectedVersion = null;
-            if (!_context.LocalVersions.ContainsKey(pluginName))
+            VersionDetail selectedVersion = null;
+
+            switch (data.PluginAction)
             {
-                // Install.
-                selectedVersion = PluginVersion.SelectVersion(null, latest, _context.Settings.UseBeta, _context.Core.Version);
-            }
-            else
-            {
-                // Upgrade.
-                selectedVersion = PluginVersion.SelectVersion(_context.LocalVersions[pluginName], latest, _context.Settings.UseBeta, _context.Core.Version);
+                case PluginAction.InstallStable:
+                case PluginAction.UpdateStable:
+                    selectedVersion = latest.Production;
+                    break;
+                case PluginAction.InstallBeta:
+                case PluginAction.UpdateBeta:
+                    selectedVersion = latest.Beta;
+                    break;
             }
 
             if (selectedVersion != null)
             {
-                if (_context.DownloadLatestPlugin(_context.HttpClient, selectedVersion.Latest.DownloadURL, latest))
+                if (_context.DownloadLatestPlugin(_context.HttpClient, selectedVersion.DownloadURL, latest))
                 {
-                    btn.Enabled = false;
                     _context.RequiresRestart = true;
+                    buttonCell.Value = "";
+                    data.PluginAction = PluginAction.None;
+                    data.Status = "Pending restart";
+                    data.PendingRestart = true; // Prevent this information from being clobbered.
+                    dgvPlugins.AutoResizeColumns();
                 }
+            }
+            else
+            {
+                _context.AddMessage("No applicable version found to download!");
             }
             ShowMessages(_context.GetMessages());
         }

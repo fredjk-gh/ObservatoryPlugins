@@ -1,4 +1,5 @@
-﻿using System;
+﻿using com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -23,7 +24,8 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
                 {
                     Name = "Beta",
                     Local = local?.Beta ?? local?.Production,
-                    Latest = latest.Beta
+                    Latest = latest.Beta,
+                    Action = PluginAction.UpdateBeta,
                 });
             }
             if (latest.Production != null && latest.Production?.Version != VersionDetail.NO_VERSION)
@@ -33,6 +35,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
                     Name = "Production",
                     Local = local?.Production,
                     Latest = latest.Production,
+                    Action = PluginAction.UpdateStable,
                 });
             }
 
@@ -111,5 +114,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
         public string Name { get; set; }
         public VersionDetail Local { get; set; }
         public VersionDetail Latest { get; set; }
+
+        public PluginAction Action { get; set; }
     }
 }

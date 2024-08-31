@@ -12,7 +12,6 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 {
     internal class UIContext
     {
-        private Dictionary<string, PluginRowUI> _pluginUI = new();
         private List<string> _messages = new();
         private string _latestVersionCacheFilename;
         private DateTime? _latestVersionsFetchedDateTime = null;
@@ -44,6 +43,18 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
             LocalVersions = GetLocalVersions();
             LatestVersions = LoadCachedLatestVersions();
+
+            Settings.PropertyChanged += Settings_PropertyChanged;
+        }
+
+        private void Settings_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case "UseBeta": // Refresh the list -- available actions may change.
+                    CheckForUpdates(true);
+                    break;
+            }
         }
 
         public bool RequiresRestart { get; set; }
@@ -57,16 +68,6 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
         // Not initialized by constructor.
         public PluginUpdaterUI UI { get; set; }
-
-        public void AddRowControls(PluginRowUI row)
-        {
-            _pluginUI.Add(row.PluginName, row);
-        }
-
-        public PluginRowUI GetRowControls(string pluginName)
-        {
-            return _pluginUI[pluginName];
-        }
 
         public string GetMessages()
         {
@@ -146,19 +147,13 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             int skippedCount = 0;
             foreach (var p in KnownPlugins)
             {
-                if (!LocalVersions.ContainsKey(p))
-                {
-                    UI.UpdatePluginState(p, "", "Not installed", PluginAction.Install);
-                    skippedCount++;
-                    continue;
-                }
-                var local = LocalVersions[p];
                 if (!LatestVersions.ContainsKey(p))
                 {
                     if (LatestVersions.Count > 0)
                     {
+                        string localVersion = LocalVersions.ContainsKey(p) ? LocalVersions[p].Production.Version : "";
                         AddMessage($"Known plugin {p} was not found in latest versions file!");
-                        UI.UpdatePluginState(p, local.Production.Version, "Latest version unavailable", PluginAction.None);
+                        UI.UpdatePluginState(p, localVersion, "Latest version unavailable", null, PluginAction.None);
                     }
                     else
                     {
@@ -167,8 +162,30 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                     skippedCount++;
                     continue;
                 }
-
                 var latest = LatestVersions[p];
+
+                if (!LocalVersions.ContainsKey(p))
+                {
+                    var action = PluginAction.None; // There may be no available version.
+                    var status = "Not installed";
+                    if (latest.Production != null && !Settings.UseBeta)
+                    {
+                        action = PluginAction.InstallStable;
+                    }
+                    else if (latest.Beta != null && Settings.UseBeta)
+                    {
+                        action = PluginAction.InstallBeta;
+                    }
+                    else if (latest.Production == null && latest.Beta != null && !Settings.UseBeta)
+                    {
+                        status += ". Beta versions available but disallowed.";
+                    }
+
+                    UI.UpdatePluginState(p, "", status, LatestVersions[p], action);
+                    skippedCount++;
+                    continue;
+                }
+                var local = LocalVersions[p];
                 var selectedVersion = PluginVersion.SelectVersion(local, latest, Settings.UseBeta, Core.Version);
                 if (selectedVersion != null)
                 {
@@ -181,19 +198,19 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                     }
                     if (DownloadLatestPlugin(HttpClient, downloadUrl, latest))
                     {
-                        UI.UpdatePluginState(p, local.Production.Version, "Updated (pending restart)", PluginAction.None);
+                        UI.UpdatePluginState(p, local.Production.Version, "Updated (pending restart)", latest, PluginAction.None);
                         updateCount++;
                     }
                     else
                     {
-                        UI.UpdatePluginState(p, local.Production.Version, "Update pending (download failed!)", PluginAction.Update);
+                        UI.UpdatePluginState(p, local.Production.Version, "Update pending (download failed!)", latest, selectedVersion.Action);
                         failedCount++;
                     }
                 }
                 else
                 {
                     skippedCount++;
-                    UI.UpdatePluginState(p, local.Production.Version, "Up to date", PluginAction.None);
+                    UI.UpdatePluginState(p, local.Production.Version, "Up to date", latest, PluginAction.None);
                 }
             }
 
@@ -212,6 +229,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             }
 
             UI.ShowMessages(string.Join(Environment.NewLine, GetMessages()));
+            UI.Refresh();
             hasCheckedForUpdates = true;
 
             return true;
@@ -229,7 +247,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 fileStream.Close();
                 f.Close();
 
-                AddMessage($"Downloaded update: {outputFilename}");
+                AddMessage($"Downloaded package: {outputFilename}");
                 return true;
             }
             else
