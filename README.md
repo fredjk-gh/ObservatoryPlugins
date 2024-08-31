@@ -25,7 +25,7 @@ NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need 
 
 *  Status: Released + Beta
 *  Download latest stable (Observatory Core <= 0.2.x): [ObservatoryPluginAutoUpdater-v0.24.005.1933.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.005.1933/ObservatoryPluginAutoUpdater-v0.24.005.1933.eop) (Jan 5, 2024)
-*  Download Beta (requires Observatory Core >= 0.3.x): [ObservatoryPluginAutoUpdater-v0.24.143.0120.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.143.0120-beta/ObservatoryPluginAutoUpdater-v0.24.143.0120.eop) (May 21, 2024)
+*  Download Beta (requires Observatory Core >= 0.3.x): [ObservatoryPluginAutoUpdater-v0.24.244.0345.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.244.0345/ObservatoryPluginAutoUpdater-v0.24.244.0345.eop)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater)
 
 ## Aggregator
