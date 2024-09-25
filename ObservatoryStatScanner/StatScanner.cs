@@ -22,11 +22,23 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         private StatScannerState _state = null;
         private List<Result> _batchResults = new List<Result>();
 
+        private AboutInfo _aboutInfo = new()
+        {
+            FullName = "Stat Scanner",
+            ShortName = "Stat Scanner",
+            Description = "Stat Scanner is your own personal record book of personal bests but can also compares your discoveries against one of two sets of galactic records provided by edastro.com.",
+            AuthorName = "fredjk-gh",
+            Links = new()
+            {
+                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
+                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/statscanner"),
+                new AboutLink("edastro.com Records", "https://edastro.com/records/")
+            }
+        };
 
-        public string Name => "Observatory Stat Scanner";
-        public string ShortName => "Stat Scanner";
+        public AboutInfo AboutInfo => _aboutInfo;
         public string Version => typeof(StatScanner).Assembly.GetName().Version.ToString();
-
         public PluginUI PluginUI => pluginUI;
 
         public object Settings
@@ -216,8 +228,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     new StatScannerGrid
                     {
                         ObjectClass = "Plugin info",
-                        Variable = $"{this.ShortName} version",
-                        ObservedValue = $"v{this.Version}",
+                        Variable = $"{AboutInfo.ShortName} version",
+                        ObservedValue = $"v{Version}",
                     },
                     Constants.HEADER_COALESCING_ID),
                 new (NotificationClass.None,
@@ -472,7 +484,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 }
                 catch (Exception ex)
                 {
-                    throw new PluginException(this.ShortName, $"Failure while processing record {record.DisplayName} while processing scan: {scan.Json}", ex);
+                    throw new PluginException(AboutInfo.ShortName, $"Failure while processing record {record.DisplayName} while processing scan: {scan.Json}", ex);
                 }
             }
             return results;
@@ -588,7 +600,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         Detail = $"{pbs.Count()} personal bests: {r.ResultItem.ObjectClass}",
                         Rendering = GetNotificationRendering(r),
                         ExtendedDetails = string.Join("; ", pbs.Select(pb => $"{pb.ResultItem.Variable}, {pb.ResultItem.Function}")),
-                        Sender = ShortName,
+                        Sender = AboutInfo.ShortName,
                         CoalescingId = r.CoalescingID,
                     });
 
@@ -615,7 +627,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         Detail = $"{r.ResultItem.Details}: {r.ResultItem.ObjectClass}; {r.ResultItem.Variable}; {r.ResultItem.Function}",
                         Rendering = GetNotificationRendering(r),
                         ExtendedDetails = $"{r.ResultItem.ObservedValue} {r.ResultItem.Units} @ {r.ResultItem.BodyOrItem}{firstDiscoveryStatus}. Previous value: {r.ResultItem.RecordValue} {r.ResultItem.Units}",
-                        Sender = ShortName,
+                        Sender = AboutInfo.ShortName,
                         CoalescingId = r.CoalescingID,
                     });
                 }
