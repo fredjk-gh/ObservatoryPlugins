@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 {
@@ -19,6 +20,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
         private TableLayoutPanel _tablePanel;
         private FlowLayoutPanel _flowLayoutPanel;
         private Dictionary<string /* callsign */, CarrierUI> _uiByCallsign = new();
+
+        private ToolTip _ttip = new ToolTip();
 
         private bool _initialized = false;
         private bool _hasNewControl = false;
@@ -60,15 +63,18 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             _flowLayoutPanel.AutoScroll = true;
 
             // Second row: Settings button.
-            var btnSettingsCog = new Button()
+            var btnSettingsCog = new ThemeableIconButton()
             {
+                Name = "btnSettingsCog",
                 FlatStyle = FlatStyle.Flat,
                 Margin = new(5),
-                AutoSize = true,
-                Text = "Settings",
+                Size = new(36, 36),
+                Padding = new(1),
             };
             btnSettingsCog.FlatAppearance.BorderSize = 0;
+            btnSettingsCog.SetIcon(Properties.Resources.SettingsIcon.ToBitmap(), btnSettingsCog.Size);
             btnSettingsCog.Click += btnSettingsCog_Click;
+            _ttip.SetToolTip(btnSettingsCog, "Open settings");
             _tablePanel.Controls.Add(btnSettingsCog);
         }
 

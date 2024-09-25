@@ -7,18 +7,6 @@
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary> 
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
-            base.Dispose(disposing);
-        }
 
         #region Component Designer generated code
 
@@ -42,11 +30,10 @@
             lblNextJumpTitle = new Label();
             lblNextJumpValue = new Label();
             lblTimerTitle = new Label();
-            lblTimerValue = new Label();
             flowLayoutPanel1 = new FlowLayoutPanel();
-            btnNewRoute = new Button();
-            btnClearRoute = new Button();
-            lblLinkToSpansh = new LinkLabel();
+            btnNewRoute = new UI.ThemeableIconButton();
+            btnClearRoute = new UI.ThemeableIconButton();
+            btnOpenSpansh = new UI.ThemeableIconButton();
             clbRoute = new CheckedListBox();
             ctxRouteMenu = new ContextMenuStrip(components);
             ctxRouteMenu_CopySystemName = new ToolStripMenuItem();
@@ -54,9 +41,14 @@
             txtMessages = new TextBox();
             lblMessages = new Label();
             pbFuelLevel = new ProgressBar();
+            tableLayoutPanel1 = new TableLayoutPanel();
+            lblTimerValue = new Label();
+            btnPopOutTimer = new UI.ThemeableIconButton();
+            ttipCarrierUI = new ToolTip(components);
             tlpCarrierLayout.SuspendLayout();
             flowLayoutPanel1.SuspendLayout();
             ctxRouteMenu.SuspendLayout();
+            tableLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
             // tlpCarrierLayout
@@ -78,12 +70,12 @@
             tlpCarrierLayout.Controls.Add(lblNextJumpTitle, 0, 5);
             tlpCarrierLayout.Controls.Add(lblNextJumpValue, 1, 5);
             tlpCarrierLayout.Controls.Add(lblTimerTitle, 0, 6);
-            tlpCarrierLayout.Controls.Add(lblTimerValue, 1, 6);
             tlpCarrierLayout.Controls.Add(flowLayoutPanel1, 2, 1);
             tlpCarrierLayout.Controls.Add(clbRoute, 2, 2);
             tlpCarrierLayout.Controls.Add(txtMessages, 1, 7);
             tlpCarrierLayout.Controls.Add(lblMessages, 0, 7);
             tlpCarrierLayout.Controls.Add(pbFuelLevel, 1, 1);
+            tlpCarrierLayout.Controls.Add(tableLayoutPanel1, 1, 6);
             tlpCarrierLayout.Dock = DockStyle.Fill;
             tlpCarrierLayout.Location = new Point(0, 0);
             tlpCarrierLayout.Margin = new Padding(7, 6, 7, 6);
@@ -97,7 +89,7 @@
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F));
-            tlpCarrierLayout.Size = new Size(800, 350);
+            tlpCarrierLayout.Size = new Size(873, 388);
             tlpCarrierLayout.TabIndex = 0;
             // 
             // lblNameAndCallsign
@@ -105,11 +97,11 @@
             lblNameAndCallsign.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblNameAndCallsign.AutoSize = true;
             tlpCarrierLayout.SetColumnSpan(lblNameAndCallsign, 2);
-            lblNameAndCallsign.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point);
+            lblNameAndCallsign.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             lblNameAndCallsign.Location = new Point(2, 0);
             lblNameAndCallsign.Margin = new Padding(2, 0, 2, 0);
             lblNameAndCallsign.Name = "lblNameAndCallsign";
-            lblNameAndCallsign.Size = new Size(476, 21);
+            lblNameAndCallsign.Size = new Size(519, 21);
             lblNameAndCallsign.TabIndex = 0;
             lblNameAndCallsign.Text = "[carrier name (callsign)]";
             lblNameAndCallsign.DoubleClick += Label_DoubleClickToCopy;
@@ -118,11 +110,11 @@
             // 
             lblOwningCommander.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblOwningCommander.AutoSize = true;
-            lblOwningCommander.Font = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point);
-            lblOwningCommander.Location = new Point(482, 0);
+            lblOwningCommander.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            lblOwningCommander.Location = new Point(525, 0);
             lblOwningCommander.Margin = new Padding(2, 0, 2, 0);
             lblOwningCommander.Name = "lblOwningCommander";
-            lblOwningCommander.Size = new Size(316, 20);
+            lblOwningCommander.Size = new Size(346, 20);
             lblOwningCommander.TabIndex = 1;
             lblOwningCommander.Text = "Owned by: [commander]";
             // 
@@ -130,7 +122,7 @@
             // 
             lblFuelTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblFuelTitle.AutoSize = true;
-            lblFuelTitle.Location = new Point(76, 33);
+            lblFuelTitle.Location = new Point(90, 33);
             lblFuelTitle.Margin = new Padding(4, 9, 4, 3);
             lblFuelTitle.Name = "lblFuelTitle";
             lblFuelTitle.Size = new Size(80, 15);
@@ -141,7 +133,7 @@
             // 
             lblBalanceTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblBalanceTitle.AutoSize = true;
-            lblBalanceTitle.Location = new Point(67, 59);
+            lblBalanceTitle.Location = new Point(81, 59);
             lblBalanceTitle.Margin = new Padding(4, 3, 4, 3);
             lblBalanceTitle.Name = "lblBalanceTitle";
             lblBalanceTitle.Size = new Size(89, 15);
@@ -152,10 +144,10 @@
             // 
             lblBalanceValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblBalanceValue.AutoSize = true;
-            lblBalanceValue.Location = new Point(164, 59);
+            lblBalanceValue.Location = new Point(178, 59);
             lblBalanceValue.Margin = new Padding(4, 3, 4, 3);
             lblBalanceValue.Name = "lblBalanceValue";
-            lblBalanceValue.Size = new Size(312, 15);
+            lblBalanceValue.Size = new Size(341, 15);
             lblBalanceValue.TabIndex = 5;
             lblBalanceValue.Text = "[x,xxx,xxx,xxx Cr]";
             // 
@@ -163,7 +155,7 @@
             // 
             lblPositionTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblPositionTitle.AutoSize = true;
-            lblPositionTitle.Location = new Point(103, 83);
+            lblPositionTitle.Location = new Point(117, 83);
             lblPositionTitle.Margin = new Padding(4, 3, 4, 3);
             lblPositionTitle.Name = "lblPositionTitle";
             lblPositionTitle.Size = new Size(53, 15);
@@ -173,11 +165,12 @@
             // lblPositionValue
             // 
             lblPositionValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblPositionValue.AutoEllipsis = true;
             lblPositionValue.AutoSize = true;
-            lblPositionValue.Location = new Point(164, 83);
+            lblPositionValue.Location = new Point(178, 83);
             lblPositionValue.Margin = new Padding(4, 3, 4, 3);
             lblPositionValue.Name = "lblPositionValue";
-            lblPositionValue.Size = new Size(312, 15);
+            lblPositionValue.Size = new Size(341, 15);
             lblPositionValue.TabIndex = 7;
             lblPositionValue.Text = "[system or body]";
             lblPositionValue.DoubleClick += Label_DoubleClickToCopy;
@@ -186,7 +179,7 @@
             // 
             lblCommanderStateTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblCommanderStateTitle.AutoSize = true;
-            lblCommanderStateTitle.Location = new Point(68, 107);
+            lblCommanderStateTitle.Location = new Point(82, 107);
             lblCommanderStateTitle.Margin = new Padding(4, 3, 4, 3);
             lblCommanderStateTitle.Name = "lblCommanderStateTitle";
             lblCommanderStateTitle.Size = new Size(88, 15);
@@ -196,11 +189,12 @@
             // lblCommanderStateValue
             // 
             lblCommanderStateValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblCommanderStateValue.AutoEllipsis = true;
             lblCommanderStateValue.AutoSize = true;
-            lblCommanderStateValue.Location = new Point(164, 107);
+            lblCommanderStateValue.Location = new Point(178, 107);
             lblCommanderStateValue.Margin = new Padding(4, 3, 4, 3);
             lblCommanderStateValue.Name = "lblCommanderStateValue";
-            lblCommanderStateValue.Size = new Size(312, 15);
+            lblCommanderStateValue.Size = new Size(341, 15);
             lblCommanderStateValue.TabIndex = 9;
             lblCommanderStateValue.Text = "[On-foot|Docked|Away|Unknown]";
             // 
@@ -208,7 +202,7 @@
             // 
             lblNextJumpTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblNextJumpTitle.AutoSize = true;
-            lblNextJumpTitle.Location = new Point(90, 131);
+            lblNextJumpTitle.Location = new Point(104, 131);
             lblNextJumpTitle.Margin = new Padding(4, 3, 4, 3);
             lblNextJumpTitle.Name = "lblNextJumpTitle";
             lblNextJumpTitle.Size = new Size(66, 15);
@@ -218,11 +212,12 @@
             // lblNextJumpValue
             // 
             lblNextJumpValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblNextJumpValue.AutoEllipsis = true;
             lblNextJumpValue.AutoSize = true;
-            lblNextJumpValue.Location = new Point(164, 131);
+            lblNextJumpValue.Location = new Point(178, 131);
             lblNextJumpValue.Margin = new Padding(4, 3, 4, 3);
             lblNextJumpValue.Name = "lblNextJumpValue";
-            lblNextJumpValue.Size = new Size(312, 15);
+            lblNextJumpValue.Size = new Size(341, 15);
             lblNextJumpValue.TabIndex = 11;
             lblNextJumpValue.Text = "(none planned)";
             lblNextJumpValue.DoubleClick += Label_DoubleClickToCopy;
@@ -231,86 +226,74 @@
             // 
             lblTimerTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblTimerTitle.AutoSize = true;
-            lblTimerTitle.Location = new Point(26, 182);
+            lblTimerTitle.Location = new Point(40, 182);
             lblTimerTitle.Margin = new Padding(4, 6, 4, 3);
             lblTimerTitle.Name = "lblTimerTitle";
             lblTimerTitle.Size = new Size(130, 15);
             lblTimerTitle.TabIndex = 12;
             lblTimerTitle.Text = "Jump|Cooldown Timer:";
             // 
-            // lblTimerValue
-            // 
-            lblTimerValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            lblTimerValue.AutoSize = true;
-            lblTimerValue.Font = new Font("Segoe UI", 14F, FontStyle.Bold, GraphicsUnit.Point);
-            lblTimerValue.Location = new Point(167, 182);
-            lblTimerValue.Margin = new Padding(7, 6, 7, 6);
-            lblTimerValue.Name = "lblTimerValue";
-            lblTimerValue.Size = new Size(306, 25);
-            lblTimerValue.TabIndex = 13;
-            lblTimerValue.Text = "0:00:00";
-            lblTimerValue.TextAlign = ContentAlignment.TopCenter;
-            // 
             // flowLayoutPanel1
             // 
             flowLayoutPanel1.Controls.Add(btnNewRoute);
             flowLayoutPanel1.Controls.Add(btnClearRoute);
-            flowLayoutPanel1.Controls.Add(lblLinkToSpansh);
+            flowLayoutPanel1.Controls.Add(btnOpenSpansh);
             flowLayoutPanel1.Dock = DockStyle.Fill;
-            flowLayoutPanel1.Location = new Point(482, 26);
+            flowLayoutPanel1.Location = new Point(525, 26);
             flowLayoutPanel1.Margin = new Padding(2);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(316, 28);
+            flowLayoutPanel1.Size = new Size(346, 28);
             flowLayoutPanel1.TabIndex = 14;
             // 
             // btnNewRoute
             // 
             btnNewRoute.FlatAppearance.BorderSize = 0;
             btnNewRoute.FlatStyle = FlatStyle.Flat;
-            btnNewRoute.Location = new Point(2, 2);
-            btnNewRoute.Margin = new Padding(2);
+            btnNewRoute.Location = new Point(3, 3);
             btnNewRoute.Name = "btnNewRoute";
-            btnNewRoute.Size = new Size(78, 20);
-            btnNewRoute.TabIndex = 0;
-            btnNewRoute.Text = "New route";
-            btnNewRoute.UseVisualStyleBackColor = false;
+            btnNewRoute.Padding = new Padding(1);
+            btnNewRoute.Size = new Size(26, 26);
+            btnNewRoute.TabIndex = 3;
+            ttipCarrierUI.SetToolTip(btnNewRoute, "Create a new route via Spansh");
+            btnNewRoute.UseVisualStyleBackColor = true;
             btnNewRoute.Click += btnNewRoute_Click;
             // 
             // btnClearRoute
             // 
             btnClearRoute.FlatAppearance.BorderSize = 0;
             btnClearRoute.FlatStyle = FlatStyle.Flat;
-            btnClearRoute.Location = new Point(84, 2);
-            btnClearRoute.Margin = new Padding(2);
+            btnClearRoute.Location = new Point(35, 3);
             btnClearRoute.Name = "btnClearRoute";
-            btnClearRoute.Size = new Size(78, 20);
-            btnClearRoute.TabIndex = 1;
-            btnClearRoute.Text = "Clear Route";
-            btnClearRoute.UseVisualStyleBackColor = false;
+            btnClearRoute.Padding = new Padding(1);
+            btnClearRoute.Size = new Size(26, 26);
+            btnClearRoute.TabIndex = 4;
+            ttipCarrierUI.SetToolTip(btnClearRoute, "Clear route");
+            btnClearRoute.UseVisualStyleBackColor = true;
             btnClearRoute.Click += btnClearRoute_Click;
             // 
-            // lblLinkToSpansh
+            // btnOpenSpansh
             // 
-            lblLinkToSpansh.AutoSize = true;
-            lblLinkToSpansh.Location = new Point(168, 3);
-            lblLinkToSpansh.Margin = new Padding(4, 3, 4, 3);
-            lblLinkToSpansh.Name = "lblLinkToSpansh";
-            lblLinkToSpansh.Size = new Size(90, 15);
-            lblLinkToSpansh.TabIndex = 2;
-            lblLinkToSpansh.TabStop = true;
-            lblLinkToSpansh.Text = "View on Spansh";
-            lblLinkToSpansh.LinkClicked += lblLinkToSpansh_LinkClicked;
+            btnOpenSpansh.FlatAppearance.BorderSize = 0;
+            btnOpenSpansh.FlatStyle = FlatStyle.Flat;
+            btnOpenSpansh.Location = new Point(67, 3);
+            btnOpenSpansh.Name = "btnOpenSpansh";
+            btnOpenSpansh.Padding = new Padding(1);
+            btnOpenSpansh.Size = new Size(26, 26);
+            btnOpenSpansh.TabIndex = 5;
+            ttipCarrierUI.SetToolTip(btnOpenSpansh, "Open route on Spansh");
+            btnOpenSpansh.UseVisualStyleBackColor = true;
+            btnOpenSpansh.Click += btnOpenSpansh_Click;
             // 
             // clbRoute
             // 
             clbRoute.ContextMenuStrip = ctxRouteMenu;
             clbRoute.Dock = DockStyle.Fill;
             clbRoute.FormattingEnabled = true;
-            clbRoute.Location = new Point(484, 59);
+            clbRoute.Location = new Point(527, 59);
             clbRoute.Margin = new Padding(4, 3, 4, 3);
             clbRoute.Name = "clbRoute";
             tlpCarrierLayout.SetRowSpan(clbRoute, 5);
-            clbRoute.Size = new Size(312, 228);
+            clbRoute.Size = new Size(342, 266);
             clbRoute.TabIndex = 15;
             clbRoute.MouseDown += clbRoute_MouseDown;
             // 
@@ -339,19 +322,19 @@
             // 
             tlpCarrierLayout.SetColumnSpan(txtMessages, 2);
             txtMessages.Dock = DockStyle.Fill;
-            txtMessages.Location = new Point(164, 293);
+            txtMessages.Location = new Point(178, 331);
             txtMessages.Margin = new Padding(4, 3, 4, 3);
             txtMessages.Multiline = true;
             txtMessages.Name = "txtMessages";
             txtMessages.ReadOnly = true;
-            txtMessages.Size = new Size(632, 54);
+            txtMessages.Size = new Size(691, 54);
             txtMessages.TabIndex = 16;
             // 
             // lblMessages
             // 
             lblMessages.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblMessages.AutoSize = true;
-            lblMessages.Location = new Point(95, 293);
+            lblMessages.Location = new Point(109, 331);
             lblMessages.Margin = new Padding(4, 3, 4, 3);
             lblMessages.Name = "lblMessages";
             lblMessages.Size = new Size(61, 15);
@@ -362,14 +345,55 @@
             // 
             pbFuelLevel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pbFuelLevel.BackColor = SystemColors.Control;
-            pbFuelLevel.Location = new Point(167, 31);
+            pbFuelLevel.Location = new Point(181, 31);
             pbFuelLevel.Margin = new Padding(7);
             pbFuelLevel.MarqueeAnimationSpeed = 0;
             pbFuelLevel.Maximum = 1000;
             pbFuelLevel.Name = "pbFuelLevel";
-            pbFuelLevel.Size = new Size(306, 18);
+            pbFuelLevel.Size = new Size(335, 18);
             pbFuelLevel.Style = ProgressBarStyle.Continuous;
             pbFuelLevel.TabIndex = 18;
+            // 
+            // tableLayoutPanel1
+            // 
+            tableLayoutPanel1.ColumnCount = 2;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 36F));
+            tableLayoutPanel1.Controls.Add(lblTimerValue, 0, 0);
+            tableLayoutPanel1.Controls.Add(btnPopOutTimer, 1, 0);
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Location = new Point(177, 179);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            tableLayoutPanel1.RowCount = 1;
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.Size = new Size(343, 146);
+            tableLayoutPanel1.TabIndex = 19;
+            // 
+            // lblTimerValue
+            // 
+            lblTimerValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblTimerValue.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            lblTimerValue.Location = new Point(7, 6);
+            lblTimerValue.Margin = new Padding(7, 6, 7, 6);
+            lblTimerValue.Name = "lblTimerValue";
+            lblTimerValue.Size = new Size(293, 25);
+            lblTimerValue.TabIndex = 16;
+            lblTimerValue.Text = "0:00:00";
+            lblTimerValue.TextAlign = ContentAlignment.TopCenter;
+            // 
+            // btnPopOutTimer
+            // 
+            btnPopOutTimer.FlatAppearance.BorderSize = 0;
+            btnPopOutTimer.FlatStyle = FlatStyle.Flat;
+            btnPopOutTimer.ImageAlign = ContentAlignment.TopCenter;
+            btnPopOutTimer.Location = new Point(310, 3);
+            btnPopOutTimer.Name = "btnPopOutTimer";
+            btnPopOutTimer.Padding = new Padding(1);
+            btnPopOutTimer.Size = new Size(30, 30);
+            btnPopOutTimer.TabIndex = 17;
+            ttipCarrierUI.SetToolTip(btnPopOutTimer, "Open Timer in pop-out window");
+            btnPopOutTimer.UseVisualStyleBackColor = true;
+            btnPopOutTimer.Click += btnPopOutTimer_Click;
             // 
             // CarrierUI
             // 
@@ -380,12 +404,12 @@
             DoubleBuffered = true;
             Margin = new Padding(2);
             Name = "CarrierUI";
-            Size = new Size(800, 350);
+            Size = new Size(873, 388);
             tlpCarrierLayout.ResumeLayout(false);
             tlpCarrierLayout.PerformLayout();
             flowLayoutPanel1.ResumeLayout(false);
-            flowLayoutPanel1.PerformLayout();
             ctxRouteMenu.ResumeLayout(false);
+            tableLayoutPanel1.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -404,17 +428,20 @@
         private Label lblNextJumpTitle;
         private Label lblNextJumpValue;
         private Label lblTimerTitle;
-        private Label lblTimerValue;
         private FlowLayoutPanel flowLayoutPanel1;
         private CheckedListBox clbRoute;
-        private Button btnNewRoute;
-        private Button btnClearRoute;
-        private LinkLabel lblLinkToSpansh;
         private ContextMenuStrip ctxRouteMenu;
         private ToolStripMenuItem ctxRouteMenu_CopySystemName;
         private ToolStripMenuItem ctxRouteMenu_SetCurrentPosition;
         private TextBox txtMessages;
         private Label lblMessages;
         private ProgressBar pbFuelLevel;
+        private TableLayoutPanel tableLayoutPanel1;
+        private Label lblTimerValue;
+        private UI.ThemeableIconButton btnPopOutTimer;
+        private ToolTip ttipCarrierUI;
+        private UI.ThemeableIconButton btnNewRoute;
+        private UI.ThemeableIconButton btnClearRoute;
+        private UI.ThemeableIconButton btnOpenSpansh;
     }
 }

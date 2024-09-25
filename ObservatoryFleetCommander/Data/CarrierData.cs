@@ -2,8 +2,10 @@
 using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -13,11 +15,17 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
     public class CarrierData
     {
+        private const int COOLDOWN_MINUTES = 5;
         private const string UNNAMED = "(unnamed)";
 
         private bool _deserialized = false;
         private CarrierStats _lastStats;
+        private System.Timers.Timer _jumpTimer;
+        private System.Timers.Timer _cooldownTimer;
+        private System.Timers.Timer _ticker = new(1000);
+        private DateTime _lastCooldownDateTime = DateTime.MinValue;
 
+        public event PropertyChangedEventHandler PropertyChanged;
 
         // Only to be used for JSON Deserialization.
         public CarrierData()
@@ -128,6 +136,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 
         public long CapacityUsed { get; set; }
 
+        public long CarrierBalance { get; set; }
+
         [JsonIgnore]
         public CarrierStats LastCarrierStats
         {
@@ -138,6 +148,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                 {
                     CarrierName = value.Name;
                     CapacityUsed = value.SpaceUsage.TotalCapacity - value.SpaceUsage.FreeSpace;
+                    CarrierBalance = value.Finance.CarrierBalance;
+
                     _lastStats = value;
                     _deserialized = false;
                 }
@@ -151,7 +163,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             get
             {
                 if (LastCarrierJumpRequest != null
-                    && !string.IsNullOrEmpty(LastCarrierJumpRequest.DepartureTime)) {
+                    && !string.IsNullOrEmpty(LastCarrierJumpRequest.DepartureTime))
+                {
                     return LastCarrierJumpRequest.DepartureTimeDateTime;
                 }
                 return DateTime.MinValue;
@@ -168,6 +181,29 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             }
         }
 
+        [JsonIgnore]
+        public DateTime CooldownDateTime
+        {
+            get
+            {
+                if (LastCarrierJumpRequest != null
+                    && !string.IsNullOrEmpty(LastCarrierJumpRequest.DepartureTime))
+                {
+                    // We have a jump request. Ensure our cached cooldown is up-to-date
+                    if (_lastCooldownDateTime < DateTime.Now && _lastCooldownDateTime > DateTime.MinValue)
+                    {
+                        if (LastCarrierJumpRequest.DepartureTimeDateTime > DateTime.Now)
+                            _lastCooldownDateTime = LastCarrierJumpRequest.DepartureTimeDateTime.AddMinutes(COOLDOWN_MINUTES);
+                        else
+                            _lastCooldownDateTime = DateTime.MinValue;
+                    }
+
+                    return _lastCooldownDateTime;
+                }
+                return DateTime.MinValue;
+            }
+        }
+
         public CarrierPositionData Position { get; set; }
 
         [JsonIgnore]
@@ -180,13 +216,27 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         public bool CooldownNotifyScheduled { get => CarrierCooldownTimer != null; }
 
         [JsonIgnore]
-        internal System.Timers.Timer CarrierCooldownTimer { get; set; }
+        internal System.Timers.Timer CarrierCooldownTimer
+        {
+            get => _cooldownTimer;
+            set => _cooldownTimer = value;
+        }
 
         [JsonIgnore]
         public bool CarrierJumpTimerScheduled { get => CarrierJumpTimer != null; }
 
         [JsonIgnore]
-        internal System.Timers.Timer CarrierJumpTimer { get; set; }
+        internal System.Timers.Timer CarrierJumpTimer
+        { 
+            get => _jumpTimer; 
+            set => _jumpTimer = value;
+        }
+
+        [JsonIgnore]
+        public System.Timers.Timer Ticker
+        {
+            get => _ticker;
+        }
 
         public void CancelCarrierJump()
         {
@@ -206,6 +256,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                 CarrierJumpTimer.Stop();
                 CarrierJumpTimer = null;
             }
+            _lastCooldownDateTime = DateTime.MinValue;
         }
 
         public bool MaybeUpdateLocation(CarrierPositionData newPosition)

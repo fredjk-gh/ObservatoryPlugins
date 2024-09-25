@@ -24,11 +24,23 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         private Location _initialLocation = null;
         private CarrierManager _manager = new();
         private CommanderUI _ui;
+        private AboutInfo _aboutInfo = new()
+        {
+            FullName = "Fleet Commander",
+            ShortName = "Commander",
+            Description = "Fleet Commander is an essential assistant for Carrier owners.",
+            AuthorName = "fredjk-gh",
+            Links = new()
+            {
+                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
+                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Fleet-Commander"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fleetcommander"),
+            }
+        };
 
         #region Worker Interface 
 
-        public string Name => "Observatory Fleet Commander";
-        public string ShortName => "Commander";
+        public AboutInfo AboutInfo => _aboutInfo;
         public string Version => typeof(Commander).Assembly.GetName().Version.ToString();
         public PluginUI PluginUI => pluginUI;
 
@@ -85,6 +97,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 }
             }
         }
+
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
@@ -181,7 +194,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                         {
                             Title = "Carrier Jump Scheduled",
                             Detail = $"Jump is in {departureTimeMinutes:#.0} minutes",
-                            Sender = ShortName,
+                            Sender = AboutInfo.ShortName,
                         });
                         Core.ExecuteOnUIThread(() =>
                         {
@@ -335,7 +348,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                         Title = "Carrier Status Update",
                         Detail = locationUpdateDetails,
                         ExtendedDetails = $"Carrier has jumped{fromPositionText} to {position.BodyName}.",
-                        Sender = ShortName,
+                        Sender = AboutInfo.ShortName,
                         Rendering = (settings.NotifyJumpComplete ? NotificationRendering.All : NotificationRendering.PluginNotifier),
                     });
                 }
@@ -372,7 +385,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
             Core.ExecuteOnUIThread(() =>
             {
-                _ui.Get(data)?.InitCountdown(data.LastCarrierJumpRequest);
+                _ui.Get(data)?.InitCountdown();
             });
         }
 
@@ -423,7 +436,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     {
                         Title = "Low Fuel",
                         Detail = fuelDetails,
-                        Sender = ShortName,
+                        Sender = AboutInfo.ShortName,
                     });
                 }
             }
@@ -530,7 +543,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 Title = "Carrier Status Update",
                 Detail = "Jump cooldown is complete. You may now schedule a new jump.",
-                Sender = ShortName,
+                Sender = AboutInfo.ShortName,
             });
             data.CancelCarrierJump();
 

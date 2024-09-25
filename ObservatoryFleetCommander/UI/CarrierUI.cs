@@ -1,4 +1,5 @@
 ﻿using com.github.fredjk_gh.ObservatoryFleetCommander.Data;
+using com.github.fredjk_gh.ObservatoryFleetCommander.UI;
 using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
@@ -23,31 +24,27 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         private const string TIMER_JUMP_TITLE = "Jump timer:";
         private const string TIMER_JUMP_COOLDOWN = "Cooldown timer:";
 
-        private const int COOLDOWN_MINUTES = 5;
         private IObservatoryCore _core;
         private Commander _commanderPlugin;
         private CarrierManager _manager;
         private CarrierData _data;
-
-        // Countdown UI info.
-        private System.Timers.Timer _countdownTicker;
-        private DateTime _departureDateTime;
-        private DateTime _cooldownDateTime;
-
+        private CountdownTimerForm _timerForm;
         private string _selectedSystemName = "";
 
         public CarrierUI(IObservatoryCore core, Commander caller, CarrierManager manager, CarrierData data)
         {
             InitializeComponent();
+            btnPopOutTimer.SetIcon(Properties.Resources.OpenInNewIcon.ToBitmap(), new(32, 32));
+            btnNewRoute.SetIcon(Properties.Resources.RouteAddIcon.ToBitmap(), new(32, 32));
+            btnClearRoute.SetIcon(Properties.Resources.RouteClearIcon.ToBitmap(), new(32, 32));
+            btnOpenSpansh.SetIcon(Properties.Resources.OpenInBrowserIcon.ToBitmap(), new(32, 32));
 
             _core = core;
             _commanderPlugin = caller;
             _manager = manager;
             _data = data;
 
-            _countdownTicker = new System.Timers.Timer();
-            _countdownTicker.Interval = 1000;
-            _countdownTicker.Elapsed += Countdown_Tick;
+            _data.Ticker.Elapsed += Countdown_Tick;
 
             if (!core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
             {
@@ -73,7 +70,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (_data.LastCarrierJumpRequest != null)
             {
                 lblNextJumpValue.Text = _data.LastCarrierJumpRequest.SystemName;
-                InitCountdown(_data.LastCarrierJumpRequest);
+                InitCountdown();
             }
             else
             {
@@ -86,26 +83,23 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             SetMessage(msg);
         }
 
-        public void InitCountdown(CarrierJumpRequest jumpRequest)
+        public void InitCountdown()
         {
-            if (IsReadAll || jumpRequest == null || string.IsNullOrWhiteSpace(jumpRequest.DepartureTime)) return;
-
-            _departureDateTime = jumpRequest.DepartureTimeDateTime;
-            _cooldownDateTime = _departureDateTime.AddMinutes(COOLDOWN_MINUTES); ;
+            if (IsReadAll || !(_data.CarrierJumpTimerScheduled || _data.CooldownNotifyScheduled)) return;
 
             var nextSystem = new CarrierPositionData(_data.LastCarrierJumpRequest);
             int estFuelUsage = _data.EstimateFuelForJumpFromCurrentPosition(nextSystem, _core);
             if (estFuelUsage > 0)
             {
-                lblNextJumpValue.Text = $"{_data.LastCarrierJumpRequest.SystemName} @ {_departureDateTime.ToShortTimeString()}{Environment.NewLine}Estimated fuel usage: {estFuelUsage} T";
+                lblNextJumpValue.Text = $"{_data.LastCarrierJumpRequest.SystemName} @ {_data.DepartureDateTime.ToShortTimeString()}{Environment.NewLine}Estimated fuel usage: {estFuelUsage} T";
             }
             else
             {
-                lblNextJumpValue.Text = $"{_data.LastCarrierJumpRequest.SystemName} @ {_departureDateTime.ToShortTimeString()}";
+                lblNextJumpValue.Text = $"{_data.LastCarrierJumpRequest.SystemName} @ {_data.DepartureDateTime.ToShortTimeString()}";
             }
 
             UpdateCountdown();
-            _countdownTicker.Start();
+            _data.Ticker.Start();
         }
 
         public void SetMessage(string message)
@@ -120,23 +114,24 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (IsReadAll) return;
 
-            _countdownTicker.Stop();
+            _data.Ticker.Stop();
             lblNextJumpValue.Text = "(none scheduled)";
             lblTimerTitle.Visible = false;
             lblTimerValue.Visible = false;
+            btnPopOutTimer.Visible = false;
 
             SetMessage(msg);
         }
 
         public void JumpScheduled(bool initTimersToo = false)
         {
-            if (IsReadAll || _data.LastCarrierJumpRequest == null) return;
+            if (IsReadAll || !_data.CarrierJumpTimerScheduled) return;
 
             var jumpTargetBody = (!string.IsNullOrEmpty(_data.LastCarrierJumpRequest.Body)) ? _data.LastCarrierJumpRequest.Body : _data.LastCarrierJumpRequest.SystemName;
-            double departureTimeMins = _departureDateTime.Subtract(DateTime.Now).TotalMinutes;
-            if (initTimersToo) InitCountdown(_data.LastCarrierJumpRequest);
+            double departureTimeMins = _data.DepartureDateTime.Subtract(DateTime.Now).TotalMinutes;
+            if (initTimersToo) InitCountdown();
             if (departureTimeMins > 0)
-                SetMessage($"Requested a jump to {jumpTargetBody}. Jump in {departureTimeMins:#.0} minutes (@ {_departureDateTime.ToShortTimeString()}).");
+                SetMessage($"Requested a jump to {jumpTargetBody}. Jump in {departureTimeMins:#.0} minutes (@ {_data.DepartureDateTime.ToShortTimeString()}).");
         }
 
         public void UpdatePosition(CarrierPositionData position, string msg = "")
@@ -177,13 +172,13 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (IsReadAll) return;
 
-            if (_data.LastCarrierStats == null)
+            if (_data.CarrierBalance == 0)
             {
                 lblBalanceValue.Text = "(unknown)";
                 return;
             }
 
-            lblBalanceValue.Text = $"{_data.LastCarrierStats.Finance.CarrierBalance:n0} Cr";
+            lblBalanceValue.Text = $"{_data.CarrierBalance:n0} Cr";
 
             SetMessage(msg);
         }
@@ -201,24 +196,26 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         private void UpdateCountdown() // UI Thread
         {
-            if (IsReadAll) return;
+            if (IsReadAll || !(_data.CarrierJumpTimerScheduled || _data.CooldownNotifyScheduled)) return;
 
-            if (DateTime.Now.CompareTo(_departureDateTime) < 0)
+            if (_data.CarrierJumpTimerScheduled && DateTime.Now.CompareTo(_data.DepartureDateTime) < 0)
             {
                 if (!lblTimerTitle.Visible) lblTimerTitle.Visible = true;
                 if (!lblTimerValue.Visible) lblTimerValue.Visible = true;
+                if (!btnPopOutTimer.Visible) btnPopOutTimer.Visible = true;
 
                 lblTimerTitle.Text = TIMER_JUMP_TITLE;
-                lblTimerValue.Text = $"{_departureDateTime.Subtract(DateTime.Now).ToString(@"h\:mm\:ss")}";
+                lblTimerValue.Text = $"{_data.DepartureDateTime.Subtract(DateTime.Now).ToString(@"h\:mm\:ss")}";
             }
-            else if (DateTime.Now.CompareTo(_cooldownDateTime) <= 0)
+            else if (_data.CooldownNotifyScheduled && DateTime.Now.CompareTo(_data.CooldownDateTime) <= 0)
             {
                 if (!lblTimerTitle.Visible) lblTimerTitle.Visible = true;
                 if (!lblTimerValue.Visible) lblTimerValue.Visible = true;
+                if (!btnPopOutTimer.Visible) btnPopOutTimer.Visible = true;
 
                 lblNextJumpValue.Text = $"(completed)";
                 lblTimerTitle.Text = TIMER_JUMP_COOLDOWN;
-                lblTimerValue.Text = $"{_cooldownDateTime.Subtract(DateTime.Now).ToString(@"h\:mm\:ss")}";
+                lblTimerValue.Text = $"{_data.CooldownDateTime.Subtract(DateTime.Now).ToString(@"h\:mm\:ss")}";
             }
             else
             {
@@ -244,12 +241,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     CarrierPositionData.CachePosition(jump.SystemName, jump.Position);
                 }
                 btnClearRoute.Enabled = true;
-                lblLinkToSpansh.Enabled = !string.IsNullOrWhiteSpace(_data.Route.JobID);
+                btnOpenSpansh.Enabled = !string.IsNullOrWhiteSpace(_data.Route.JobID);
             }
             else
             {
                 btnClearRoute.Enabled = false;
-                lblLinkToSpansh.Enabled = false;
+                btnOpenSpansh.Enabled = false;
             }
         }
 
@@ -305,9 +302,30 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             clbRoute.Items.Clear();
             btnClearRoute.Enabled = false;
-            lblLinkToSpansh.Enabled = false;
+            btnOpenSpansh.Enabled = false;
 
             SetMessage(msg);
+        }
+
+        /// <summary> 
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+
+            // Custom: If countdown timer window is open, close it and clean up.
+            if (_timerForm != null && _timerForm.Visible)
+            {
+                _timerForm.Close();
+                @_timerForm.Dispose();
+                _timerForm = null;
+            }
         }
         #endregion
 
@@ -319,15 +337,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (label == null || string.IsNullOrWhiteSpace(label.Text)) return;
 
             Clipboard.SetText(label.Text);
-        }
-
-        private void lblLinkToSpansh_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            if (!_data.HasRoute || string.IsNullOrWhiteSpace(_data.Route.JobID)) return;
-
-            var url = $"https://spansh.co.uk/fleet-carrier/results/{_data.Route.JobID}";
-
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 
         private void ctxRouteMenu_SetCurrentPosition_Click(object sender, EventArgs e)
@@ -398,5 +407,29 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         }
 
         #endregion
+
+        private void btnPopOutTimer_Click(object sender, EventArgs e)
+        {
+            _timerForm = new CountdownTimerForm(_core, _data);
+            _core.RegisterControl(_timerForm);
+            _timerForm.Show();
+
+            _timerForm.FormClosed += TimerFormClosed;
+        }
+
+        private void TimerFormClosed(object sender, FormClosedEventArgs e)
+        {
+            _core.UnregisterControl(_timerForm);
+            _timerForm = null;
+        }
+
+        private void btnOpenSpansh_Click(object sender, EventArgs e)
+        {
+            if (!_data.HasRoute || string.IsNullOrWhiteSpace(_data.Route.JobID)) return;
+
+            var url = $"https://spansh.co.uk/fleet-carrier/results/{_data.Route.JobID}";
+
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
     }
 }
