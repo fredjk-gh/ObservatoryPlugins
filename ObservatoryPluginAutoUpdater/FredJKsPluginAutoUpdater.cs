@@ -13,9 +13,21 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
         private AutoUpdaterSettings _settings = new();
         private UIContext _context;
         private PluginUI _pluginUI;
+        private AboutInfo _aboutInfo = new()
+        {
+            FullName = "FredJK AutoUpdater",
+            ShortName = "AutoUpdater",
+            Description = "This plugin helps you install other plugins authored by fredjk-gh and keep them up-to-date after installation.",
+            AuthorName = "fredjk-gh",
+            Links = new()
+            {
+                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
+                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/bioinsights"),
+            }
+        };
 
-        public string Name => "FredJKs Plugin AutoUpdater";
-        public string ShortName => "FredJK AutoUpdater";
+        public AboutInfo AboutInfo => _aboutInfo;
 
         public string Version => typeof(FredJKsPluginAutoUpdater).Assembly.GetName().Version.ToString();
 
