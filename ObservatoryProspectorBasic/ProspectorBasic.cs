@@ -37,13 +37,22 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         private readonly TrackedStats _stats = new();
         private readonly Guid[] _prospectorNotifications = new Guid[2];
         private Guid _cargoNotification = Guid.Empty;
+        private AboutInfo _aboutInfo = new()
+        {
+            FullName = "Prospector Basic",
+            ShortName = "Prospector",
+            Description = "Prospector is a miner's must-have tool, assisting you through the entire prospecting and mining workflow.",
+            AuthorName = "fredjk-gh",
+            Links = new()
+            {
+                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
+                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/prospector"),
+            }
+        };
 
-        public string Name => "Observatory Prospector Basic";
-
-        public string ShortName => "Prospector";
-
+        public AboutInfo AboutInfo => _aboutInfo;
         public string Version => typeof(ProspectorBasic).Assembly.GetName().Version.ToString();
-
         public PluginUI PluginUI => pluginUI;
 
         public object Settings
@@ -273,7 +282,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             {
                 Core.SendNotification(new()
                 {
-                    Sender = ShortName,
+                    Sender = AboutInfo.ShortName,
                     CoalescingId =  e.Key.BodyID,
                     Title =  _data.GetBodyTitle(e.Key.BodyName),
                     Detail = $"Good source of synth mats",
@@ -319,7 +328,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
                 Core.SendNotification(new()
                 {
-                    Sender = ShortName,
+                    Sender = AboutInfo.ShortName,
                     CoalescingId = -22,
                     Title = "Surface materials available",
                     Detail = $"For {recipeName}",
@@ -375,7 +384,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 XPos = 83,
                 YPos = 15,
                 Rendering = NotificationRendering.NativeVisual,
-                Sender = ShortName,
+                Sender = AboutInfo.ShortName,
             };
             if (_cargoNotification == Guid.Empty)
             {
@@ -500,7 +509,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 Title = _data.GetBodyTitle(shortBodyName),
                 Detail = string.Join(", ", ringsOfInterest.Select(t => $"{t.RingType} Ring")),
                 ExtendedDetails = $"{detailsCommaSeparated}, {bodyDistance}",
-                Sender = ShortName,
+                Sender = AboutInfo.ShortName,
                 CoalescingId = scan.BodyID,
             });
         }
@@ -666,7 +675,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 {
                     Title = "Hotspots of interest",
                     Detail = $"{ringName} contains:{Environment.NewLine}{string.Join(Environment.NewLine, notificationDetail)}",
-                    Sender = ShortName,
+                    Sender = AboutInfo.ShortName,
                     CoalescingId = saaSignalsFound.BodyID,
                 });
             }
@@ -683,7 +692,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 XPos = 1,
                 YPos = ((index % 2) + 1) * 15,
                 Rendering = rendering,
-                Sender = ShortName,
+                Sender = AboutInfo.ShortName,
             };
             return args;
         }
