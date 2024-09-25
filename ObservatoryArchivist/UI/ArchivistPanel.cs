@@ -12,6 +12,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
     {
         private ArchivistContext _context;
         private TableLayoutPanel _tablePanel;
+        private ToolTip _ttip = new ToolTip();
 
         public ArchivistPanel(ArchivistContext context)
         {
@@ -47,15 +48,18 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             _context.UI.Dock = DockStyle.Fill;
 
             // Second row: Settings button.
-            var btnSettingsCog = new Button()
+            var btnSettingsCog = new ThemeableIconButton()
             {
+                Name = "btnSettingsCog",
                 FlatStyle = FlatStyle.Flat,
                 Margin = new(5),
-                AutoSize = true,
-                Text = "Settings",
+                Size = new(36, 36),
+                Padding = new(1),
             };
             btnSettingsCog.FlatAppearance.BorderSize = 0;
             btnSettingsCog.Click += btnSettingsCog_Click;
+            btnSettingsCog.SetIcon(Properties.Resources.SettingsIcon.ToBitmap(), btnSettingsCog.Size);
+            _ttip.SetToolTip(btnSettingsCog, "Open settings");
             _tablePanel.Controls.Add(btnSettingsCog);
         }
 

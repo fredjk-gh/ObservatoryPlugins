@@ -33,6 +33,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
             InitializeComponent();
 
+            btnOpenInViewer.SetIcon(Properties.Resources.OpenInNewIcon.ToBitmap(), new(32, 32));
+            btnOpenInSearch.SetIcon(Properties.Resources.SearchIcon.ToBitmap(), new(32, 32));
+
             Draw();
 
             _filterTimer.Tick += _filterTimer_Tick;

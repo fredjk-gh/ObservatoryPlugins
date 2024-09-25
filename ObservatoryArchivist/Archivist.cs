@@ -16,11 +16,22 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         private ArchivistPanel _archivistPanel;
         private ArchivistSettings settings = ArchivistSettings.DEFAULT;
         private ArchivistContext _context;
+        private AboutInfo _aboutInfo = new()
+        {
+            FullName = "Archivist",
+            ShortName = "Archivist",
+            Description = "The Archivist plugin captures exploration related journals and stores them in a database for later re-use.",
+            AuthorName = "fredjk-gh",
+            Links = new()
+            {
+                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
+                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Archivist"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/archivist"),
+            }
+        };
 
-        public string Name => "Observatory Archivist";
-        public string ShortName => "Archivist";
+        public AboutInfo AboutInfo => _aboutInfo;
         public string Version => typeof(Archivist).Assembly.GetName().Version.ToString();
-
         public PluginUI PluginUI => pluginUI;
 
         public object Settings

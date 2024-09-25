@@ -34,14 +34,14 @@
             tableLayoutPanel2 = new TableLayoutPanel();
             lblSystemName = new Label();
             txtSystemName = new TextBox();
-            btnOpenInSearch = new Button();
             lblMessages = new Label();
             txtMessages = new TextBox();
             lblLastRecord = new Label();
             txtLastEntry = new TextBox();
             lblRecordCommanderTitle = new Label();
             lblRecordCommanderValue = new Label();
-            btnOpenInViewer = new Button();
+            btnOpenInViewer = new ThemeableIconButton();
+            btnOpenInSearch = new ThemeableIconButton();
             tabSearch = new TabPage();
             tableLayoutPanel3 = new TableLayoutPanel();
             cboCommanderFilter = new ComboBox();
@@ -56,6 +56,7 @@
             copyToolStripMenuItem = new ToolStripMenuItem();
             viewToolStripMenuItem = new ToolStripMenuItem();
             btnResendAll = new Button();
+            ttipArchivistUI = new ToolTip(components);
             tabPanels.SuspendLayout();
             tabCurrentSystem.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
@@ -94,7 +95,6 @@
             tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
             tableLayoutPanel2.Controls.Add(lblSystemName, 0, 0);
             tableLayoutPanel2.Controls.Add(txtSystemName, 1, 0);
-            tableLayoutPanel2.Controls.Add(btnOpenInSearch, 2, 0);
             tableLayoutPanel2.Controls.Add(lblMessages, 0, 2);
             tableLayoutPanel2.Controls.Add(txtMessages, 1, 2);
             tableLayoutPanel2.Controls.Add(lblLastRecord, 0, 3);
@@ -102,16 +102,16 @@
             tableLayoutPanel2.Controls.Add(lblRecordCommanderTitle, 0, 1);
             tableLayoutPanel2.Controls.Add(lblRecordCommanderValue, 1, 1);
             tableLayoutPanel2.Controls.Add(btnOpenInViewer, 1, 3);
+            tableLayoutPanel2.Controls.Add(btnOpenInSearch, 2, 0);
             tableLayoutPanel2.Dock = DockStyle.Fill;
             tableLayoutPanel2.Location = new Point(3, 3);
             tableLayoutPanel2.Name = "tableLayoutPanel2";
             tableLayoutPanel2.RowCount = 5;
-            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
-            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
+            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 16.66666F));
-            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
+            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 83.3333359F));
-            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             tableLayoutPanel2.Size = new Size(598, 511);
             tableLayoutPanel2.TabIndex = 0;
             // 
@@ -121,7 +121,7 @@
             lblSystemName.AutoSize = true;
             lblSystemName.Location = new Point(3, 0);
             lblSystemName.Name = "lblSystemName";
-            lblSystemName.Size = new Size(83, 33);
+            lblSystemName.Size = new Size(83, 32);
             lblSystemName.TabIndex = 0;
             lblSystemName.Text = "System Name:";
             lblSystemName.TextAlign = ContentAlignment.MiddleRight;
@@ -137,24 +137,10 @@
             txtSystemName.Size = new Size(242, 23);
             txtSystemName.TabIndex = 1;
             // 
-            // btnOpenInSearch
-            // 
-            btnOpenInSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnOpenInSearch.AutoSize = true;
-            btnOpenInSearch.FlatAppearance.BorderSize = 0;
-            btnOpenInSearch.FlatStyle = FlatStyle.Flat;
-            btnOpenInSearch.Location = new Point(496, 3);
-            btnOpenInSearch.Name = "btnOpenInSearch";
-            btnOpenInSearch.Size = new Size(99, 27);
-            btnOpenInSearch.TabIndex = 2;
-            btnOpenInSearch.Text = "Open in Search";
-            btnOpenInSearch.UseVisualStyleBackColor = true;
-            btnOpenInSearch.Click += btnOpenInSearch_Click;
-            // 
             // lblMessages
             // 
             lblMessages.AutoSize = true;
-            lblMessages.Location = new Point(3, 69);
+            lblMessages.Location = new Point(3, 67);
             lblMessages.Margin = new Padding(3);
             lblMessages.Name = "lblMessages";
             lblMessages.Size = new Size(61, 15);
@@ -165,18 +151,18 @@
             // 
             tableLayoutPanel2.SetColumnSpan(txtMessages, 2);
             txtMessages.Dock = DockStyle.Fill;
-            txtMessages.Location = new Point(153, 69);
+            txtMessages.Location = new Point(153, 67);
             txtMessages.Multiline = true;
             txtMessages.Name = "txtMessages";
             txtMessages.ReadOnly = true;
-            txtMessages.Size = new Size(442, 62);
+            txtMessages.Size = new Size(442, 63);
             txtMessages.TabIndex = 3;
             // 
             // lblLastRecord
             // 
             lblLastRecord.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblLastRecord.AutoSize = true;
-            lblLastRecord.Location = new Point(3, 149);
+            lblLastRecord.Location = new Point(3, 147);
             lblLastRecord.Margin = new Padding(3);
             lblLastRecord.Name = "lblLastRecord";
             lblLastRecord.Size = new Size(115, 15);
@@ -187,21 +173,21 @@
             // 
             tableLayoutPanel2.SetColumnSpan(txtLastEntry, 3);
             txtLastEntry.Dock = DockStyle.Fill;
-            txtLastEntry.Location = new Point(3, 170);
+            txtLastEntry.Location = new Point(3, 168);
             txtLastEntry.Multiline = true;
             txtLastEntry.Name = "txtLastEntry";
             txtLastEntry.ReadOnly = true;
             txtLastEntry.ScrollBars = ScrollBars.Vertical;
-            txtLastEntry.Size = new Size(592, 338);
+            txtLastEntry.Size = new Size(592, 340);
             txtLastEntry.TabIndex = 5;
             // 
             // lblRecordCommanderTitle
             // 
             lblRecordCommanderTitle.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             lblRecordCommanderTitle.AutoSize = true;
-            lblRecordCommanderTitle.Location = new Point(3, 33);
+            lblRecordCommanderTitle.Location = new Point(3, 32);
             lblRecordCommanderTitle.Name = "lblRecordCommanderTitle";
-            lblRecordCommanderTitle.Size = new Size(77, 33);
+            lblRecordCommanderTitle.Size = new Size(77, 32);
             lblRecordCommanderTitle.TabIndex = 7;
             lblRecordCommanderTitle.Text = "Commander:";
             lblRecordCommanderTitle.TextAlign = ContentAlignment.MiddleLeft;
@@ -210,24 +196,40 @@
             // 
             lblRecordCommanderValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             lblRecordCommanderValue.AutoSize = true;
-            lblRecordCommanderValue.Location = new Point(153, 33);
+            lblRecordCommanderValue.Location = new Point(153, 32);
             lblRecordCommanderValue.Name = "lblRecordCommanderValue";
-            lblRecordCommanderValue.Size = new Size(0, 33);
+            lblRecordCommanderValue.Size = new Size(0, 32);
             lblRecordCommanderValue.TabIndex = 8;
             lblRecordCommanderValue.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // btnOpenInViewer
             // 
-            btnOpenInViewer.AutoSize = true;
             btnOpenInViewer.FlatAppearance.BorderSize = 0;
             btnOpenInViewer.FlatStyle = FlatStyle.Flat;
-            btnOpenInViewer.Location = new Point(153, 137);
+            btnOpenInViewer.Location = new Point(153, 136);
             btnOpenInViewer.Name = "btnOpenInViewer";
-            btnOpenInViewer.Size = new Size(101, 25);
-            btnOpenInViewer.TabIndex = 4;
-            btnOpenInViewer.Text = "Open in Viewer";
+            btnOpenInViewer.Padding = new Padding(1);
+            btnOpenInViewer.Size = new Size(26, 26);
+            btnOpenInViewer.TabIndex = 9;
+            ttipArchivistUI.SetToolTip(btnOpenInViewer, "Open latest record in JSON Viewer");
             btnOpenInViewer.UseVisualStyleBackColor = true;
             btnOpenInViewer.Click += btnOpenInViewer_Click;
+            // 
+            // btnOpenInSearch
+            // 
+            btnOpenInSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnOpenInSearch.BackColor = Color.Transparent;
+            btnOpenInSearch.FlatAppearance.BorderSize = 0;
+            btnOpenInSearch.FlatAppearance.MouseOverBackColor = Color.FromArgb(215, 215, 215);
+            btnOpenInSearch.FlatStyle = FlatStyle.Flat;
+            btnOpenInSearch.Location = new Point(569, 3);
+            btnOpenInSearch.Name = "btnOpenInSearch";
+            btnOpenInSearch.Padding = new Padding(1);
+            btnOpenInSearch.Size = new Size(26, 26);
+            btnOpenInSearch.TabIndex = 10;
+            ttipArchivistUI.SetToolTip(btnOpenInSearch, "Open in Search tab");
+            btnOpenInSearch.UseVisualStyleBackColor = false;
+            btnOpenInSearch.Click += btnOpenInSearch_Click;
             // 
             // tabSearch
             // 
@@ -422,7 +424,6 @@
         private TableLayoutPanel tableLayoutPanel2;
         private Label lblSystemName;
         private TextBox txtSystemName;
-        private Button btnOpenInSearch;
         private Label lblMessages;
         private TextBox txtMessages;
         private Label lblLastRecord;
@@ -440,6 +441,8 @@
         private Button btnResendAll;
         private Label lblRecordCommanderTitle;
         private Label lblRecordCommanderValue;
-        private Button btnOpenInViewer;
+        private ThemeableIconButton btnOpenInViewer;
+        private ThemeableIconButton btnOpenInSearch;
+        private ToolTip ttipArchivistUI;
     }
 }

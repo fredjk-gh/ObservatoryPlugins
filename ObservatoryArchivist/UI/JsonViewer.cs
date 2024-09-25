@@ -23,7 +23,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         public void ViewJson(string json)
         {
             txtJson.Text = PrettyPrintJson(json);
+            txtJson.Select(0, 0);
         }
+
         private string PrettyPrintJson(string rawJson)
         {
             JsonSerializerOptions opts = new()
