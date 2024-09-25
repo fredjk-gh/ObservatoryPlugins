@@ -3,6 +3,7 @@ using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
+using Observatory.Framework.Sorters;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 
@@ -10,6 +11,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
 {
     public class Helm : IObservatoryWorker
     {
+        private static readonly int MAX_FUEL = 99;
+
         private IObservatoryCore Core;
         /// <summary>
         /// Error logger; string param is an arbitrary context hint.
@@ -21,11 +24,21 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         private TrackedData data = new();
         private HashSet<string> incompleteSystemsNotified = new();
         private bool hasLoadedDestinations = false;
+        private AboutInfo _aboutInfo = new()
+        {
+            FullName = "Helm",
+            ShortName = "Helm",
+            Description = "Provides additional insights about your flight environment, route and some travel statistics.",
+            AuthorName = "fredjk-gh",
+            Links = new()
+            {
+                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
+                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Helm"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/helm"),
+            }
+        };
 
-        private static readonly int MAX_FUEL = 99;
-
-        public string Name => "Observatory Helm";
-        public string ShortName => "Helm";
+        public AboutInfo AboutInfo => _aboutInfo;
         public string Version => typeof(Helm).Assembly.GetName().Version.ToString();
         public PluginUI PluginUI => pluginUI;
 
@@ -118,7 +131,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                     {
                         Title = "New route",
                         Detail = "",
-                        Sender = ShortName,
+                        Sender = AboutInfo.ShortName,
                         ExtendedDetails = $"{data.CommanderData.JumpsRemainingInRoute} jumps to {data.CommanderData.Destination}",
                         Rendering = NotificationRendering.PluginNotifier,
                         CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
@@ -185,7 +198,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         {
                             Title = "Route Progress",
                             Detail = $"{data.CommanderData.JumpsRemainingInRoute} jumps remaining{(!string.IsNullOrEmpty(data.CommanderData.Destination) ? $" to {data.CommanderData.Destination}" : "")}",
-                            Sender = ShortName,
+                            Sender = AboutInfo.ShortName,
                             ExtendedDetails = arrivalStarScoopableStr,
                             Rendering = NotificationRendering.PluginNotifier,
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
@@ -197,7 +210,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             {
                                 Title = "Warning! Low fuel",
                                 Detail = $"Refuel soon! {arrivalStarScoopableStr}",
-                                Sender = ShortName,
+                                Sender = AboutInfo.ShortName,
                                 CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                             });
                             data.CommanderData.FuelWarningNotifiedSystem = jump.StarSystem;
@@ -258,7 +271,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                                 Title = "Warning! Low fuel",
                                 Detail = $"There is a scoopable star in this system!",
                                 ExtendedDetails = extendedDetails,
-                                Sender = ShortName,
+                                Sender = AboutInfo.ShortName,
                                 CoalescingId = scan.BodyID,
                             });
                             data.CommanderData.FuelWarningNotifiedSystem = data.CommanderData.CurrentSystem;
@@ -286,7 +299,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             Title = $"Body {BodyShortName(scan.BodyName, data.CommanderData.CurrentSystem)}",
                             Detail = $"Nearby scoopable secondary star",
                             ExtendedDetails = extendedDetails,
-                            Sender = ShortName,
+                            Sender = AboutInfo.ShortName,
                             CoalescingId = scan.BodyID,
                         });
                     }
@@ -305,7 +318,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             Title = "Warning! Low fuel!",
                             Detail = "There is no scoopable star in this system!",
                             ExtendedDetails = extendedDetails,
-                            Sender = ShortName,
+                            Sender = AboutInfo.ShortName,
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                     }
@@ -316,7 +329,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             Title = "FSS completed",
                             Detail = $"All {allFound.Count} bodies found",
                             Rendering = NotificationRendering.PluginNotifier,
-                            Sender = ShortName,
+                            Sender = AboutInfo.ShortName,
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                     }
@@ -338,7 +351,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         {
                             Title = $"Use caution when landing!",
                             Detail = $"Relatively high gravity: {gravityG:n1}g",
-                            Sender = ShortName,
+                            Sender = AboutInfo.ShortName,
                             CoalescingId = approachBody.BodyID,
                         });
                     }
@@ -360,7 +373,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 {
                     Title = "Incomplete system scan!",
                     Detail = $"The undiscovered system you are about to leave is not fully scanned!",
-                    Sender = ShortName,
+                    Sender = AboutInfo.ShortName,
                     CoalescingId = Constants.COALESCING_ID_SYSTEM,
                 });
             }
@@ -456,7 +469,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 {
                     Title = "Ready to re-plot route",
                     Detail = "Destination is in the system clipboard",
-                    Sender = ShortName,
+                    Sender = AboutInfo.ShortName,
                     ExtendedDetails = $"Destination: {data.CommanderData.Destination}",
                     Rendering = NotificationRendering.PluginNotifier,
                     CoalescingId = Constants.COALESCING_ID_HEADER,
