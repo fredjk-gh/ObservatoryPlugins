@@ -8,9 +8,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 {
     internal class Constants
     {
-        public const string TAG_HEADER_1_PREFIX = "H1_";
-        public const string TAG_HEADER_2_PREFIX = "H2_";
-        public const string TAG_HEADER_3_PREFIX = "H3_";
+        public const string TAG_INSPECT = "ColInspect";
+        public const string TAG_SENDER = "ColSender";
 
         public const string PLUGIN_SHORT_NAME = "Aggregator";
         public const string DETAIL_SEP = " | ";
@@ -32,6 +31,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             JOURNAL_WW,
         };
 
+        public const int ALERT_COALESCING_ID = -2; // preamble / alerts
         public const int SYSTEM_COALESCING_ID = -1;
         public const int DEFAULT_COALESCING_ID = 1001; // After bodies.
 

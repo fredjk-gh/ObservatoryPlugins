@@ -10,17 +10,17 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
 {
     internal class AggregatorUIPanel : Panel
     {
-        private const string TAG_INSPECT = "ColInspect";
-        private const string TAG_SENDER = "ColSender";
         private TrackedData _data;
         private List<AggregatorGrid> _readAllGridItems = new();
         private List<AggregatorGrid> gridItems = new();
 
+        private ToolStrip _tools;
         private DataGridView _dgvGrid;
 
         public AggregatorUIPanel(TrackedData data)
         {
             _data = data;
+            _data.Settings.PropertyChanged += Settings_PropertyChanged;
 
             #region Initialize Component code.
 
@@ -37,7 +37,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 EnableHeadersVisualStyles = false,
                 Location = new Point(0, 0),
                 RowHeadersWidth = 25,
-
+                Font = new Font(this.Font.FontFamily, this.Font.Size + (float)_data.Settings.FontSizeAdjustment)
             };
             _dgvGrid.SuspendLayout();
             SuspendLayout();
@@ -52,8 +52,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             DoubleBuffered = true;
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
-            // TODO: Set up columns.
-
+            // Set up columns.
             _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 HeaderText = "Title",
@@ -66,7 +65,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             });
             _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
             {
-                Tag = TAG_INSPECT,
+                Tag = Constants.TAG_INSPECT,
                 FlatStyle = FlatStyle.Flat,
                 HeaderText = "✅",
                 MinimumWidth = 30,
@@ -111,7 +110,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             });
             _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
             {
-                Tag = TAG_SENDER,
+                Tag = Constants.TAG_SENDER,
                 HeaderText = "Sender",
                 MinimumWidth = 100,
                 Name = "colSender",
@@ -129,10 +128,59 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
 
             Controls.Add(_dgvGrid);
 
+            _tools = new ToolStrip();
+            _tools.Name = "_tools";
+            _tools.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            _tools.Dock = DockStyle.Top;
+
+            var tsbInfo = new ToolStripButton()
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                Text = "ℹ️",
+                Name = "tsbInfo",
+            };
+            tsbInfo.Click += tsbInfo_Click;
+            _tools.Items.Add(tsbInfo);
+            var tsbSettings = new ToolStripButton()
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                Text = "⚙️",
+                Name = "tsbSettings",
+            };
+            tsbSettings.Click += tsbSettings_Click;
+            _tools.Items.Add(tsbSettings);
+
+            Controls.Add(_tools);
+
             _dgvGrid.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
             #endregion
+        }
+
+        private void tsbSettings_Click(object sender, EventArgs e)
+        {
+            _data.Core.OpenSettings(_data.Worker);
+        }
+
+        private void tsbInfo_Click(object sender, EventArgs e)
+        {
+            _data.Core.OpenAbout(_data.Worker);
+        }
+
+        private void Settings_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case "FontSizeAdjustment":
+                    _dgvGrid.Font = new Font(this.Font.FontFamily, this.Font.Size + (float)_data.Settings.FontSizeAdjustment);
+                    RepaintAll();
+                    break;
+                case "ShowAllBodySummaries":
+                    SetGridItems(_data.ToGrid());
+                    RepaintAll();
+                    break;
+            }
         }
 
         private void Grid_BackgroundColorChanged(object sender, EventArgs e)
@@ -177,26 +225,28 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
 
         private void Grid_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            // TODO: Reflect this in the underlying data structure and have the appropriate AggregatorGrid 
             DataGridView? dataGridView = sender as DataGridView;
             if (dataGridView == null) return;
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return; // Clicked a header; Ignore
 
             string colTag = (dataGridView.Columns[e.ColumnIndex].Tag ?? "").ToString();
-            if (colTag == TAG_INSPECT) // Inspect column
+            var row = dataGridView.Rows[e.RowIndex];
+            if (colTag == Constants.TAG_INSPECT) // Inspect column
             {
                 // Inspect Column.
-                var inspectCell = dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                var inspectCell = row.Cells[e.ColumnIndex];
 
-                VisitedState currentState = VisitedStates.FromString((string)inspectCell.Value);
-                var newState = currentState.NextState().ToEmojiSpec();
-                inspectCell.Value = newState.Text;
-                inspectCell.ToolTipText = newState.Description;
+                AggregatorGrid data = row.Tag as AggregatorGrid;
+                if (data != null && data.State != VisitedState.None)
+                {
+                    VisitedState currentState = data.State;
+                    data.State = currentState.NextState(); // Also updates the UI.
+                }
             }
-            else if (colTag == TAG_SENDER)
+            else if (colTag == Constants.TAG_SENDER)
             {
                 // Sender column
-                var senderCell = dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                var senderCell = row.Cells[e.ColumnIndex];
                 _data.Core.FocusPlugin((string)senderCell.Value);
             }
         }
@@ -209,8 +259,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return; // Header cells or last row.
 
             var row = dgv.Rows[e.RowIndex];
-            string rowTag = (row.Tag ?? "").ToString();
-            if (rowTag.StartsWith(Constants.TAG_HEADER_2_PREFIX))
+            AggregatorGrid rowData = row.Tag as AggregatorGrid;
+            if (rowData != null && rowData.RowStyle == AggregatorRowStyle.H2)
             {
                 // Body summary row.
                 e.Paint(e.CellBounds, DataGridViewPaintParts.All & ~DataGridViewPaintParts.Border);

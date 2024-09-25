@@ -21,23 +21,29 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private TrackedData _data = new();
         private AggregatorUIPanel _ui;
         private List<AggregatorGrid> _readAllGridItems = new();
+        private AboutInfo _aboutInfo = new()
+        {
+            FullName = $"Notification {Constants.PLUGIN_SHORT_NAME}",
+            ShortName = Constants.PLUGIN_SHORT_NAME,
+            Description = "The Aggregator plugin is a notification log -- collecting notifications from all other plugins into one place to reduce the number of times you need to switch between plugins.",
+            AuthorName = "fredjk-gh",
+            Links = new()
+            {
+                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
+                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/aggregator"),
+            }
+        };
 
-        public string Name => "Observatory Aggregator";
-
-        public string ShortName => Constants.PLUGIN_SHORT_NAME;
-
+        public AboutInfo AboutInfo => _aboutInfo;
         public string Version => typeof(Aggregator).Assembly.GetName().Version.ToString();
-
         public PluginUI PluginUI => _pluginUI;
-
-        public IObservatoryComparer ColumnSorter => new NoOpColumnSorter();
 
         public object Settings
         {
             get => settings;
             set {
                 settings = (AggregatorSettings)value;
-                settings.OpenAggregatorWiki = OpenWikiUrl;
 
                 _data.ApplySettings(settings);
             }
@@ -107,11 +113,11 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     _data.CurrentShip = loadout.ShipName;
                     break;
                 case FSSDiscoveryScan dScan:
-                    _data.CurrentSystem.DiscoveryScan = dScan;
+                    _data.AddDiscoveryScan(dScan);
                     RedrawGrid();
                     break;
                 case FSSAllBodiesFound allFound:
-                    _data.CurrentSystem.AllBodiesFound = allFound;
+                    _data.AddAllBodiesFound(allFound);
                     RedrawGrid();
                     break;
                 case FSSBodySignals bodySignals:
@@ -137,6 +143,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     break;
                 case SAAScanComplete scanComplete:
                     _data.AddScanComplete(scanComplete);
+                    _data.MarkVisited(scanComplete.BodyID);
+                    RedrawGrid();
+                    break;
+                //case ApproachBody approachBody:
+                //    _data.MarkVisited(approachBody.BodyID);
+                //    RedrawGrid();
+                //    break;
+                case Touchdown touchdown:
+                    _data.MarkVisited(touchdown.BodyID);
                     RedrawGrid();
                     break;
             }
@@ -210,17 +225,17 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     if (string.IsNullOrEmpty(details[i].Trim()) && (i >= extDetails.Length || string.IsNullOrEmpty(extDetails[i].Trim()))) continue;
 
                     // Clone the core bits we care about but split the detail/extdetails.
-                    NotificationData split = new(
+                    NotificationData split = new(_data,
                         _data.CurrentSystem.Name, args.Sender, args.Title, details[i], (i < extDetails.Length ? extDetails[i] : ""), args.CoalescingId ?? Constants.DEFAULT_COALESCING_ID);
 
-                    if (shouldShow(split))
+                    if (ShouldShow(split))
                         notifications.Add(split);
                 }
             }
             else
             {
-                NotificationData nData = new(_data.CurrentSystem.Name, args);
-                if (shouldShow(nData))
+                NotificationData nData = new(_data, _data.CurrentSystem.Name, args);
+                if (ShouldShow(nData))
                     notifications.Add(nData);
             }
 
@@ -232,12 +247,12 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             // Check for Pre-read too?
             if ((Core.CurrentLogMonitorState & LogMonitorState.Realtime) != 0)
             {
-                var gridItems = _data.ToGrid(false);
+                var gridItems = _data.ToGrid();
                 _ui.SetGridItems(gridItems);
             }
         }
 
-        private bool shouldShow(NotificationData nData)
+        private bool ShouldShow(NotificationData nData)
         {
             var show = true;
             foreach (string f in settings.Filters)

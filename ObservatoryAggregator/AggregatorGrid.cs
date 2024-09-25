@@ -5,10 +5,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Windows.Forms.AxHost;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace com.github.fredjk_gh.ObservatoryAggregator
 {
+    public enum AggregatorRowStyle
+    {
+        Default,
+        H1,
+        H2,
+    }
+
     public class AggregatorGrid
     {
         private TrackedData _allData;
@@ -16,13 +24,14 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private SystemSummary _systemSummary;
         private BodySummary _bodySummary;
         private NotificationData _notificationData;
-        //private DataGridViewRow _myRow;
+        private VisitedState _visitedState = VisitedState.None;
+        private DataGridViewRow _myRow;
 
 
         internal AggregatorGrid()
         {
+            RowStyle = AggregatorRowStyle.Default;
             Title = "";
-            State = VisitedState.None;
             Detail = "";
             ExtendedDetails = "";
             Flags = new();
@@ -34,9 +43,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             _allData = data;
             _cid = Constants.SYSTEM_COALESCING_ID;
             _systemSummary = data.CurrentSystem;
-            Tag = $"{Constants.TAG_HEADER_1_PREFIX}{Constants.SYSTEM_COALESCING_ID}";
+            RowStyle = AggregatorRowStyle.H1;
+
+            // Consider making these these properties read from the underlying object(s) for always-fresh row generation.
             Title = data.CurrentSystem.Name;
-            State = VisitedState.None;
             Detail = data.CurrentSystem.GetDetailString();
             ExtendedDetails = data.GetCommanderAndShipString();
             Flags = data.CurrentSystem.GetFlagEmoji(data);
@@ -48,12 +58,13 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             _allData = data;
             _cid = bodySummary.BodyID;
             _bodySummary = bodySummary;
-            Tag = $"{Constants.TAG_HEADER_2_PREFIX}{bodySummary.BodyID}";
+            RowStyle = AggregatorRowStyle.H2;
+
+            // Consider making these these properties read from the underlying object(s) for always-fresh row generation.
             Title = $"{Constants.BODY_NESTING_INDICATOR}{bodySummary.GetBodyNameDisplayString()}";
-            State = VisitedState.None;
             Detail = bodySummary.GetBodyType();
             ExtendedDetails = bodySummary.GetDetailsString();
-            Flags = bodySummary.GetFlagEmoji();  // TODO make this return flag specs.
+            Flags = bodySummary.GetFlagEmoji();
             Sender = "";
         }
 
@@ -62,9 +73,11 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             _allData = data;
             _cid = notification.CoalescingID;
             _notificationData = notification;
-            Tag = $"{Constants.TAG_HEADER_3_PREFIX}{notification.CoalescingID}";
+            RowStyle = AggregatorRowStyle.Default;
+
+            // Consider making these these properties read from the underlying object(s) for always-fresh row generation.
             Title = notification.GetTitleDisplayString(suppressedTitle);
-            State = VisitedState.MarkForVisit;
+            _visitedState = notification.VisitedState;
             Detail = notification.Detail;
             ExtendedDetails = notification.ExtendedDetails;
             Flags = new();
@@ -75,22 +88,49 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             _allData = data;
             _cid = coalescingId;
-            Tag = $"{Constants.TAG_HEADER_2_PREFIX}{coalescingId}";
+            RowStyle = AggregatorRowStyle.H2;
             Title = coalescingGroupTitle;
-            State = VisitedState.None;
             Detail = "";
             ExtendedDetails = "";
             Flags = new();
             Sender = "";
         }
 
-        internal string Tag { get; init; }
+        internal int CoalescingId { get => _cid; }
+        internal AggregatorRowStyle RowStyle { get; init; }
 
         //internal int RowId { get => _myRow != null ? _myRow.Index : -1; }
 
         public string Title { get; init; }
 
-        public VisitedState State { get; set; }
+        public VisitedState State
+        {
+            get => _visitedState;
+            set
+            {
+                bool changed = _visitedState != value;
+                _visitedState = value;
+                if (_notificationData != null && _notificationData.VisitedState != value)
+                {
+                    // Note that setting this may call back in a re-entrant way. Hence there's a bunch of checks for
+                    // if the value has actually changed so as to avoid infinite recursion and/or unnecessary UI updates.
+                    _notificationData.VisitedState = value;
+                }
+                if (changed)
+                {
+                    _allData.Core.ExecuteOnUIThread(() =>
+                    {
+                        DataGridViewButtonCell cell = _myRow.Cells["colTracking"] as DataGridViewButtonCell;
+                        if (cell != null)
+                        {
+                            var emojiData = _visitedState.ToEmojiSpec();
+                            cell.Value = emojiData.Text;
+                            cell.ToolTipText = emojiData.Description;
+                        }
+                    });
+                }
+            }
+        }
 
         public string Detail { get; init; }
 
@@ -105,7 +145,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             //if (_myRow != null) return _myRow.Index;
 
-            var _myRow = new DataGridViewRow() { Tag = Tag };
+            _myRow = new DataGridViewRow() { Tag = this };
 
             if (_systemSummary != null)
             {
@@ -191,7 +231,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     BackColor = dgv.BackgroundColor,
                 };
             }
-            else if (_allData != null && !string.IsNullOrWhiteSpace(Tag))
+            else if (_allData != null && RowStyle == AggregatorRowStyle.H2)
             {
                 // Generic H2 group header, Title only.
                 _myRow.Cells.Add(new DataGridViewTextBoxCell() { Value = Title });

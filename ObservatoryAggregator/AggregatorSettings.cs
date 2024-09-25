@@ -1,20 +1,24 @@
 ﻿using Observatory.Framework;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("ObservatoryPlugins.Tests")]
 namespace com.github.fredjk_gh.ObservatoryAggregator
 {
     [SettingSuggestedColumnWidth(450)]
-    internal class AggregatorSettings
+    internal class AggregatorSettings : INotifyPropertyChanged
     {
-        public static readonly AggregatorSettings DEFAULT = new ()
+        public static readonly AggregatorSettings DEFAULT = new()
         {
             ShowAllBodySummaries = false,
+            FontSizeAdjustment = 0.0,
             FilterSpec = "",
         };
 
         private string _filterSpec = "";
         private List<String> _filters = new();
+        private bool _showAllBodySummaries = false;
+        private double _fontSizeAdjustment = 0.0;
 
         [SettingIgnore]
         public List<string> Filters { get => _filters; }
@@ -29,14 +33,35 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 _filters = value?.Split('|').ToList() ?? new();
             }
         }
-        // TODO: add button for filter help and/or UI for composing Filters?
 
         [SettingNewGroup("Display")]
         [SettingDisplayName("Show all body summaries even if no notification")]
-        public bool ShowAllBodySummaries { get; set; }
+        public bool ShowAllBodySummaries
+        { 
+            get => _showAllBodySummaries;
+            set
+            {
+                _showAllBodySummaries = value;
+                OnPropertyChanged("ShowAllBodySummaries");
+            }
+        }
 
-        [SettingDisplayName("Open Wiki (help, legend and info)")]
-        [System.Text.Json.Serialization.JsonIgnore]
-        public Action OpenAggregatorWiki { get; internal set; }
+        [SettingDisplayName("Font Size adjustment.")]
+        [SettingNumericBounds(-5.0, 10.0)]
+        public double FontSizeAdjustment
+        {
+            get => _fontSizeAdjustment;
+            set
+            {
+                _fontSizeAdjustment = value;
+                OnPropertyChanged("FontSizeAdjustment");
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        internal void OnPropertyChanged([CallerMemberName] string name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
     }
 }

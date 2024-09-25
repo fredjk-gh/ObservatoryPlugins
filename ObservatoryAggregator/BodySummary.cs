@@ -11,8 +11,31 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 {
     internal class BodySummary
     {
+        private TrackedData _allData;
+        private AggregatorGrid _gridItem = null;
+        private Scan _scan = null;
+
+        internal BodySummary(TrackedData allData)
+        {
+            _allData = allData; 
+        }
+
         public FSSBodySignals BodySignals { get; set; }
-        public Scan Scan { get; set; }
+        public Scan Scan
+        {
+            get => _scan;
+            set
+            {
+                _scan = value;
+                // Regenerate the grid item in case it was generated before the Scan (and thus doesn't have a short-name).
+                if (_gridItem != null)
+                {
+                    _gridItem = null;
+                    ToGrid();
+                }
+            }
+        }
+
         public SAAScanComplete ScanComplete { get; set; }
 
         // Ring scans???
@@ -161,6 +184,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 }
             }
             return parts;
+        }
+
+        public AggregatorGrid ToGrid()
+        {
+            if (_gridItem == null)
+            {
+                _gridItem = new(_allData, this);
+            }
+            return _gridItem;
         }
     }
 }

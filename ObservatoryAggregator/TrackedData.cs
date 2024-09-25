@@ -1,4 +1,5 @@
 ﻿using com.github.fredjk_gh.ObservatoryAggregator;
+using com.github.fredjk_gh.ObservatoryAggregator.UI;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
 using System;
@@ -15,17 +16,21 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
     {
         private Dictionary<int, List<NotificationData>> _notifications = new();
         private Dictionary<int, BodySummary> _bodies = new();
-        private Aggregator _worker;
         private AggregatorSettings _settings;
+        private AggregatorGrid _gridData;
+        private string _commander;
+        private string _ship;
 
         public void Load(IObservatoryCore core, Aggregator worker, AggregatorSettings settings)
         {
             Core = core;
-            _worker = worker;
+            Worker = worker;
             _settings = settings;
         }
 
-        public IObservatoryCore Core { get; private set; }
+        public IObservatoryCore Core { get; internal set; }
+        public Aggregator Worker { get; internal set; }
+
         public bool IsDirty { get; internal set; }
 
         public AggregatorSettings Settings { get => _settings; }
@@ -37,8 +42,25 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         }
 
         public SystemSummary CurrentSystem { get; private set; }
-        public string CurrentCommander { get; set; }
-        public string CurrentShip { get; set; }
+        public string CurrentCommander
+        {
+            get => _commander;
+            set
+            {
+                _commander = value;
+                IsDirty = true;
+            }
+        }
+
+        public string CurrentShip
+        { 
+            get => _ship;
+            set
+            {
+                _ship = value;
+                IsDirty = true;
+            }
+        }
 
         public Dictionary<int, List<NotificationData>> Notifications { get => _notifications; }
         public Dictionary<int, BodySummary> BodyData { get => _bodies; }
@@ -49,6 +71,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
             _notifications.Clear();
             _bodies.Clear();
+            _gridData = null;
             IsDirty = true;
         }
 
@@ -57,12 +80,17 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             return $"{CurrentCommander} - {CurrentShip}";
         }
 
-        public List<AggregatorGrid> ToGrid(bool isBatchMode)
+        public List<AggregatorGrid> ToGrid(bool isBatchMode = false)
         {
             bool haveCatchAllHeader = false;
             List<AggregatorGrid> gridItems = new();
 
-            gridItems.Add(new AggregatorGrid(this));
+            if (_gridData == null || IsDirty)
+            {
+                _gridData = new AggregatorGrid(this);
+                IsDirty = false;
+            }
+            gridItems.Add(_gridData);
 
             List<int> cIds;
             if (Settings.ShowAllBodySummaries)
@@ -77,14 +105,18 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 {
                     var bData = GetBody(cId);
                     bodyDisplayString = bData.GetBodyNameDisplayString();
-                    gridItems.Add(new AggregatorGrid(this, bData));
+                    gridItems.Add(bData.ToGrid());
                 }
                 else if (cId == Constants.SYSTEM_COALESCING_ID)
                 {
                     // No H2 summary row!
                     bodyDisplayString = "System";
                 }
-                else if (!haveCatchAllHeader)
+                else if (cId == Constants.ALERT_COALESCING_ID)
+                {
+                    gridItems.Add(new AggregatorGrid(this, "Alerts", cId));
+                }
+                else if (cId >= Constants.DEFAULT_COALESCING_ID && !haveCatchAllHeader)
                 {
                     gridItems.Add(new AggregatorGrid(this, "Other notifications"));
                     haveCatchAllHeader = true;
@@ -94,7 +126,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 {
                     foreach (var n in GetNotifications(cId))
                     {
-                        gridItems.Add(new AggregatorGrid(this, n, bodyDisplayString));
+                        gridItems.Add(n.ToGrid(bodyDisplayString));
                     }
                 }
             }
@@ -134,12 +166,36 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 .ScanComplete = scanComplete;
         }
 
+        public void MarkVisited(int bodyId)
+        {
+            if (!_notifications.ContainsKey(bodyId)) return;
+            
+            GetNotifications(bodyId)
+                .ForEach(n =>
+                {
+                    if (n.VisitedState == VisitedState.Unvisited)
+                        n.VisitedState = VisitedState.Visited;
+                });
+        }
+
         public BodySummary GetBody(int bodyID)
         {
             if (!_bodies.ContainsKey(bodyID))
-                _bodies[bodyID] = new();
+                _bodies[bodyID] = new(this);
 
             return _bodies[bodyID];
+        }
+
+        public void AddDiscoveryScan (FSSDiscoveryScan discoveryScan)
+        {
+            CurrentSystem.DiscoveryScan = discoveryScan;
+            IsDirty = true;
+        }
+
+        public void AddAllBodiesFound (FSSAllBodiesFound allBodiesFound)
+        {
+            CurrentSystem.AllBodiesFound = allBodiesFound;
+            IsDirty = true;
         }
     }
 }
