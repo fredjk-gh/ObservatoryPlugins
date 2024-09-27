@@ -24,16 +24,17 @@ After installation, be sure to look at the plugin's options and adjust as you li
 NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need to enable the "Use beta versions" option.
 
 *  Status: Released + Beta
-*  Download latest stable (Observatory Core <= 0.2.x): [ObservatoryPluginAutoUpdater-v0.24.005.1933.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.005.1933/ObservatoryPluginAutoUpdater-v0.24.005.1933.eop) (Jan 5, 2024)
-*  Download Beta (requires Observatory Core >= 0.3.x): [ObservatoryPluginAutoUpdater-v0.24.244.0345.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.244.0345/ObservatoryPluginAutoUpdater-v0.24.244.0345.eop)
+*  Download latest stable (requires Observatory Core >= 1.0.4): [ObservatoryPluginAutoUpdater-v1.0.0.27102.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.0.27102/ObservatoryPluginAutoUpdater-v1.0.0.27102.eop) (Sep 26, 2024)
+*  Download Beta (requires Observatory Core >= 1.0.4): [ObservatoryPluginAutoUpdater-v1.0.0.27102.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.0.27102/ObservatoryPluginAutoUpdater-v1.0.0.27102.eop) (Sep 26, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater)
 
 ## Aggregator
 
 The Aggregator plugin is a notification log -- collecting notifications from all other plugins into one place to reduce the number of times you need to switch between plugins.
 
-*  Status: Beta
-*  Download Beta (requires Observatory Core >= 0.3.x): [ObservatoryAggregator-v0.24.143.0119-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.143.0120-beta/ObservatoryAggregator-v0.24.143.0119-beta.eop) (May 21, 2024)
+*  Status: Released + Beta
+*  Download latest stable (Requires Observatory Core >= 1.0.4): [ObservatoryAggregator-v1.0.0.27102.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.0.27102/ObservatoryAggregator-v1.0.0.27102.eop) (Sept 26, 2024)
+*  Download Beta (requires Observatory Core >= 1.0.4): [ObservatoryAggregator-v1.0.0.27102.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.0.27102/ObservatoryAggregator-v1.0.0.27102.eop) (Sept 26, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator)
 
 ## Archivist

@@ -1,10 +1,15 @@
 [
     {
         "PluginName": "ObservatoryAggregator",
+        "Production": {
+            "Version": "1.0.0.27102",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.0.27102/ObservatoryAggregator-v1.0.0.27102.eop",
+            "MinRequiredCoreVersion": "1.0.4"
+        },
         "Beta":{
-            "Version": "0.24.143.0119",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.143.0120-beta/ObservatoryAggregator-v0.24.143.0119-beta.eop",
-            "MinRequiredCoreVersion": "0.3.24141.2140"
+            "Version": "1.0.0.27102",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.0.27102/ObservatoryAggregator-v1.0.0.27102.eop",
+            "MinRequiredCoreVersion": "1.0.4"
         }
     },
     {
@@ -38,14 +43,14 @@
     {
         "PluginName": "ObservatoryPluginAutoUpdater",
         "Production":{
-            "Version": "0.24.005.1933",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.005.1933/ObservatoryPluginAutoUpdater-v0.24.005.1933.eop",
-            "MinRequiredCoreVersion": "0.2.22141.1531"
+            "Version": "1.0.0.27102",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.0.27102/ObservatoryPluginAutoUpdater-v1.0.0.27102.eop",
+            "MinRequiredCoreVersion": "1.0.4"
         },
         "Beta":{
-            "Version": "0.24.244.0345",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.244.0345/ObservatoryPluginAutoUpdater-v0.24.244.0345.eop",
-            "MinRequiredCoreVersion": "0.3.24141.2140"
+            "Version": "1.0.0.27102",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.0.27102/ObservatoryPluginAutoUpdater-v1.0.0.27102.eop",
+            "MinRequiredCoreVersion": "1.0.4"
         }
     },
     {
