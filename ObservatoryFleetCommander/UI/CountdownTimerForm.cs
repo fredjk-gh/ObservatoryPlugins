@@ -98,7 +98,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 
         private void Countdown_Tick(object sender, ElapsedEventArgs e)
         {
-            RefreshDisplay();
+            _core.ExecuteOnUIThread(() =>
+            {
+                RefreshDisplay();
+            });
         }
 
         // Adapted from https://stackoverflow.com/questions/3083146/winforms-action-after-resize-event

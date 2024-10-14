@@ -88,7 +88,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (IsReadAll || !(_data.CarrierJumpTimerScheduled || _data.CooldownNotifyScheduled)) return;
 
             var nextSystem = new CarrierPositionData(_data.LastCarrierJumpRequest);
-            int estFuelUsage = _data.EstimateFuelForJumpFromCurrentPosition(nextSystem, _core);
+            int estFuelUsage = _data.EstimateFuelForJumpFromCurrentPosition(nextSystem, _core, _commanderPlugin);
             if (estFuelUsage > 0)
             {
                 lblNextJumpValue.Text = $"{_data.LastCarrierJumpRequest.SystemName} @ {_data.DepartureDateTime.ToShortTimeString()}{Environment.NewLine}Estimated fuel usage: {estFuelUsage} T";
@@ -163,7 +163,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (IsReadAll) return;
 
-            pbFuelLevel.Value = _data.CarrierFuel;
+            pbFuelLevel.Value = Math.Clamp(_data.CarrierFuel, pbFuelLevel.Minimum, pbFuelLevel.Maximum);
 
             SetMessage(msg);
         }
@@ -403,7 +403,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         }
         private void Countdown_Tick(object sender, ElapsedEventArgs e)
         {
-            UpdateCountdown();
+            _core.ExecuteOnUIThread(() =>
+            {
+                UpdateCountdown();
+            });
         }
 
         #endregion

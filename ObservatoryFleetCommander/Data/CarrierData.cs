@@ -60,14 +60,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         public string CarrierCallsign { get; set; }
         public int CarrierFuel { get; set; }
 
-        public int EstimateFuelForJumpFromCurrentPosition(CarrierPositionData newPosition, IObservatoryCore core)
+        public int EstimateFuelForJumpFromCurrentPosition(CarrierPositionData newPosition, IObservatoryCore core, IObservatoryWorker worker)
         {
             if (!IsPositionKnown || newPosition == null || LastCarrierStats == null) return 0; // Not enough data.
 
 
             // TODO: Consider using ID64CoordHelper to minimize lookups from edastro (with a cache in-play, do NOT set estimated coords to the StarPos property).
-            if (!Position.StarPos.HasValue) Position.StarPos = MaybeFetchStarPos(Position.SystemName, core);
-            if (!newPosition.StarPos.HasValue) newPosition.StarPos = MaybeFetchStarPos(newPosition.SystemName, core);
+            if (!Position.StarPos.HasValue) Position.StarPos = MaybeFetchStarPos(Position.SystemName, core, worker);
+            if (!newPosition.StarPos.HasValue) newPosition.StarPos = MaybeFetchStarPos(newPosition.SystemName, core, worker);
 
             // Ideal case: two detailed positions.
             int estFuelUsage = 0;
@@ -98,29 +98,32 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             return estFuelUsage;
         }
 
-        private (double x, double y, double z)? MaybeFetchStarPos(string systemName, IObservatoryCore core)
+        private (double x, double y, double z)? MaybeFetchStarPos(string systemName, IObservatoryCore core, IObservatoryWorker worker)
         {
             // We'll get rate-limited.
             if (core.IsLogMonitorBatchReading || string.IsNullOrEmpty(systemName)) return null;
 
             string url = $"https://edastro.com/api/starsystem?q={systemName}";
             string jsonStr = "";
-
+            JsonElement root;
             var jsonFetchTask = core.HttpClient.GetStringAsync(url);
             try
             {
                 jsonStr = jsonFetchTask.Result;
+                if (string.IsNullOrWhiteSpace(jsonStr)) return null;
+
+                using var jsonDoc = JsonDocument.Parse(jsonStr);
+                root = jsonDoc.RootElement;
             }
             catch (Exception ex)
             {
-                // core.GetPluginErrorLogger(this)(ex, $"Failed to fetch data from edastro.com for system: {systemName}");
+                core.GetPluginErrorLogger(worker)(ex, $"Failed to fetch data from edastro.com for system: {systemName}");
+
+                // Log the jsonStr to a file in plugin data for diagnosis.
+                var edastroSysResponseFile = $"{core.PluginStorageFolder}lastEdastroSystemResponse.json";
+                File.WriteAllText(edastroSysResponseFile, jsonStr);
                 return null;
             }
-
-            if (string.IsNullOrWhiteSpace(jsonStr)) return null;
-
-            using var jsonDoc = JsonDocument.Parse(jsonStr);
-            var root = jsonDoc.RootElement;
 
             // root[0].coordinates is an array of 3 doubles.
             if (root.GetArrayLength() > 0 && root[0].GetProperty("coordinates").GetArrayLength() == 3)

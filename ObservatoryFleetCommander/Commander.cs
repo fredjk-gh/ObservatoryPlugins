@@ -319,8 +319,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 // Skip fuel estimate for in-system jumps (as it appears sometimes it doesn't actually deduct the 5 T of fuel.
                 if (data.IsPositionKnown && data.Position.SystemName != position.SystemName)
                 {
-                    estFuelUsage = data.EstimateFuelForJumpFromCurrentPosition(position, Core);
-                    data.CarrierFuel -= estFuelUsage;
+                    estFuelUsage = data.EstimateFuelForJumpFromCurrentPosition(position, Core, this);
+                    data.CarrierFuel = Math.Clamp(data.CarrierFuel - estFuelUsage, 0, 1000);
                 }
 
                 if (data.HasRoute)
