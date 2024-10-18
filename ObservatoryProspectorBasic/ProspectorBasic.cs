@@ -15,7 +15,6 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
     {
         private bool enableDebug = false; // Not const to avoid unreachable code warnings.
 
-        private const int minRingDensity = 5;  // MT/km^3
         private const string LimpetDronesKey = "drones";
         private const string LimpetDronesName = "Limpets";
         private const string TritiumKey = "tritium";
@@ -474,7 +473,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     if (mentionableRings.HasFlag(rt) && ring.RingClass.Contains(rt.MatchString()))
                     {
                         double densityMTperkm3 = ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0)));
-                        if (densityMTperkm3 < minRingDensity)
+                        if (densityMTperkm3 < _settings.MinimumDensity)
                         {
                             Debug.WriteLineIf(enableDebug, $"Scan: Ignoring interesting ring with low density: {densityMTperkm3:n1}");
                             break;

@@ -15,6 +15,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             ShowProspectorNotifications = true,
             ShowCargoNotification = true,
             MinimumPercent = 10,
+            MinimumDensity = 5.0,
             ProspectTritium = true,
             ProspectPlatinum = true,
         };
@@ -62,6 +63,10 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         [SettingDisplayName("Minimum % content required to be 'good'")]
         [SettingNumericBounds(0.0, 66.0)]
         public double MinimumPercent { get; set; }
+
+        [SettingDisplayName("Minimum ring density to trigger notification (MT/km^3)")]
+        [SettingNumericBounds(0.0, 9.0)]
+        public double MinimumDensity { get; set; }
 
         public List<Commodities> DesirableCommonditiesByRingType(RingType ringType)
         {
