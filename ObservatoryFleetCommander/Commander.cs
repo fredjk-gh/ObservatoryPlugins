@@ -353,7 +353,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     });
                 }
                 MaybeScheduleTimers(data);
-                data.LastCarrierJumpRequest = null;
+                //data.LastCarrierJumpRequest = null;
             }
             data.MaybeUpdateLocation(position);
             SerializeDataCache();

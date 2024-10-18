@@ -20,12 +20,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 
         private bool _deserialized = false;
         private CarrierStats _lastStats;
+        private CarrierJumpRequest _lastJumpRequest;
         private System.Timers.Timer _jumpTimer;
         private System.Timers.Timer _cooldownTimer;
         private System.Timers.Timer _ticker = new(1000);
         private DateTime _lastCooldownDateTime = DateTime.MinValue;
-
-        public event PropertyChangedEventHandler PropertyChanged;
 
         // Only to be used for JSON Deserialization.
         public CarrierData()
@@ -112,8 +111,19 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                 jsonStr = jsonFetchTask.Result;
                 if (string.IsNullOrWhiteSpace(jsonStr)) return null;
 
-                using var jsonDoc = JsonDocument.Parse(jsonStr);
-                root = jsonDoc.RootElement;
+                using (var jsonDoc = JsonDocument.Parse(jsonStr))
+                {
+                    root = jsonDoc.RootElement;
+                    // root[0].coordinates is an array of 3 doubles.
+                    if (root.GetArrayLength() > 0 && root[0].GetProperty("coordinates").GetArrayLength() == 3)
+                    {
+                        var coordsArray = root[0].GetProperty("coordinates");
+
+                        (double x, double y, double z)? position = (
+                            coordsArray[0].GetDouble(), coordsArray[1].GetDouble(), coordsArray[2].GetDouble());
+                        return position;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -124,22 +134,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                 File.WriteAllText(edastroSysResponseFile, jsonStr);
                 return null;
             }
-
-            // root[0].coordinates is an array of 3 doubles.
-            if (root.GetArrayLength() > 0 && root[0].GetProperty("coordinates").GetArrayLength() == 3)
-            {
-                var coordsArray = root[0].GetProperty("coordinates");
-
-                (double x, double y, double z)? position = (
-                    coordsArray[0].GetDouble(), coordsArray[1].GetDouble(), coordsArray[2].GetDouble());
-                return position;
-            }
             return null;
         }
 
         public long CapacityUsed { get; set; }
 
         public long CarrierBalance { get; set; }
+
+        public DateTime StatsAsOfDate { get; set; }
 
         [JsonIgnore]
         public CarrierStats LastCarrierStats
@@ -152,6 +154,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                     CarrierName = value.Name;
                     CapacityUsed = value.SpaceUsage.TotalCapacity - value.SpaceUsage.FreeSpace;
                     CarrierBalance = value.Finance.CarrierBalance;
+                    StatsAsOfDate = value.TimestampDateTime;
 
                     _lastStats = value;
                     _deserialized = false;
@@ -159,7 +162,15 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             }
         }
 
-        public CarrierJumpRequest LastCarrierJumpRequest { get; set; }
+        public CarrierJumpRequest LastCarrierJumpRequest
+        {
+            get => _lastJumpRequest;
+            set
+            {
+                _lastCooldownDateTime = DateTime.MinValue; // Force update of cached value.
+                _lastJumpRequest = value;
+            }
+        }
 
         [JsonIgnore]
         public DateTime DepartureDateTime {
@@ -190,20 +201,13 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             get
             {
                 if (LastCarrierJumpRequest != null
-                    && !string.IsNullOrEmpty(LastCarrierJumpRequest.DepartureTime))
+                    && !string.IsNullOrEmpty(LastCarrierJumpRequest.DepartureTime)
+                    && _lastCooldownDateTime == DateTime.MinValue)
                 {
                     // We have a jump request. Ensure our cached cooldown is up-to-date
-                    if (_lastCooldownDateTime < DateTime.Now && _lastCooldownDateTime > DateTime.MinValue)
-                    {
-                        if (LastCarrierJumpRequest.DepartureTimeDateTime > DateTime.Now)
-                            _lastCooldownDateTime = LastCarrierJumpRequest.DepartureTimeDateTime.AddMinutes(COOLDOWN_MINUTES);
-                        else
-                            _lastCooldownDateTime = DateTime.MinValue;
-                    }
-
-                    return _lastCooldownDateTime;
+                    _lastCooldownDateTime = LastCarrierJumpRequest.DepartureTimeDateTime.AddMinutes(COOLDOWN_MINUTES);
                 }
-                return DateTime.MinValue;
+                return _lastCooldownDateTime;
             }
         }
 

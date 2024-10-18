@@ -48,6 +48,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
             if (!core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
             {
+                JumpCanceled();
                 Draw();
             }
         }
@@ -71,10 +72,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 lblNextJumpValue.Text = _data.LastCarrierJumpRequest.SystemName;
                 InitCountdown();
-            }
-            else
-            {
-                JumpCanceled();
             }
 
             PopulateRoute();
@@ -164,6 +161,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (IsReadAll) return;
 
             pbFuelLevel.Value = Math.Clamp(_data.CarrierFuel, pbFuelLevel.Minimum, pbFuelLevel.Maximum);
+            ttipCarrierUI.SetToolTip(pbFuelLevel, $"{_data.CarrierFuel} T / {pbFuelLevel.Maximum - _data.CarrierFuel} T to refill");
 
             SetMessage(msg);
         }
@@ -172,13 +170,27 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (IsReadAll) return;
 
+            var asOfDate = _data.StatsAsOfDate;
+
             if (_data.CarrierBalance == 0)
             {
                 lblBalanceValue.Text = "(unknown)";
-                return;
+            }
+            else
+            {
+                lblBalanceValue.Text = $"{_data.CarrierBalance:n0} Cr";
+                ttipCarrierUI.SetToolTip(lblBalanceValue, $"Balance as of {asOfDate}");
             }
 
-            lblBalanceValue.Text = $"{_data.CarrierBalance:n0} Cr";
+            if (_data.CapacityUsed == 0)
+            {
+                lblCapacityValue.Text = "(unknown)";
+            }
+            else
+            {
+                lblCapacityValue.Text = $"{_data.CapacityUsed:#,###} T";
+                ttipCarrierUI.SetToolTip(lblCapacityValue, $"Capacity as of {asOfDate}");
+            }
 
             SetMessage(msg);
         }
@@ -220,7 +232,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             else
             {
                 JumpCanceled();
-                return;
             }
         }
 

@@ -18,6 +18,8 @@
         {
             components = new System.ComponentModel.Container();
             tlpCarrierLayout = new TableLayoutPanel();
+            lblCapacityValue = new Label();
+            lblCapacityTitle = new Label();
             lblNameAndCallsign = new Label();
             lblOwningCommander = new Label();
             lblFuelTitle = new Label();
@@ -58,39 +60,64 @@
             tlpCarrierLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             tlpCarrierLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
             tlpCarrierLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+            tlpCarrierLayout.Controls.Add(lblCapacityValue, 1, 2);
+            tlpCarrierLayout.Controls.Add(lblCapacityTitle, 0, 2);
             tlpCarrierLayout.Controls.Add(lblNameAndCallsign, 0, 0);
             tlpCarrierLayout.Controls.Add(lblOwningCommander, 2, 0);
             tlpCarrierLayout.Controls.Add(lblFuelTitle, 0, 1);
-            tlpCarrierLayout.Controls.Add(lblBalanceTitle, 0, 2);
-            tlpCarrierLayout.Controls.Add(lblBalanceValue, 1, 2);
-            tlpCarrierLayout.Controls.Add(lblPositionTitle, 0, 3);
-            tlpCarrierLayout.Controls.Add(lblPositionValue, 1, 3);
-            tlpCarrierLayout.Controls.Add(lblCommanderStateTitle, 0, 4);
-            tlpCarrierLayout.Controls.Add(lblCommanderStateValue, 1, 4);
-            tlpCarrierLayout.Controls.Add(lblNextJumpTitle, 0, 5);
-            tlpCarrierLayout.Controls.Add(lblNextJumpValue, 1, 5);
-            tlpCarrierLayout.Controls.Add(lblTimerTitle, 0, 6);
+            tlpCarrierLayout.Controls.Add(lblBalanceTitle, 0, 3);
+            tlpCarrierLayout.Controls.Add(lblBalanceValue, 1, 3);
+            tlpCarrierLayout.Controls.Add(lblPositionTitle, 0, 4);
+            tlpCarrierLayout.Controls.Add(lblPositionValue, 1, 4);
+            tlpCarrierLayout.Controls.Add(lblCommanderStateTitle, 0, 5);
+            tlpCarrierLayout.Controls.Add(lblCommanderStateValue, 1, 5);
+            tlpCarrierLayout.Controls.Add(lblNextJumpTitle, 0, 6);
+            tlpCarrierLayout.Controls.Add(lblNextJumpValue, 1, 6);
+            tlpCarrierLayout.Controls.Add(lblTimerTitle, 0, 7);
             tlpCarrierLayout.Controls.Add(flowLayoutPanel1, 2, 1);
             tlpCarrierLayout.Controls.Add(clbRoute, 2, 2);
-            tlpCarrierLayout.Controls.Add(txtMessages, 1, 7);
-            tlpCarrierLayout.Controls.Add(lblMessages, 0, 7);
+            tlpCarrierLayout.Controls.Add(txtMessages, 1, 8);
+            tlpCarrierLayout.Controls.Add(lblMessages, 0, 8);
             tlpCarrierLayout.Controls.Add(pbFuelLevel, 1, 1);
-            tlpCarrierLayout.Controls.Add(tableLayoutPanel1, 1, 6);
+            tlpCarrierLayout.Controls.Add(tableLayoutPanel1, 1, 7);
             tlpCarrierLayout.Dock = DockStyle.Fill;
             tlpCarrierLayout.Location = new Point(0, 0);
             tlpCarrierLayout.Margin = new Padding(7, 6, 7, 6);
             tlpCarrierLayout.Name = "tlpCarrierLayout";
-            tlpCarrierLayout.RowCount = 8;
+            tlpCarrierLayout.RowCount = 9;
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
+            tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F));
+            tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 75F));
             tlpCarrierLayout.Size = new Size(873, 388);
             tlpCarrierLayout.TabIndex = 0;
+            // 
+            // lblCapacityValue
+            // 
+            lblCapacityValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblCapacityValue.AutoSize = true;
+            lblCapacityValue.Location = new Point(178, 59);
+            lblCapacityValue.Margin = new Padding(4, 3, 4, 3);
+            lblCapacityValue.Name = "lblCapacityValue";
+            lblCapacityValue.Size = new Size(341, 15);
+            lblCapacityValue.TabIndex = 21;
+            lblCapacityValue.Text = "[xx,xxx T]";
+            // 
+            // lblCapacityTitle
+            // 
+            lblCapacityTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            lblCapacityTitle.AutoSize = true;
+            lblCapacityTitle.Location = new Point(85, 59);
+            lblCapacityTitle.Margin = new Padding(4, 3, 4, 3);
+            lblCapacityTitle.Name = "lblCapacityTitle";
+            lblCapacityTitle.Size = new Size(85, 15);
+            lblCapacityTitle.TabIndex = 20;
+            lblCapacityTitle.Text = "Capacity Used:";
             // 
             // lblNameAndCallsign
             // 
@@ -133,7 +160,7 @@
             // 
             lblBalanceTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblBalanceTitle.AutoSize = true;
-            lblBalanceTitle.Location = new Point(81, 59);
+            lblBalanceTitle.Location = new Point(81, 83);
             lblBalanceTitle.Margin = new Padding(4, 3, 4, 3);
             lblBalanceTitle.Name = "lblBalanceTitle";
             lblBalanceTitle.Size = new Size(89, 15);
@@ -144,7 +171,7 @@
             // 
             lblBalanceValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblBalanceValue.AutoSize = true;
-            lblBalanceValue.Location = new Point(178, 59);
+            lblBalanceValue.Location = new Point(178, 83);
             lblBalanceValue.Margin = new Padding(4, 3, 4, 3);
             lblBalanceValue.Name = "lblBalanceValue";
             lblBalanceValue.Size = new Size(341, 15);
@@ -155,7 +182,7 @@
             // 
             lblPositionTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblPositionTitle.AutoSize = true;
-            lblPositionTitle.Location = new Point(117, 83);
+            lblPositionTitle.Location = new Point(117, 107);
             lblPositionTitle.Margin = new Padding(4, 3, 4, 3);
             lblPositionTitle.Name = "lblPositionTitle";
             lblPositionTitle.Size = new Size(53, 15);
@@ -167,7 +194,7 @@
             lblPositionValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblPositionValue.AutoEllipsis = true;
             lblPositionValue.AutoSize = true;
-            lblPositionValue.Location = new Point(178, 83);
+            lblPositionValue.Location = new Point(178, 107);
             lblPositionValue.Margin = new Padding(4, 3, 4, 3);
             lblPositionValue.Name = "lblPositionValue";
             lblPositionValue.Size = new Size(341, 15);
@@ -179,7 +206,7 @@
             // 
             lblCommanderStateTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblCommanderStateTitle.AutoSize = true;
-            lblCommanderStateTitle.Location = new Point(82, 107);
+            lblCommanderStateTitle.Location = new Point(82, 131);
             lblCommanderStateTitle.Margin = new Padding(4, 3, 4, 3);
             lblCommanderStateTitle.Name = "lblCommanderStateTitle";
             lblCommanderStateTitle.Size = new Size(88, 15);
@@ -191,7 +218,7 @@
             lblCommanderStateValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblCommanderStateValue.AutoEllipsis = true;
             lblCommanderStateValue.AutoSize = true;
-            lblCommanderStateValue.Location = new Point(178, 107);
+            lblCommanderStateValue.Location = new Point(178, 131);
             lblCommanderStateValue.Margin = new Padding(4, 3, 4, 3);
             lblCommanderStateValue.Name = "lblCommanderStateValue";
             lblCommanderStateValue.Size = new Size(341, 15);
@@ -202,7 +229,7 @@
             // 
             lblNextJumpTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblNextJumpTitle.AutoSize = true;
-            lblNextJumpTitle.Location = new Point(104, 131);
+            lblNextJumpTitle.Location = new Point(104, 155);
             lblNextJumpTitle.Margin = new Padding(4, 3, 4, 3);
             lblNextJumpTitle.Name = "lblNextJumpTitle";
             lblNextJumpTitle.Size = new Size(66, 15);
@@ -214,7 +241,7 @@
             lblNextJumpValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblNextJumpValue.AutoEllipsis = true;
             lblNextJumpValue.AutoSize = true;
-            lblNextJumpValue.Location = new Point(178, 131);
+            lblNextJumpValue.Location = new Point(178, 155);
             lblNextJumpValue.Margin = new Padding(4, 3, 4, 3);
             lblNextJumpValue.Name = "lblNextJumpValue";
             lblNextJumpValue.Size = new Size(341, 15);
@@ -226,7 +253,7 @@
             // 
             lblTimerTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblTimerTitle.AutoSize = true;
-            lblTimerTitle.Location = new Point(40, 182);
+            lblTimerTitle.Location = new Point(40, 206);
             lblTimerTitle.Margin = new Padding(4, 6, 4, 3);
             lblTimerTitle.Name = "lblTimerTitle";
             lblTimerTitle.Size = new Size(130, 15);
@@ -292,8 +319,8 @@
             clbRoute.Location = new Point(527, 59);
             clbRoute.Margin = new Padding(4, 3, 4, 3);
             clbRoute.Name = "clbRoute";
-            tlpCarrierLayout.SetRowSpan(clbRoute, 5);
-            clbRoute.Size = new Size(342, 266);
+            tlpCarrierLayout.SetRowSpan(clbRoute, 6);
+            clbRoute.Size = new Size(342, 251);
             clbRoute.TabIndex = 15;
             clbRoute.MouseDown += clbRoute_MouseDown;
             // 
@@ -322,19 +349,19 @@
             // 
             tlpCarrierLayout.SetColumnSpan(txtMessages, 2);
             txtMessages.Dock = DockStyle.Fill;
-            txtMessages.Location = new Point(178, 331);
+            txtMessages.Location = new Point(178, 316);
             txtMessages.Margin = new Padding(4, 3, 4, 3);
             txtMessages.Multiline = true;
             txtMessages.Name = "txtMessages";
             txtMessages.ReadOnly = true;
-            txtMessages.Size = new Size(691, 54);
+            txtMessages.Size = new Size(691, 69);
             txtMessages.TabIndex = 16;
             // 
             // lblMessages
             // 
             lblMessages.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblMessages.AutoSize = true;
-            lblMessages.Location = new Point(109, 331);
+            lblMessages.Location = new Point(109, 316);
             lblMessages.Margin = new Padding(4, 3, 4, 3);
             lblMessages.Name = "lblMessages";
             lblMessages.Size = new Size(61, 15);
@@ -362,11 +389,11 @@
             tableLayoutPanel1.Controls.Add(lblTimerValue, 0, 0);
             tableLayoutPanel1.Controls.Add(btnPopOutTimer, 1, 0);
             tableLayoutPanel1.Dock = DockStyle.Fill;
-            tableLayoutPanel1.Location = new Point(177, 179);
+            tableLayoutPanel1.Location = new Point(177, 203);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(343, 146);
+            tableLayoutPanel1.Size = new Size(343, 107);
             tableLayoutPanel1.TabIndex = 19;
             // 
             // lblTimerValue
@@ -443,5 +470,7 @@
         private UI.ThemeableIconButton btnNewRoute;
         private UI.ThemeableIconButton btnClearRoute;
         private UI.ThemeableIconButton btnOpenSpansh;
+        private Label lblCapacityTitle;
+        private Label lblCapacityValue;
     }
 }
