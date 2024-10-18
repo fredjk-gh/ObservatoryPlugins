@@ -26,8 +26,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             System = system;
             Sender = sender;
             Title = title;
-            Detail = detail;
-            ExtendedDetails = extDetails;
+            Detail = detail?.TrimEnd();
+            ExtendedDetails = extDetails?.TrimEnd();
             CoalescingID = coalescingId;
         }
 

@@ -33,6 +33,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public const int ALERT_COALESCING_ID = -2; // preamble / alerts
         public const int SYSTEM_COALESCING_ID = -1;
+        public const int MIN_BODY_COALESCING_ID = 0;
+        public const int MAX_BODY_COALESCING_ID = 1000;
         public const int DEFAULT_COALESCING_ID = 1001; // After bodies.
 
         public static Dictionary<string, string> EmojiToolTips = new()

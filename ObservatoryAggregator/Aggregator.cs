@@ -94,23 +94,34 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     {
                         if (carrierJump.Docked || carrierJump.OnFoot)
                         {
-                            MaybeChangeSystem(carrierJump.StarSystem);
+                            MaybeChangeSystem(carrierJump.StarSystem, carrierJump.SystemAddress);
                         }
                     }
                     else
                     {
-                        MaybeChangeSystem(fsdJump.StarSystem);
+                        MaybeChangeSystem(fsdJump.StarSystem, fsdJump.SystemAddress);
                     }
                     break;
                 case Location location:
-                    MaybeChangeSystem(location.StarSystem);
+                    MaybeChangeSystem(location.StarSystem, location.SystemAddress);
                     break;
                 case LoadGame loadGame:
                     _data.CurrentCommander = loadGame.Commander;
-                    _data.CurrentShip = loadGame.ShipName;
+                    _data.ChangeShip(loadGame.ShipID, loadGame.ShipName);
                     break;
                 case Loadout loadout:
-                    _data.CurrentShip = loadout.ShipName;
+                    _data.ChangeShip(loadout.ShipID, loadout.ShipName);
+                    RedrawGrid();
+                    break;
+                case StoredShips ships:
+                    foreach (var ship in ships.ShipsHere.Concat(ships.ShipsRemote))
+                    {
+                        _data.AddKnownShip(ship.ShipID, ship.Name);
+                    }
+                    break;
+                case ShipyardSwap swapShip:
+                    _data.ChangeShip(swapShip.ShipID);
+                    RedrawGrid();
                     break;
                 case FSSDiscoveryScan dScan:
                     _data.AddDiscoveryScan(dScan);
@@ -157,14 +168,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             }
         }
 
+        public void StatusChange(Status status)
+        {
+            if (status.Destination != null)
+                _data.MaybeChangeDestinationBody(status.Destination);
+        }
+
         public void OnNotificationEvent(NotificationArgs args)
         {
-            List<NotificationData> nList = MaybeSplitMultilineArgs(args);
-
-            foreach (var n in nList)
-            {
-                _data.AddNotification(n);
-            }
+            _data.AddNotification(new(_data, _data.CurrentSystem.Name, args));
             RedrawGrid();
         }
 
@@ -211,37 +223,6 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             //}
         }
 
-        private List<NotificationData> MaybeSplitMultilineArgs(NotificationArgs args)
-        {
-            List<NotificationData> notifications = new();
-
-            if (args.Detail.Trim().Contains(Environment.NewLine))
-            {
-                string[] details = args.Detail.Trim().Split(Environment.NewLine);
-                string[] extDetails = args.ExtendedDetails?.Trim().Split(Environment.NewLine) ?? new string[0];
-
-                for (int i = 0; i < details.Length; i++)
-                {
-                    if (string.IsNullOrEmpty(details[i].Trim()) && (i >= extDetails.Length || string.IsNullOrEmpty(extDetails[i].Trim()))) continue;
-
-                    // Clone the core bits we care about but split the detail/extdetails.
-                    NotificationData split = new(_data,
-                        _data.CurrentSystem.Name, args.Sender, args.Title, details[i], (i < extDetails.Length ? extDetails[i] : ""), args.CoalescingId ?? Constants.DEFAULT_COALESCING_ID);
-
-                    if (ShouldShow(split))
-                        notifications.Add(split);
-                }
-            }
-            else
-            {
-                NotificationData nData = new(_data, _data.CurrentSystem.Name, args);
-                if (ShouldShow(nData))
-                    notifications.Add(nData);
-            }
-
-            return notifications;
-        }
-
         private void RedrawGrid()
         {
             // Check for Pre-read too?
@@ -270,18 +251,18 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             return show;
         }
 
-        private void MaybeChangeSystem(string newSystem)
+        private void MaybeChangeSystem(string newSystem, ulong systemAddress)
         {
             if ((_data.CurrentSystem?.Name ?? "") != newSystem)
             {
                 if ((Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0)
                 {
                     if (_data.CurrentSystem != null) _readAllGridItems.AddRange(_data.ToGrid(true));
-                    _data.ChangeSystem(newSystem);
+                    _data.ChangeSystem(newSystem, systemAddress);
                 }
                 else
                 {
-                    _data.ChangeSystem(newSystem);
+                    _data.ChangeSystem(newSystem, systemAddress);
                     RedrawGrid();
                 }
             }

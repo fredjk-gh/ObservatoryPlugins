@@ -10,13 +10,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 {
     internal class SystemSummary
     {
-        public SystemSummary(string systemName)
+        public SystemSummary(string systemName, ulong systemAddress)
         {
             Name = systemName;
+            SystemAddress = systemAddress;
             IsUndiscovered = false;
         }
 
         public string Name { get; }
+        public ulong SystemAddress { get; }
         public bool IsUndiscovered { get; set; }
         public FSSDiscoveryScan DiscoveryScan { get; set; }
         public FSSAllBodiesFound AllBodiesFound { get; set; }

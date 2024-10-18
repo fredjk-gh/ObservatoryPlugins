@@ -11,6 +11,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public static readonly AggregatorSettings DEFAULT = new()
         {
             ShowAllBodySummaries = false,
+            AutoMarkBodiesWhenTargeted = true,
             FontSizeAdjustment = 0.0,
             FilterSpec = "",
         };
@@ -18,6 +19,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private string _filterSpec = "";
         private List<String> _filters = new();
         private bool _showAllBodySummaries = false;
+        private bool _autoMarkOnTarget = true;
         private double _fontSizeAdjustment = 0.0;
 
         [SettingIgnore]
@@ -46,6 +48,16 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             }
         }
 
+        [SettingDisplayName("Mark bodies as interesting when targeted")]
+        public bool AutoMarkBodiesWhenTargeted
+        {
+            get => _autoMarkOnTarget;
+            set
+            {
+                _autoMarkOnTarget = value;
+                OnPropertyChanged("AutoMarkBodiesWhenTargeted");
+            }
+        }
         [SettingDisplayName("Font Size adjustment.")]
         [SettingNumericBounds(-5.0, 10.0)]
         public double FontSizeAdjustment

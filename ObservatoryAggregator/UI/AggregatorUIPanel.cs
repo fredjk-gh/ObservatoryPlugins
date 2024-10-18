@@ -29,7 +29,6 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 AllowUserToOrderColumns = true,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells,
                 AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells,
                 CellBorderStyle = DataGridViewCellBorderStyle.None,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
@@ -47,7 +46,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             _dgvGrid.ColumnHeadersDefaultCellStyle.ForeColor = _dgvGrid.ForeColor;
             _dgvGrid.RowHeadersDefaultCellStyle.BackColor = _dgvGrid.BackgroundColor;
             _dgvGrid.RowHeadersDefaultCellStyle.ForeColor = _dgvGrid.ForeColor;
-
+            _dgvGrid.DefaultCellStyle.Alignment = DataGridViewContentAlignment.TopLeft;
 
             DoubleBuffered = true;
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
@@ -55,16 +54,19 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             // Set up columns.
             _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet,
+                FillWeight = 200,
                 HeaderText = "Title",
                 MinimumWidth = 100,
                 Name = "colTitle",
                 ReadOnly = true,
                 Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 200,
+                Width = 300,
             });
             _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
             {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
                 Tag = Constants.TAG_INSPECT,
                 FlatStyle = FlatStyle.Flat,
                 HeaderText = "✅",
@@ -76,28 +78,35 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 ToolTipText = "Interest and completion tracking",
                 Width = 40,
             });
-            _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
+            int detailsColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                FillWeight = 200,
                 HeaderText = "Details",
-                MinimumWidth = 200,
+                MinimumWidth = 300,
                 Name = "colDetails",
                 ReadOnly = true,
                 Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 250,
+                Width = 350,
             });
-            _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
+            _dgvGrid.Columns[detailsColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+            int extDetailsColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                FillWeight = 400,
                 HeaderText = "Extended Details",
                 MinimumWidth = 200,
                 Name = "colExtDetails",
                 ReadOnly = true,
                 Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 500,
+                Width = 750,
             });
+            _dgvGrid.Columns[extDetailsColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet,
                 HeaderText = "Flags",
                 MinimumWidth = 40,
                 Name = "colFlags",
@@ -110,6 +119,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             });
             _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
             {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet,
+                FillWeight = 100,
                 Tag = Constants.TAG_SENDER,
                 HeaderText = "Sender",
                 MinimumWidth = 100,
@@ -121,7 +132,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 Width = 150,
             });
 
-            _dgvGrid.CellClick += Grid_CellClick;
+            _dgvGrid.CellMouseClick += Grid_CellMouseClick;
             _dgvGrid.CellPainting += Grid_CellPainting;
             _dgvGrid.BackgroundColorChanged += Grid_BackgroundColorChanged;
             _dgvGrid.ForeColorChanged += Grid_ForeColorChanged;
@@ -223,31 +234,49 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             });
         }
 
-        private void Grid_CellClick(object sender, DataGridViewCellEventArgs e)
+        private void Grid_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
+
             DataGridView? dataGridView = sender as DataGridView;
             if (dataGridView == null) return;
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return; // Clicked a header; Ignore
 
             string colTag = (dataGridView.Columns[e.ColumnIndex].Tag ?? "").ToString();
             var row = dataGridView.Rows[e.RowIndex];
-            if (colTag == Constants.TAG_INSPECT) // Inspect column
+            if (e.Button == MouseButtons.Left)
             {
-                // Inspect Column.
-                var inspectCell = row.Cells[e.ColumnIndex];
-
-                AggregatorGrid data = row.Tag as AggregatorGrid;
-                if (data != null && data.State != VisitedState.None)
+                if (colTag == Constants.TAG_INSPECT) // Inspect column
                 {
-                    VisitedState currentState = data.State;
-                    data.State = currentState.NextState(); // Also updates the UI.
+                    // Inspect Column. Cycle to the next state.
+                    var inspectCell = row.Cells[e.ColumnIndex];
+
+                    AggregatorGrid data = row.Tag as AggregatorGrid;
+                    if (data != null && data.State != VisitedState.None)
+                    {
+                        VisitedState currentState = data.State;
+                        data.State = currentState.NextState(); // Also updates the UI.
+                    }
+                }
+                else if (colTag == Constants.TAG_SENDER)
+                {
+                    // Sender column
+                    var senderCell = row.Cells[e.ColumnIndex];
+                    _data.Core.FocusPlugin((string)senderCell.Value);
                 }
             }
-            else if (colTag == Constants.TAG_SENDER)
+            else if (e.Button == MouseButtons.Right)
             {
-                // Sender column
-                var senderCell = row.Cells[e.ColumnIndex];
-                _data.Core.FocusPlugin((string)senderCell.Value);
+                if (colTag == Constants.TAG_INSPECT) // Inspect column
+                {
+                    // Inspect Column. Reset to initial state.
+                    var inspectCell = row.Cells[e.ColumnIndex];
+
+                    AggregatorGrid data = row.Tag as AggregatorGrid;
+                    if (data != null && data.State != VisitedState.None)
+                    {
+                        data.State = VisitedState.MarkForVisit; // Also updates the UI.
+                    }
+                }
             }
         }
 

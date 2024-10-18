@@ -1,6 +1,8 @@
 ﻿using com.github.fredjk_gh.ObservatoryAggregator;
 using com.github.fredjk_gh.ObservatoryAggregator.UI;
+using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -19,7 +21,9 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private AggregatorSettings _settings;
         private AggregatorGrid _gridData;
         private string _commander;
-        private string _ship;
+        private string _shipName;
+        private Dictionary<ulong, string> _shipNamesById = new();
+        private int _destinationBodyId = 0; // arrival
 
         public void Load(IObservatoryCore core, Aggregator worker, AggregatorSettings settings)
         {
@@ -54,10 +58,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public string CurrentShip
         { 
-            get => _ship;
-            set
+            get => _shipName;
+            private set
             {
-                _ship = value;
+                _shipName = value;
                 IsDirty = true;
             }
         }
@@ -65,9 +69,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public Dictionary<int, List<NotificationData>> Notifications { get => _notifications; }
         public Dictionary<int, BodySummary> BodyData { get => _bodies; }
 
-        public void ChangeSystem(string newSystem)
+        public void ChangeSystem(string newSystem, ulong systemAddress)
         {
-            CurrentSystem = new(newSystem);
+            CurrentSystem = new(newSystem, systemAddress);
+            _destinationBodyId = 0;
 
             _notifications.Clear();
             _bodies.Clear();
@@ -75,9 +80,41 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             IsDirty = true;
         }
 
+        public void MaybeChangeDestinationBody(Destination destination)
+        {
+            if (destination != null && destination.System == CurrentSystem.SystemAddress && destination.Body != _destinationBodyId && destination.Body != 0)
+            {
+                _destinationBodyId = destination.Body;
+                MarkForVisit(_destinationBodyId);
+            }
+        }
+
         public string GetCommanderAndShipString()
         {
             return $"{CurrentCommander} - {CurrentShip}";
+        }
+
+        public void ChangeShip(ulong shipId, string name = "")
+        {
+            if (!_shipNamesById.ContainsKey(shipId))
+            {
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    // Don't know this ship's name. Don't cache it.
+                    CurrentShip = "(unknown ship)";
+                    return;
+                }
+                else
+                {
+                    AddKnownShip(shipId, name);
+                }
+            }
+            CurrentShip = _shipNamesById[shipId];
+        }
+
+        public void AddKnownShip(ulong shipId, string name)
+        {
+            _shipNamesById[shipId] = name;
         }
 
         public List<AggregatorGrid> ToGrid(bool isBatchMode = false)
@@ -101,7 +138,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             foreach (var cId in cIds)
             {
                 var bodyDisplayString = "";
-                if (BodyData.ContainsKey(cId))
+                if (cId >= Constants.MIN_BODY_COALESCING_ID && cId <= Constants.MAX_BODY_COALESCING_ID && BodyData.ContainsKey(cId))
                 {
                     var bData = GetBody(cId);
                     bodyDisplayString = bData.GetBodyNameDisplayString();
@@ -137,7 +174,16 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public void AddNotification(NotificationData n)
         {
-            GetNotifications(n.CoalescingID).Add(n);
+            NotificationData shifted = n;
+            if (n.CoalescingID >= Constants.MIN_BODY_COALESCING_ID && n.CoalescingID <= Constants.MAX_BODY_COALESCING_ID
+                && string.IsNullOrWhiteSpace(n.ExtendedDetails) && !n.Title.StartsWith(GetBody(n.CoalescingID).GetBodyNameDisplayString()))
+            //if (string.IsNullOrWhiteSpace(n.ExtendedDetails) && !n.Title.StartsWith(GetBody(n.CoalescingID).BodyShortName))
+            {
+                // we have a notification that does not start with the body short name and has an empty extended details. This
+                // means the title won't suppress -- let's shift values right.
+                shifted = new(this, n.System, n.Sender, "", n.Title, n.Detail, n.CoalescingID);
+            }
+            GetNotifications(shifted.CoalescingID).Add(shifted);
         }
 
         public List<NotificationData> GetNotifications(int coalescingID)
@@ -166,6 +212,18 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 .ScanComplete = scanComplete;
         }
 
+        public void MarkForVisit(int bodyId)
+        {
+            if (!_notifications.ContainsKey(bodyId)) return;
+
+            GetNotifications(bodyId)
+                .ForEach(n =>
+                {
+                    if (n.VisitedState == VisitedState.MarkForVisit || Core.IsLogMonitorBatchReading)
+                        n.VisitedState = VisitedState.Unvisited;
+                });
+        }
+
         public void MarkVisited(int bodyId)
         {
             if (!_notifications.ContainsKey(bodyId)) return;
@@ -173,7 +231,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             GetNotifications(bodyId)
                 .ForEach(n =>
                 {
-                    if (n.VisitedState == VisitedState.Unvisited)
+                    if (n.VisitedState == VisitedState.Unvisited || Core.IsLogMonitorBatchReading)
                         n.VisitedState = VisitedState.Visited;
                 });
         }
@@ -186,13 +244,13 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             return _bodies[bodyID];
         }
 
-        public void AddDiscoveryScan (FSSDiscoveryScan discoveryScan)
+        public void AddDiscoveryScan(FSSDiscoveryScan discoveryScan)
         {
             CurrentSystem.DiscoveryScan = discoveryScan;
             IsDirty = true;
         }
 
-        public void AddAllBodiesFound (FSSAllBodiesFound allBodiesFound)
+        public void AddAllBodiesFound(FSSAllBodiesFound allBodiesFound)
         {
             CurrentSystem.AllBodiesFound = allBodiesFound;
             IsDirty = true;
