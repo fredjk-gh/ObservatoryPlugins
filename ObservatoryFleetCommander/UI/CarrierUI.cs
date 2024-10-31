@@ -117,6 +117,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             lblTimerValue.Visible = false;
             btnPopOutTimer.Visible = false;
 
+            if (_timerForm != null)
+            {
+                _timerForm.RefreshDisplay();
+            }
             SetMessage(msg);
         }
 
@@ -333,8 +337,9 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // Custom: If countdown timer window is open, close it and clean up.
             if (_timerForm != null && _timerForm.Visible)
             {
-                _timerForm.Close();
-                @_timerForm.Dispose();
+                var theTimerForm = _timerForm; // _timerForm can get set to null between now and the .Dispose() call.
+                theTimerForm.Close();
+                @theTimerForm.Dispose();
                 _timerForm = null;
             }
         }
@@ -424,6 +429,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         private void btnPopOutTimer_Click(object sender, EventArgs e)
         {
+            if (_timerForm != null) return;
+
             _timerForm = new CountdownTimerForm(_core, _data);
             _core.RegisterControl(_timerForm);
             _timerForm.Show();

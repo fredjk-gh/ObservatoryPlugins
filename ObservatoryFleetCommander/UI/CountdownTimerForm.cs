@@ -35,7 +35,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             RefreshDisplay();
         }
 
-        private void RefreshDisplay()
+        internal void RefreshDisplay()
         {
             if ((_core.CurrentLogMonitorState & LogMonitorState.Batch) != 0) return;
 
