@@ -20,7 +20,6 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private PluginUI _pluginUI;
         private TrackedData _data = new();
         private AggregatorUIPanel _ui;
-        private List<AggregatorGrid> _readAllGridItems = new();
         private AboutInfo _aboutInfo = new()
         {
             FullName = $"Notification {Constants.PLUGIN_SHORT_NAME}",
@@ -62,19 +61,12 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             // * -> ReadAll
             if ((args.NewState & LogMonitorState.Batch) != 0)
             {
-                _readAllGridItems.Clear();
-                //Core.ClearGrid(this, new AggregatorGrid());
                 _ui.Clear();
             }
             // ReadAll -> *
             else if ((args.PreviousState & LogMonitorState.Batch) != 0)
             {
-                _readAllGridItems.AddRange(_data.ToGrid(true));
-                //Core.AddGridItems(this, _readAllGridItems);
-                Core.ExecuteOnUIThread(() =>
-                {
-                    _ui.SetGridItems(_readAllGridItems);
-                });
+                RedrawGrid();
             }
             // PreRead -> *
             // -> Realtime
@@ -176,8 +168,12 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public void OnNotificationEvent(NotificationArgs args)
         {
-            _data.AddNotification(new(_data, _data.CurrentSystem.Name, args));
-            RedrawGrid();
+            NotificationData nd = new(_data, _data.CurrentSystem.Name, args);
+            if (ShouldShow(nd))
+            {
+                _data.AddNotification(nd);
+                RedrawGrid();
+            }
         }
 
         public void HandlePluginMessage(string sourceName, string sourceVersion, object messageArgs)
@@ -226,11 +222,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private void RedrawGrid()
         {
             // Check for Pre-read too?
-            if ((Core.CurrentLogMonitorState & LogMonitorState.Realtime) != 0)
-            {
-                var gridItems = _data.ToGrid();
-                _ui.SetGridItems(gridItems);
-            }
+            if (Core.IsLogMonitorBatchReading) return;
+
+            var gridItems = _data.ToGrid();
+            _ui.SetGridItems(gridItems);
         }
 
         private bool ShouldShow(NotificationData nData)
@@ -255,14 +250,9 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             if ((_data.CurrentSystem?.Name ?? "") != newSystem)
             {
-                if ((Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0)
+                _data.ChangeSystem(newSystem, systemAddress);
+                if ((Core.CurrentLogMonitorState & LogMonitorState.Batch) == 0)
                 {
-                    if (_data.CurrentSystem != null) _readAllGridItems.AddRange(_data.ToGrid(true));
-                    _data.ChangeSystem(newSystem, systemAddress);
-                }
-                else
-                {
-                    _data.ChangeSystem(newSystem, systemAddress);
                     RedrawGrid();
                 }
             }

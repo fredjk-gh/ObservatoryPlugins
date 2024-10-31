@@ -46,10 +46,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             RowStyle = AggregatorRowStyle.H1;
 
             // Consider making these these properties read from the underlying object(s) for always-fresh row generation.
-            Title = data.CurrentSystem.Name;
-            Detail = data.CurrentSystem.GetDetailString();
+            Title = data.CurrentSystem?.Name;
+            Detail = data.CurrentSystem?.GetDetailString();
             ExtendedDetails = data.GetCommanderAndShipString();
-            Flags = data.CurrentSystem.GetFlagEmoji(data);
+            Flags = data.CurrentSystem?.GetFlagEmoji(data) ?? new();
             Sender = "";
         }
 

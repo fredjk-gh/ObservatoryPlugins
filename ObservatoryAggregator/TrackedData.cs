@@ -100,13 +100,13 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             {
                 if (!string.IsNullOrWhiteSpace(name))
                 {
-                    // Don't know this ship's name. Don't cache it.
-                    CurrentShip = "(unknown ship)";
-                    return;
+                    AddKnownShip(shipId, name);
                 }
                 else
                 {
-                    AddKnownShip(shipId, name);
+                    // Don't know this ship's name. Don't cache it.
+                    CurrentShip = "(unknown ship)";
+                    return;
                 }
             }
             CurrentShip = _shipNamesById[shipId];
@@ -117,7 +117,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             _shipNamesById[shipId] = name;
         }
 
-        public List<AggregatorGrid> ToGrid(bool isBatchMode = false)
+        public List<AggregatorGrid> ToGrid()
         {
             bool haveCatchAllHeader = false;
             List<AggregatorGrid> gridItems = new();
@@ -168,7 +168,6 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 }
             }
 
-            if (isBatchMode) gridItems.Add(new()); // Blank line for readability.
             return gridItems;
         }
 
