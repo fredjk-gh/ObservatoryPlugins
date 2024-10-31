@@ -214,6 +214,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 _context.Core.ExecuteOnUIThread(() =>
                 {
                     _context.UI.PopulateCurrentSystem();
+                    _context.UI.PopulateRecentSystems();
                     _context.UI.SetMessage($"New system detected.");
                 });
             }

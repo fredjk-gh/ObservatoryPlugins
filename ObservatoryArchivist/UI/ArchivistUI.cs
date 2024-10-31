@@ -53,6 +53,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // Search tab
             // TODO: Show Commander as well in result?
             PopulateCommandersList();
+            PopulateRecentSystems(_context.Data.CurrentCommander);
             lblFindMessages.Text = string.Empty;
             lbJournals.Items.Clear();
 
@@ -94,6 +95,23 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             txtSystemName.Text = cmdrData.CurrentSystem.SystemName;
             lblRecordCommanderValue.Text = cmdrData.CommanderName;
             PopulateLatestRecord(cmdrData);
+        }
+
+        public void PopulateRecentSystems(string commander = "")
+        {
+            if (_context.IsReadAll) return;
+
+            var cmdrData = _context.Data.ForCommander(commander);
+            if (string.IsNullOrWhiteSpace(_context.Data.CurrentCommander) || cmdrData == null || cmdrData.RecentSystems.Count == 0)
+            {
+                return;
+            }
+
+            lbRecentSystems.Items.Clear();
+            foreach (var item in cmdrData.RecentSystems)
+            {
+                lbRecentSystems.Items.Add(item);
+            }
         }
 
         public void SetMessage(string message = "")
@@ -319,6 +337,16 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             if (string.IsNullOrWhiteSpace(txtLastEntry.Text)) return;
 
             OpenJsonViewer(txtLastEntry.Text);
+        }
+
+        private void lbRecentSystems_DoubleClick(object sender, EventArgs e)
+        {
+            if (lbRecentSystems.SelectedIndex < 0 || string.IsNullOrWhiteSpace(lbRecentSystems.SelectedItem?.ToString())) return;
+
+            txtFindSystem.Text = lbRecentSystems.SelectedItem?.ToString();
+            
+            DoSearch();
+            PopulateSearchResult();
         }
     }
 }

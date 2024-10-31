@@ -9,7 +9,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 {
     internal class ArchivistCommanderData
     {
+        private CurrentSystemInfo _currentSystemInfo = null;
         private string _currentSystemName = "";
+        private List<string> _recentSystems = new();
 
         public ArchivistCommanderData()
         {
@@ -23,12 +25,14 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public string CurrentSystemName
         {
-            get {
+            get
+            {
                 return CurrentSystem == null ? _currentSystemName : _currentSystemName = CurrentSystem.SystemName;
             }
             set
             {
                 // Used only for deserialization.
+                MaybeAddToRecentSystems(value);
                 _currentSystemName = value;
             }
         }
@@ -36,6 +40,31 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public FileHeaderInfo FileHeaderInfo { get; set; }
 
         [JsonIgnore]
-        public CurrentSystemInfo CurrentSystem { get; set; }
+        public CurrentSystemInfo CurrentSystem
+        {
+            get => _currentSystemInfo;
+            set
+            {
+                MaybeAddToRecentSystems(value?.SystemName);
+                _currentSystemInfo = value;
+            }
+        }
+
+        [JsonIgnore]
+        public List<string> RecentSystems {
+            get => _recentSystems;
+        }
+
+        private void MaybeAddToRecentSystems(string? systemName)
+        {
+            if (!string.IsNullOrWhiteSpace(systemName) && (_recentSystems.Count == 0 || !systemName.Equals(_recentSystems[0])))
+            {
+                _recentSystems.Insert(0, systemName);
+                if (_recentSystems.Count > 25)
+                {
+                    _recentSystems.RemoveRange(25, _recentSystems.Count - 25);
+                }
+            }
+        }
     }
 }

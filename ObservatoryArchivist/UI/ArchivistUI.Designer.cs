@@ -56,6 +56,8 @@
             copyToolStripMenuItem = new ToolStripMenuItem();
             viewToolStripMenuItem = new ToolStripMenuItem();
             btnResendAll = new Button();
+            lblRecentSystems = new Label();
+            lbRecentSystems = new ListBox();
             ttipArchivistUI = new ToolTip(components);
             tabPanels.SuspendLayout();
             tabCurrentSystem.SuspendLayout();
@@ -73,7 +75,7 @@
             tabPanels.Location = new Point(0, 0);
             tabPanels.Name = "tabPanels";
             tabPanels.SelectedIndex = 0;
-            tabPanels.Size = new Size(612, 545);
+            tabPanels.Size = new Size(782, 545);
             tabPanels.TabIndex = 2;
             // 
             // tabCurrentSystem
@@ -82,7 +84,7 @@
             tabCurrentSystem.Location = new Point(4, 24);
             tabCurrentSystem.Name = "tabCurrentSystem";
             tabCurrentSystem.Padding = new Padding(3);
-            tabCurrentSystem.Size = new Size(604, 517);
+            tabCurrentSystem.Size = new Size(774, 517);
             tabCurrentSystem.TabIndex = 0;
             tabCurrentSystem.Text = "Current System";
             tabCurrentSystem.UseVisualStyleBackColor = true;
@@ -112,7 +114,7 @@
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 16.66666F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 83.3333359F));
-            tableLayoutPanel2.Size = new Size(598, 511);
+            tableLayoutPanel2.Size = new Size(768, 511);
             tableLayoutPanel2.TabIndex = 0;
             // 
             // lblSystemName
@@ -134,7 +136,7 @@
             txtSystemName.Name = "txtSystemName";
             txtSystemName.PlaceholderText = "(unknown)";
             txtSystemName.ReadOnly = true;
-            txtSystemName.Size = new Size(242, 23);
+            txtSystemName.Size = new Size(412, 23);
             txtSystemName.TabIndex = 1;
             // 
             // lblMessages
@@ -149,13 +151,12 @@
             // 
             // txtMessages
             // 
-            tableLayoutPanel2.SetColumnSpan(txtMessages, 2);
             txtMessages.Dock = DockStyle.Fill;
             txtMessages.Location = new Point(153, 67);
             txtMessages.Multiline = true;
             txtMessages.Name = "txtMessages";
             txtMessages.ReadOnly = true;
-            txtMessages.Size = new Size(442, 63);
+            txtMessages.Size = new Size(412, 63);
             txtMessages.TabIndex = 3;
             // 
             // lblLastRecord
@@ -178,7 +179,7 @@
             txtLastEntry.Name = "txtLastEntry";
             txtLastEntry.ReadOnly = true;
             txtLastEntry.ScrollBars = ScrollBars.Vertical;
-            txtLastEntry.Size = new Size(592, 340);
+            txtLastEntry.Size = new Size(762, 340);
             txtLastEntry.TabIndex = 5;
             // 
             // lblRecordCommanderTitle
@@ -222,7 +223,7 @@
             btnOpenInSearch.FlatAppearance.BorderSize = 0;
             btnOpenInSearch.FlatAppearance.MouseOverBackColor = Color.FromArgb(215, 215, 215);
             btnOpenInSearch.FlatStyle = FlatStyle.Flat;
-            btnOpenInSearch.Location = new Point(569, 3);
+            btnOpenInSearch.Location = new Point(739, 3);
             btnOpenInSearch.Name = "btnOpenInSearch";
             btnOpenInSearch.Padding = new Padding(1);
             btnOpenInSearch.Size = new Size(26, 26);
@@ -237,7 +238,7 @@
             tabSearch.Location = new Point(4, 24);
             tabSearch.Name = "tabSearch";
             tabSearch.Padding = new Padding(3);
-            tabSearch.Size = new Size(604, 517);
+            tabSearch.Size = new Size(774, 517);
             tabSearch.TabIndex = 1;
             tabSearch.Text = "Search";
             tabSearch.UseVisualStyleBackColor = true;
@@ -245,9 +246,9 @@
             // tableLayoutPanel3
             // 
             tableLayoutPanel3.ColumnCount = 3;
-            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
-            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 250F));
             tableLayoutPanel3.Controls.Add(cboCommanderFilter, 1, 2);
             tableLayoutPanel3.Controls.Add(lblCommanderFilterTitle, 0, 2);
             tableLayoutPanel3.Controls.Add(lblFindSystem, 0, 0);
@@ -257,6 +258,8 @@
             tableLayoutPanel3.Controls.Add(txtFilter, 1, 1);
             tableLayoutPanel3.Controls.Add(lbJournals, 0, 3);
             tableLayoutPanel3.Controls.Add(btnResendAll, 0, 4);
+            tableLayoutPanel3.Controls.Add(lblRecentSystems, 2, 2);
+            tableLayoutPanel3.Controls.Add(lbRecentSystems, 2, 3);
             tableLayoutPanel3.Dock = DockStyle.Fill;
             tableLayoutPanel3.Location = new Point(3, 3);
             tableLayoutPanel3.Name = "tableLayoutPanel3";
@@ -266,7 +269,7 @@
             tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
             tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
-            tableLayoutPanel3.Size = new Size(598, 511);
+            tableLayoutPanel3.Size = new Size(768, 511);
             tableLayoutPanel3.TabIndex = 0;
             // 
             // cboCommanderFilter
@@ -274,10 +277,10 @@
             cboCommanderFilter.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             cboCommanderFilter.Font = new Font("Segoe UI", 11F);
             cboCommanderFilter.FormattingEnabled = true;
-            cboCommanderFilter.Location = new Point(152, 69);
+            cboCommanderFilter.Location = new Point(153, 69);
             cboCommanderFilter.MaximumSize = new Size(500, 0);
             cboCommanderFilter.Name = "cboCommanderFilter";
-            cboCommanderFilter.Size = new Size(293, 28);
+            cboCommanderFilter.Size = new Size(362, 28);
             cboCommanderFilter.TabIndex = 3;
             cboCommanderFilter.SelectedIndexChanged += cboCommanderFilter_SelectedIndexChanged;
             // 
@@ -286,7 +289,7 @@
             lblCommanderFilterTitle.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblCommanderFilterTitle.AutoSize = true;
             lblCommanderFilterTitle.Font = new Font("Segoe UI", 9F);
-            lblCommanderFilterTitle.Location = new Point(40, 66);
+            lblCommanderFilterTitle.Location = new Point(41, 66);
             lblCommanderFilterTitle.Name = "lblCommanderFilterTitle";
             lblCommanderFilterTitle.Size = new Size(106, 33);
             lblCommanderFilterTitle.TabIndex = 0;
@@ -297,7 +300,7 @@
             // 
             lblFindSystem.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblFindSystem.AutoSize = true;
-            lblFindSystem.Location = new Point(72, 0);
+            lblFindSystem.Location = new Point(73, 0);
             lblFindSystem.Name = "lblFindSystem";
             lblFindSystem.Size = new Size(74, 33);
             lblFindSystem.TabIndex = 0;
@@ -307,11 +310,11 @@
             // txtFindSystem
             // 
             txtFindSystem.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtFindSystem.Location = new Point(152, 6);
+            txtFindSystem.Location = new Point(153, 6);
             txtFindSystem.Margin = new Padding(3, 6, 3, 3);
             txtFindSystem.Name = "txtFindSystem";
             txtFindSystem.PlaceholderText = "Hit Enter to search";
-            txtFindSystem.Size = new Size(293, 23);
+            txtFindSystem.Size = new Size(362, 23);
             txtFindSystem.TabIndex = 1;
             txtFindSystem.KeyPress += txtFindSystem_KeyPress;
             // 
@@ -319,11 +322,11 @@
             // 
             lblFindMessages.AutoSize = true;
             lblFindMessages.Dock = DockStyle.Fill;
-            lblFindMessages.Location = new Point(451, 3);
+            lblFindMessages.Location = new Point(521, 3);
             lblFindMessages.Margin = new Padding(3);
             lblFindMessages.Name = "lblFindMessages";
-            tableLayoutPanel3.SetRowSpan(lblFindMessages, 3);
-            lblFindMessages.Size = new Size(144, 93);
+            tableLayoutPanel3.SetRowSpan(lblFindMessages, 2);
+            lblFindMessages.Size = new Size(244, 60);
             lblFindMessages.TabIndex = 2;
             lblFindMessages.Text = "Nothing found";
             // 
@@ -331,7 +334,7 @@
             // 
             lblFilter.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblFilter.AutoSize = true;
-            lblFilter.Location = new Point(86, 33);
+            lblFilter.Location = new Point(87, 33);
             lblFilter.Name = "lblFilter";
             lblFilter.Size = new Size(60, 33);
             lblFilter.TabIndex = 3;
@@ -341,17 +344,17 @@
             // txtFilter
             // 
             txtFilter.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtFilter.Location = new Point(152, 39);
+            txtFilter.Location = new Point(153, 39);
             txtFilter.Margin = new Padding(3, 6, 3, 3);
             txtFilter.Name = "txtFilter";
             txtFilter.PlaceholderText = "Type to filter";
-            txtFilter.Size = new Size(293, 23);
+            txtFilter.Size = new Size(362, 23);
             txtFilter.TabIndex = 2;
             txtFilter.TextChanged += txtFilter_TextChanged;
             // 
             // lbJournals
             // 
-            tableLayoutPanel3.SetColumnSpan(lbJournals, 3);
+            tableLayoutPanel3.SetColumnSpan(lbJournals, 2);
             lbJournals.ContextMenuStrip = ctxResultsMenu;
             lbJournals.Dock = DockStyle.Fill;
             lbJournals.FormattingEnabled = true;
@@ -359,7 +362,7 @@
             lbJournals.Items.AddRange(new object[] { "{\"timestamp\":\"2024-04-11T19:39:33\" \"event\":\"FSDJump\" ... }" });
             lbJournals.Location = new Point(3, 102);
             lbJournals.Name = "lbJournals";
-            lbJournals.Size = new Size(592, 373);
+            lbJournals.Size = new Size(512, 373);
             lbJournals.TabIndex = 5;
             lbJournals.MouseDown += lbJournals_MouseDown;
             // 
@@ -396,6 +399,29 @@
             btnResendAll.UseVisualStyleBackColor = true;
             btnResendAll.Click += btnResendAll_Click;
             // 
+            // lblRecentSystems
+            // 
+            lblRecentSystems.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            lblRecentSystems.AutoSize = true;
+            lblRecentSystems.Location = new Point(521, 66);
+            lblRecentSystems.Name = "lblRecentSystems";
+            lblRecentSystems.Size = new Size(184, 33);
+            lblRecentSystems.TabIndex = 8;
+            lblRecentSystems.Text = "Recent Systems for current Cmdr:";
+            lblRecentSystems.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // lbRecentSystems
+            // 
+            lbRecentSystems.Dock = DockStyle.Fill;
+            lbRecentSystems.FormattingEnabled = true;
+            lbRecentSystems.ItemHeight = 15;
+            lbRecentSystems.Location = new Point(521, 102);
+            lbRecentSystems.Name = "lbRecentSystems";
+            lbRecentSystems.Size = new Size(244, 373);
+            lbRecentSystems.TabIndex = 7;
+            ttipArchivistUI.SetToolTip(lbRecentSystems, "Double-click an item to search for the system.");
+            lbRecentSystems.DoubleClick += lbRecentSystems_DoubleClick;
+            // 
             // ArchivistUI
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -403,7 +429,7 @@
             Controls.Add(tabPanels);
             DoubleBuffered = true;
             Name = "ArchivistUI";
-            Size = new Size(612, 545);
+            Size = new Size(782, 545);
             tabPanels.ResumeLayout(false);
             tabCurrentSystem.ResumeLayout(false);
             tableLayoutPanel2.ResumeLayout(false);
@@ -444,5 +470,7 @@
         private ThemeableIconButton btnOpenInViewer;
         private ThemeableIconButton btnOpenInSearch;
         private ToolTip ttipArchivistUI;
+        private ListBox lbRecentSystems;
+        private Label lblRecentSystems;
     }
 }
