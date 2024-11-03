@@ -2,22 +2,22 @@
     {
         "PluginName": "ObservatoryAggregator",
         "Production": {
-            "Version": "1.0.1.27202",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.1.27202/ObservatoryAggregator-v1.0.1.27202.eop",
+            "Version": "1.0.2.30804",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.30804/ObservatoryAggregator-v1.0.2.30804.eop",
             "MinRequiredCoreVersion": "1.0.4"
         },
         "Beta":{
-            "Version": "1.0.1.27202",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.1.27202/ObservatoryAggregator-v1.0.1.27202.eop",
+            "Version": "1.0.2.30804",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.30804/ObservatoryAggregator-v1.0.2.30804.eop",
             "MinRequiredCoreVersion": "1.0.4"
         }
     },
     {
         "PluginName": "ObservatoryArchivist",
         "Beta":{
-            "Version": "0.24.143.0120",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.143.0120-beta/ObservatoryArchivist-v0.24.143.0120-beta.eop",
-            "MinRequiredCoreVersion": "0.3.24141.2140"
+            "Version": "1.0.0.30804",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.30804/ObservatoryArchivist-v1.0.0.30804-beta.eop",
+            "MinRequiredCoreVersion": "1.0.4"
         }
     },
     {

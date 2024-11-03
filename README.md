@@ -33,8 +33,8 @@ NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need 
 The Aggregator plugin is a notification log -- collecting notifications from all other plugins into one place to reduce the number of times you need to switch between plugins.
 
 *  Status: Released + Beta
-*  Download latest stable (Requires Observatory Core >= 1.0.4): [ObservatoryAggregator-v1.0.1.27202.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.1.27202/ObservatoryAggregator-v1.0.1.27202.eop) (Sept 26, 2024)
-*  Download Beta (requires Observatory Core >= 1.0.4): [ObservatoryAggregator-v1.0.1.27202.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.1.27202/ObservatoryAggregator-v1.0.1.27202.eop) (Sept 26, 2024)
+*  Download latest stable (Requires Observatory Core >= 1.0.4): [ObservatoryAggregator-v1.0.2.30804.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.30804/ObservatoryAggregator-v1.0.2.30804.eop) (Nov 3, 2024)
+*  Download Beta (requires Observatory Core >= 1.0.4): [ObservatoryAggregator-v1.0.2.30804.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.30804/ObservatoryAggregator-v1.0.2.30804.eop) (Nov 3, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator)
 
 ## Archivist
@@ -42,7 +42,7 @@ The Aggregator plugin is a notification log -- collecting notifications from all
 The Archivist plugin captures exploration related journals and stores them in a database for later re-use either by re-sending journal entries to other plugins or by allowing you to search/browse the journal entries yourself (pretty printed) and copy them out for other uses.
 
 *  Status: Beta
-*  Download Beta (requires Observatory Core >= 0.3.x): [ObservatoryArchivist-v0.24.143.0120-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v0.24.143.0120-beta/ObservatoryArchivist-v0.24.143.0120-beta.eop) (May 21, 2024)
+*  Download Beta (requires Observatory Core >= 0.3.x): [ObservatoryArchivist-v1.0.0.30804-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.30804/ObservatoryArchivist-v1.0.0.30804-beta.eop) (Nov 3, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Archivist)
 
 ## Fleet Commander
