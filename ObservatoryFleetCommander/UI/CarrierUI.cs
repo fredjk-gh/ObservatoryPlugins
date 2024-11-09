@@ -221,7 +221,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 var upkeepUntilDate = asOfDate.AddDays(upkeepWeeks * 7);
                 if (upkeepUntilDate.Subtract(DateTime.Now).Days <= 30)
                 {
-                    msg = msg + Environment.NewLine + "WARNING: Carrier may have low funds remining! Add funds to the carrier budget to avoid it being decommissioned.";
+                    msg = msg + Environment.NewLine + "WARNING: Carrier may have low funds remaining! Add funds to the carrier budget to avoid it being decommissioned.";
                 }
                 lblBalanceValue.Text = $"{_data.CarrierBalance:n0} Cr";
                 ttipCarrierUI.SetToolTip(
