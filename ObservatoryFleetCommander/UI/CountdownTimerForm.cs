@@ -118,5 +118,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
         {
             AdjustTimerFont();
         }
+
+        private void CountdownTimerForm_Shown(object sender, EventArgs e)
+        {
+            AdjustTimerFont();
+        }
     }
 }

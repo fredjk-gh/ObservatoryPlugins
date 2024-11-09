@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Timers;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
@@ -52,6 +53,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         public void Load(IObservatoryCore observatoryCore)
         {
+            PrepSettings();
             Core = observatoryCore;
 
             MaybeDeserializeDataCache();
@@ -527,6 +529,23 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 new JsonSerializerOptions() { AllowTrailingCommas = true, WriteIndented = true });
             File.WriteAllText(dataCacheFile, jsonString);
         }
+
+        private void PrepSettings()
+        {
+            settings.ClearCountdownWindowSizePosition = ResetCountdownWindowSizePosition;
+        }
+
+        private void ResetCountdownWindowSizePosition()
+        {
+            settings.CountdownWindowX = 0;
+            settings.CountdownWindowY = 0;
+
+            settings.CountdownWindowWidth = 0;
+            settings.CountdownWindowHeight = 0;
+
+            Core.SaveSettings(this);
+        }
+
         #endregion
 
         #region Events

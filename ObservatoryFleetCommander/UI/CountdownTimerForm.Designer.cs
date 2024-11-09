@@ -71,6 +71,7 @@
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Commander - Timer Popout";
             TopMost = true;
+            Shown += CountdownTimerForm_Shown;
             ResizeEnd += CountdownTimerForm_ResizeEnd;
             Resize += CountdownTimerForm_Resize;
             ResumeLayout(false);
