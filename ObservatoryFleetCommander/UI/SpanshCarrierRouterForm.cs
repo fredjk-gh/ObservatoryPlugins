@@ -192,14 +192,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             ValidateInputs();
         }
 
-        private void btnGenerateRoute_Click(object sender, EventArgs e)
+        private async void btnGenerateRoute_Click(object sender, EventArgs e)
         {
             // Disable UI elements to prevent fiddling.
             btnGenerateRoute.Enabled = false;
             ToggleInputs(false);
 
             // Create a request
-            var requestUri = $"https://spansh.co.uk/api/fleetcarrier/route?source={Uri.EscapeDataString(txtStartSystem.Text)}&destinations={Uri.EscapeDataString(txtDestSystem.Text)}&capacity_used={nudUsedCapacity.Value}&calculate_starting_fuel=1";
+            var requestUri = $"https://spansh.co.uk/api/fleetcarrier/route?source={Uri.EscapeDataString(txtStartSystem.Text.Trim())}&destinations={Uri.EscapeDataString(txtDestSystem.Text.Trim())}&capacity_used={nudUsedCapacity.Value}&calculate_starting_fuel=1";
             string jobJson = "";
 
             // Send it, get result ID.
@@ -221,42 +221,40 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             var jobId = jobRoot.GetProperty("job").GetString();
             txtOutput.Text = $"Got Job ID {jobId}; polling for result...";
 
-            // Poll until it's ready.
+            // Poll until it's ready. Unfortunate, but the only way we can do it.
+            // That said, I wonder if this should be a separate task at some point.
             var routeJson = string.Empty;
             do
             {
-                Thread.Sleep(1500);
+                Task pause = Task.Delay(1500); // Non-blocking wait.
+                await pause;
                 var fetchResultTask = _core.HttpClient.GetStringAsync($"https://spansh.co.uk/api/results/{jobId}");
-                try
+                await fetchResultTask;
+                if (fetchResultTask.IsFaulted)
                 {
-                    routeJson = fetchResultTask.Result;
-                }
-                catch (Exception ex)
-                {
-                    txtOutput.Text = $"Spansh result fetch failed: {ex.Message}{Environment.NewLine}See Error log.";
-                    _core.GetPluginErrorLogger(_worker)(ex, "Fetching Spansh route result");
+                    txtOutput.Text = $"Spansh result fetch failed: {fetchResultTask.Exception.Message}"
+                        + $"{Environment.NewLine}Possible reasons for this include invalid inputs or unknown systems; please try something else."
+                        + $"{Environment.NewLine}See Error log.";
+                    _core.GetPluginErrorLogger(_worker)(fetchResultTask.Exception, "Fetching Spansh route result");
                     ToggleInputs(true);
                     return;
                 }
 
+                routeJson = fetchResultTask.Result;
                 using var resultDoc = JsonDocument.Parse(routeJson);
                 var resultRoot = resultDoc.RootElement;
                 JsonElement property;
-                if (resultRoot.TryGetProperty("job", out property))
+                if (resultRoot.TryGetProperty("result", out property))
                 {
-                    routeJson = ""; // Still working on it...
-                }
-                else if (resultRoot.TryGetProperty("error", out property))
-                {
-                    txtOutput.Text = $"Spansh returned error: {property.GetString()}{Environment.NewLine}Perhaps your systems are unknown?";
-                    ToggleInputs(true);
-                    return;
-                }
-                else if (resultRoot.TryGetProperty("result", out property))
-                {
-                    // We have a result!
+                    // We have a result! Always check this first, in case both "job" and "result" are present to avoid loops.
                     _carrierRoute = CarrierRoute.FromSpanshResultJson(property, jobId);
                     txtOutput.Text = $"Route ready! {_carrierRoute.Jumps.Count - 1} jumps.";
+                    break;
+                }
+                else if (resultRoot.TryGetProperty("job", out property))
+                {
+                    routeJson = ""; // Still working on it...
+                    continue;
                 }
                 else
                 {

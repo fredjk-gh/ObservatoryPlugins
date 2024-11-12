@@ -50,8 +50,8 @@ The Archivist plugin captures exploration related journals and stores them in a 
 A companion for fleet carrier owners. My favourite feature is the jump cooldown timer. Beta includes Spansh carrier routing integration.
 
 *  Status: Released + Beta
-*  Download latest stable (Observatory Core >= 1.0.4): [ObservatoryFleetCommander-v1.0.1.31406.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.1.31406/ObservatoryFleetCommander-v1.0.1.31406.eop) (Nov 9, 2024)
-*  Download Beta (requires Observatory Core >= 1.0.4): [ObservatoryFleetCommander-v1.0.1.31406.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.1.31406/ObservatoryFleetCommander-v1.0.1.31406.eop) (Nov 9, 2024)
+*  Download latest stable (Observatory Core >= 1.0.4): [ObservatoryFleetCommander-v1.0.2.31703.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.31703/ObservatoryFleetCommander-v1.0.2.31703.eop) (Nov 9, 2024)
+*  Download Beta (requires Observatory Core >= 1.0.4): [ObservatoryFleetCommander-v1.0.2.31703.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.31703/ObservatoryFleetCommander-v1.0.2.31703.eop) (Nov 9, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Fleet-Commander)
 
 ## Helm
