@@ -1,4 +1,6 @@
-﻿namespace com.github.fredjk_gh.ObservatoryFleetCommander
+﻿using com.github.fredjk_gh.ObservatoryFleetCommander.UI;
+
+namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
     partial class ExpanderTile
     {
@@ -29,7 +31,7 @@
         private void InitializeComponent()
         {
             tlpLayout = new TableLayoutPanel();
-            lblTileTitle = new Label();
+            lblTileTitle = new ExpanderLabel();
             btnToggle = new Button();
             tlpLayout.SuspendLayout();
             SuspendLayout();
@@ -97,7 +99,7 @@
         #endregion
 
         private TableLayoutPanel tlpLayout;
-        private Label lblTileTitle;
+        private ExpanderLabel lblTileTitle;
         private Button btnToggle;
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace com.github.fredjk_gh.ObservatoryFleetCommander
+﻿using com.github.fredjk_gh.ObservatoryFleetCommander.UI;
+
+namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
     partial class CarrierUI
     {
@@ -42,7 +44,7 @@
             ctxRouteMenu_SetCurrentPosition = new ToolStripMenuItem();
             txtMessages = new TextBox();
             lblMessages = new Label();
-            pbFuelLevel = new ProgressBar();
+            pbFuelLevel = new UI.ThemeableProgressBar();
             tableLayoutPanel1 = new TableLayoutPanel();
             lblTimerValue = new Label();
             btnPopOutTimer = new UI.ThemeableIconButton();
@@ -462,7 +464,7 @@
         private ToolStripMenuItem ctxRouteMenu_SetCurrentPosition;
         private TextBox txtMessages;
         private Label lblMessages;
-        private ProgressBar pbFuelLevel;
+        private UI.ThemeableProgressBar pbFuelLevel;
         private TableLayoutPanel tableLayoutPanel1;
         private Label lblTimerValue;
         private UI.ThemeableIconButton btnPopOutTimer;
