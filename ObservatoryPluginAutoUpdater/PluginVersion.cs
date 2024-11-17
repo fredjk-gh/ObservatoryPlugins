@@ -79,6 +79,10 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
         {
             if (string.IsNullOrEmpty(version) || version == NO_VERSION) return NO_VERSION_PARSED;
 
+            if (version.StartsWith('v'))
+            {
+                version = version.Replace("v", ""); // Just in case I'm dumb and leave a v prefix.
+            }
             string[] parts = version.Split('.');
             int[] numericParts = new int[parts.Length];
 
