@@ -37,6 +37,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public AboutInfo AboutInfo => _aboutInfo;
         public string Version => typeof(Aggregator).Assembly.GetName().Version.ToString();
         public PluginUI PluginUI => _pluginUI;
+        public bool OverrideAcceptNotificationsDuringBatch { get => true; }
 
         public object Settings
         {
@@ -113,6 +114,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     break;
                 case ShipyardSwap swapShip:
                     _data.ChangeShip(swapShip.ShipID);
+                    RedrawGrid();
+                    break;
+                case SetUserShipName shipNameChange:
+                    _data.UpdateShip(shipNameChange.ShipID, shipNameChange.UserShipName);
                     RedrawGrid();
                     break;
                 case FSSDiscoveryScan dScan:

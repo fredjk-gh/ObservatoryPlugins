@@ -21,8 +21,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         private AggregatorSettings _settings;
         private AggregatorGrid _gridData;
         private string _commander;
-        private string _shipName;
-        private Dictionary<ulong, string> _shipNamesById = new();
+        private ShipData _shipData;
+        private Dictionary<string, Dictionary<ulong, ShipData>> _shipDataByCommander = new();
         private int _destinationBodyId = 0; // arrival
 
         public void Load(IObservatoryCore core, Aggregator worker, AggregatorSettings settings)
@@ -56,12 +56,12 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             }
         }
 
-        public string CurrentShip
+        public ShipData CurrentShip
         { 
-            get => _shipName;
+            get => _shipData;
             private set
             {
-                _shipName = value;
+                _shipData = value;
                 IsDirty = true;
             }
         }
@@ -88,33 +88,54 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 MarkForVisit(_destinationBodyId);
             }
         }
+        internal Dictionary<ulong, ShipData> GetShipsForCommander()
+        {
+            if (string.IsNullOrWhiteSpace(CurrentCommander))
+            {
+                return null;
+            }
+
+            if (!_shipDataByCommander.ContainsKey(CurrentCommander))
+            {
+                _shipDataByCommander.Add(CurrentCommander, new());
+            }
+            return _shipDataByCommander[CurrentCommander];
+        }
 
         public string GetCommanderAndShipString()
         {
-            return $"{CurrentCommander} - {CurrentShip}";
+            return $"{CurrentCommander} - {CurrentShip.Name}";
         }
+
 
         public void ChangeShip(ulong shipId, string name = "")
         {
-            if (!_shipNamesById.ContainsKey(shipId))
+            var commanderShips = GetShipsForCommander();
+            if (!commanderShips.ContainsKey(shipId))
             {
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    AddKnownShip(shipId, name);
-                }
-                else
-                {
-                    // Don't know this ship's name. Don't cache it.
-                    CurrentShip = "(unknown ship)";
-                    return;
-                }
+                AddKnownShip(shipId, name);
             }
-            CurrentShip = _shipNamesById[shipId];
+            CurrentShip = commanderShips[shipId];
         }
 
-        public void AddKnownShip(ulong shipId, string name)
+        public void UpdateShip(ulong shipId, string userShipName)
         {
-            _shipNamesById[shipId] = name;
+            var commanderShips = GetShipsForCommander();
+            if (commanderShips.ContainsKey(shipId))
+            {
+                commanderShips[shipId].Name = userShipName;
+            }
+            else
+            {
+                AddKnownShip(shipId, userShipName);
+            }
+        }
+
+        public ShipData AddKnownShip(ulong shipId, string name)
+        {
+            var commanderShips = GetShipsForCommander();
+            commanderShips[shipId] = new(shipId, name);
+            return commanderShips[shipId];
         }
 
         public List<AggregatorGrid> ToGrid()
