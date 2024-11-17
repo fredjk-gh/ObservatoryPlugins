@@ -57,8 +57,10 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         private void MaybeAddToRecentSystems(string? systemName)
         {
-            if (!string.IsNullOrWhiteSpace(systemName) && (_recentSystems.Count == 0 || !systemName.Equals(_recentSystems[0])))
+            if (!string.IsNullOrWhiteSpace(systemName))
             {
+                // De-dupe by removing the item and re-inserting it at the top of the list.
+                _recentSystems.Remove(systemName);
                 _recentSystems.Insert(0, systemName);
                 if (_recentSystems.Count > 25)
                 {

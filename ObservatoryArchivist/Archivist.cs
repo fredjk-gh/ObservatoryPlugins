@@ -4,6 +4,7 @@ using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -110,6 +111,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
         {
+            if (_context.IsResending) return;
+
             switch (journal)
             {
                 case FileHeader fileHeader:

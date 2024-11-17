@@ -248,7 +248,7 @@
             tableLayoutPanel3.ColumnCount = 3;
             tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150F));
             tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 250F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300F));
             tableLayoutPanel3.Controls.Add(cboCommanderFilter, 1, 2);
             tableLayoutPanel3.Controls.Add(lblCommanderFilterTitle, 0, 2);
             tableLayoutPanel3.Controls.Add(lblFindSystem, 0, 0);
@@ -280,7 +280,7 @@
             cboCommanderFilter.Location = new Point(153, 69);
             cboCommanderFilter.MaximumSize = new Size(500, 0);
             cboCommanderFilter.Name = "cboCommanderFilter";
-            cboCommanderFilter.Size = new Size(362, 28);
+            cboCommanderFilter.Size = new Size(312, 28);
             cboCommanderFilter.TabIndex = 3;
             cboCommanderFilter.SelectedIndexChanged += cboCommanderFilter_SelectedIndexChanged;
             // 
@@ -314,7 +314,7 @@
             txtFindSystem.Margin = new Padding(3, 6, 3, 3);
             txtFindSystem.Name = "txtFindSystem";
             txtFindSystem.PlaceholderText = "Hit Enter to search";
-            txtFindSystem.Size = new Size(362, 23);
+            txtFindSystem.Size = new Size(312, 23);
             txtFindSystem.TabIndex = 1;
             txtFindSystem.KeyPress += txtFindSystem_KeyPress;
             // 
@@ -322,11 +322,11 @@
             // 
             lblFindMessages.AutoSize = true;
             lblFindMessages.Dock = DockStyle.Fill;
-            lblFindMessages.Location = new Point(521, 3);
+            lblFindMessages.Location = new Point(471, 3);
             lblFindMessages.Margin = new Padding(3);
             lblFindMessages.Name = "lblFindMessages";
             tableLayoutPanel3.SetRowSpan(lblFindMessages, 2);
-            lblFindMessages.Size = new Size(244, 60);
+            lblFindMessages.Size = new Size(294, 60);
             lblFindMessages.TabIndex = 2;
             lblFindMessages.Text = "Nothing found";
             // 
@@ -348,7 +348,7 @@
             txtFilter.Margin = new Padding(3, 6, 3, 3);
             txtFilter.Name = "txtFilter";
             txtFilter.PlaceholderText = "Type to filter";
-            txtFilter.Size = new Size(362, 23);
+            txtFilter.Size = new Size(312, 23);
             txtFilter.TabIndex = 2;
             txtFilter.TextChanged += txtFilter_TextChanged;
             // 
@@ -362,7 +362,7 @@
             lbJournals.Items.AddRange(new object[] { "{\"timestamp\":\"2024-04-11T19:39:33\" \"event\":\"FSDJump\" ... }" });
             lbJournals.Location = new Point(3, 102);
             lbJournals.Name = "lbJournals";
-            lbJournals.Size = new Size(512, 373);
+            lbJournals.Size = new Size(462, 373);
             lbJournals.TabIndex = 5;
             lbJournals.MouseDown += lbJournals_MouseDown;
             // 
@@ -403,11 +403,11 @@
             // 
             lblRecentSystems.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             lblRecentSystems.AutoSize = true;
-            lblRecentSystems.Location = new Point(521, 66);
+            lblRecentSystems.Location = new Point(471, 66);
             lblRecentSystems.Name = "lblRecentSystems";
-            lblRecentSystems.Size = new Size(184, 33);
+            lblRecentSystems.Size = new Size(221, 33);
             lblRecentSystems.TabIndex = 8;
-            lblRecentSystems.Text = "Recent Systems for current Cmdr:";
+            lblRecentSystems.Text = "Recent Systems for current Commander:";
             lblRecentSystems.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lbRecentSystems
@@ -415,9 +415,9 @@
             lbRecentSystems.Dock = DockStyle.Fill;
             lbRecentSystems.FormattingEnabled = true;
             lbRecentSystems.ItemHeight = 15;
-            lbRecentSystems.Location = new Point(521, 102);
+            lbRecentSystems.Location = new Point(471, 102);
             lbRecentSystems.Name = "lbRecentSystems";
-            lbRecentSystems.Size = new Size(244, 373);
+            lbRecentSystems.Size = new Size(294, 373);
             lbRecentSystems.TabIndex = 7;
             ttipArchivistUI.SetToolTip(lbRecentSystems, "Double-click an item to search for the system.");
             lbRecentSystems.DoubleClick += lbRecentSystems_DoubleClick;

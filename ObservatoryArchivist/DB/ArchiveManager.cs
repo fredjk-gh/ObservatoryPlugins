@@ -115,7 +115,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             //return VisitedSystemsCol.FindOne(bsonExpr);
             if (BatchModeProcessing)
             {
-                var key = new Tuple<string, string>(systemName, commanderName);
+                var key = new Tuple<string, string>(commanderName, systemName);
                 if (_deferredChanges.ContainsKey(key))
                     return _deferredChanges[key].ToSystemInfo();
                 return null;

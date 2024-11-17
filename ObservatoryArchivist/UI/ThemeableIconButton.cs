@@ -51,6 +51,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         {
             if (_originalIcon == null) return;
 
+            // derived from https://stackoverflow.com/questions/4699762/how-do-i-recolor-an-image-see-images
             ColorMatrix cm = new ColorMatrix(new float[][]
             {
                 new float[] {r(c.R), 0, 0, 0, 0},
@@ -73,7 +74,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
         private float r(byte component)
         {
-            return component > 0 ? 255 / component : 0;
+            return component > 0 ? (component / 255.0f) : 0;
         }
     }
 }

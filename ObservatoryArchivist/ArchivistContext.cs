@@ -38,6 +38,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public bool IsReadAll { get => (Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0; }
 
+        public bool IsResending { get; private set; }
+
         public void FlushIfDirty(bool forceFlush = false)
         {
             if (IsReadAll && !forceFlush) return;
@@ -103,6 +105,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             }
 
             UI.SetMessage(sb.ToString());
+        }
+
+        internal void SetResendAll(bool isResending)
+        {
+            IsResending = isResending;
         }
     }
 }

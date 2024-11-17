@@ -107,6 +107,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                 return;
             }
 
+            lblRecentSystems.Text = $"Recent systems for {cmdrData.CommanderName}";
             lbRecentSystems.Items.Clear();
             foreach (var item in cmdrData.RecentSystems)
             {
@@ -293,11 +294,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         private void btnResendAll_Click(object sender, EventArgs e)
         {
             // Implement this on Context?
+            _context.SetResendAll(true);
             foreach (var item in lbJournals.Items)
             {
                 string json = item.ToString();
                 _context.Core.DeserializeEvent(json, true);
             }
+            _context.SetResendAll(false);
         }
 
         private void lbJournals_MouseDown(object sender, MouseEventArgs e)
