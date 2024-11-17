@@ -27,7 +27,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             {
                 new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
                 new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Archivist"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/archivist"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/archivist"),
             }
         };
 

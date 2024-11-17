@@ -46,7 +46,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             {
                 new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
                 new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/prospector"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/prospector"),
             }
         };
 

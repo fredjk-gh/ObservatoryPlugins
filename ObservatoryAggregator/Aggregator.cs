@@ -30,7 +30,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             {
                 new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
                 new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/aggregator"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/aggregator"),
             }
         };
 

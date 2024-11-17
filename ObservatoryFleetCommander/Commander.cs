@@ -35,7 +35,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
                 new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Fleet-Commander"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fleetcommander"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/fleetcommander"),
             }
         };
 

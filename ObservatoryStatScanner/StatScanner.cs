@@ -32,7 +32,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             {
                 new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
                 new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/statscanner"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/statscanner"),
                 new AboutLink("edastro.com Records", "https://edastro.com/records/")
             }
         };

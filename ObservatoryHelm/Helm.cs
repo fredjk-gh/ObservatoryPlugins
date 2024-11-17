@@ -34,7 +34,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             {
                 new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
                 new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Helm"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/helm"),
+                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/helm"),
             }
         };
 
