@@ -1,4 +1,5 @@
 ﻿using com.github.fredjk_gh.ObservatoryFleetCommander.Data;
+using com.github.fredjk_gh.ObservatoryFleetCommander.UI;
 using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
 using System;
@@ -16,7 +17,7 @@ using System.Windows.Forms;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
-    public partial class SpanshCarrierRouterForm : Form
+    public partial class SpanshCarrierRouterForm : Form, ICarrierRouteCreator
     {
         private IObservatoryCore _core;
         private IObservatoryWorker _worker;
@@ -38,7 +39,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
             if (_carrierManager.Count == 0)
             {
-                txtOutput.Text = "No known carriers. Open your Carrier Administration Panel or perform a Read-All, close this window and try again.";
+                txtOutput.Text = "No known carriers. Please close this window, and perform a Read-All and try again.";
                 btnSaveRoute.Enabled = false;
                 btnGenerateRoute.Enabled = false;
             }
@@ -198,8 +199,22 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             btnGenerateRoute.Enabled = false;
             ToggleInputs(false);
 
+            string destinationsParams = "";
+            foreach (var dest in txtDestSystem.Text.Trim().Split(','))
+            {
+                if (string.IsNullOrWhiteSpace(dest)) continue;
+
+                destinationsParams += $"&destinations={Uri.EscapeDataString(dest.Trim())}";
+            }
+            if (destinationsParams.Length == 0)
+            {
+                txtOutput.Text = $"No destination(s) provided!";
+                ToggleInputs(true);
+                return;
+            }
+
             // Create a request
-            var requestUri = $"https://spansh.co.uk/api/fleetcarrier/route?source={Uri.EscapeDataString(txtStartSystem.Text.Trim())}&destinations={Uri.EscapeDataString(txtDestSystem.Text.Trim())}&capacity_used={nudUsedCapacity.Value}&calculate_starting_fuel=1";
+            var requestUri = $"https://spansh.co.uk/api/fleetcarrier/route?source={Uri.EscapeDataString(txtStartSystem.Text.Trim())}{destinationsParams}&capacity_used={nudUsedCapacity.Value}&calculate_starting_fuel=1";
             string jobJson = "";
 
             // Send it, get result ID.
@@ -210,8 +225,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
             catch (Exception ex)
             {
-                txtOutput.Text = $"Failed to start search on Spansh: {ex.Message}{Environment.NewLine}See Error log.";
-                _core.GetPluginErrorLogger(_worker)(ex, "Initiating Spansh route search");
+                txtOutput.Text = $"Failed to start search on Spansh: {ex.Message}.";
                 ToggleInputs(true);
                 return;
             }
@@ -229,15 +243,15 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 Task pause = Task.Delay(1500); // Non-blocking wait.
                 await pause;
                 var fetchResultTask = _core.HttpClient.GetStringAsync($"https://spansh.co.uk/api/results/{jobId}");
-                await fetchResultTask;
-                if (fetchResultTask.IsFaulted)
+                try
                 {
-                    txtOutput.Text = $"Spansh result fetch failed: {fetchResultTask.Exception.Message}"
-                        + $"{Environment.NewLine}Possible reasons for this include invalid inputs or unknown systems; please try something else."
-                        + $"{Environment.NewLine}See Error log.";
-                    _core.GetPluginErrorLogger(_worker)(fetchResultTask.Exception, "Fetching Spansh route result");
-                    ToggleInputs(true);
-                    return;
+                    await fetchResultTask;
+                }
+                catch (Exception ex)
+                {
+                    txtOutput.Text = $"Spansh result fetch failed: {ex.Message}"
+                        + $"{Environment.NewLine}Possible reasons for this include invalid inputs or unknown systems; please try something else.";
+                    break;
                 }
 
                 routeJson = fetchResultTask.Result;

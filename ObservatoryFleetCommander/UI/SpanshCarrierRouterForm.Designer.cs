@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             mainLayoutPanel = new TableLayoutPanel();
             lblCommander = new Label();
             cbCommanders = new ComboBox();
@@ -46,6 +47,7 @@
             nudUsedCapacity = new NumericUpDown();
             flowLayoutPanel1 = new FlowLayoutPanel();
             btnGenerateRoute = new Button();
+            ttipSpanshRouter = new ToolTip(components);
             mainLayoutPanel.SuspendLayout();
             buttonLayoutPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)nudUsedCapacity).BeginInit();
@@ -158,13 +160,14 @@
             // 
             lblDestinationSystem.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblDestinationSystem.AutoSize = true;
-            lblDestinationSystem.Location = new Point(28, 99);
+            lblDestinationSystem.Location = new Point(15, 99);
             lblDestinationSystem.Margin = new Padding(2, 0, 2, 0);
             lblDestinationSystem.Name = "lblDestinationSystem";
-            lblDestinationSystem.Size = new Size(111, 33);
+            lblDestinationSystem.Size = new Size(124, 33);
             lblDestinationSystem.TabIndex = 6;
-            lblDestinationSystem.Text = "Destination System:";
+            lblDestinationSystem.Text = "Destination System(s):";
             lblDestinationSystem.TextAlign = ContentAlignment.MiddleRight;
+            ttipSpanshRouter.SetToolTip(lblDestinationSystem, "Separate destinations with commas");
             // 
             // txtDestSystem
             // 
@@ -298,6 +301,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(458, 281);
             Controls.Add(mainLayoutPanel);
+            DoubleBuffered = true;
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Margin = new Padding(2);
             Name = "SpanshCarrierRouterForm";
@@ -334,5 +338,6 @@
         private Button btnGenerateRoute;
         private FlowLayoutPanel flowLayoutPanel1;
         private Button btnClearRoute;
+        private ToolTip ttipSpanshRouter;
     }
 }

@@ -37,6 +37,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             InitializeComponent();
             btnPopOutTimer.SetIcon(Properties.Resources.OpenInNewIcon.ToBitmap(), new(32, 32));
             btnNewRoute.SetIcon(Properties.Resources.RouteAddIcon.ToBitmap(), new(32, 32));
+            btnOpenFromSpansh.SetIcon(Properties.Resources.OpenFromLinkIcon.ToBitmap(), new(32, 32));
             btnClearRoute.SetIcon(Properties.Resources.RouteClearIcon.ToBitmap(), new(32, 32));
             btnOpenSpansh.SetIcon(Properties.Resources.OpenInBrowserIcon.ToBitmap(), new(32, 32));
 
@@ -312,20 +313,25 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
         }
 
-        private void PlotCarrierRoute()
+        private void CreateCarrierRoute(Form theUI, string purpose)
         {
             try
             {
-                SpanshCarrierRouterForm dlgSpanshOptions = new(_core, _commanderPlugin, _data.OwningCommander, _manager);
+                ICarrierRouteCreator creatorForm = theUI as ICarrierRouteCreator;
+                if (creatorForm == null)
+                {
+                    theUI.Dispose();
+                    return;
+                }
 
-                _core.RegisterControl(dlgSpanshOptions);
+                _core.RegisterControl(theUI);
 
-                DialogResult result = dlgSpanshOptions.ShowDialog();
+                DialogResult result = theUI.ShowDialog();
 
                 if (result == DialogResult.OK)
                 {
                     // The result is stored on the CarrierData for the selected Commander (indicated on the "SelectedCommander" property).
-                    CarrierData data = _manager.GetByCommander(dlgSpanshOptions.SelectedCommander);
+                    CarrierData data = _manager.GetByCommander(creatorForm.SelectedCommander);
                     if (data != null)
                     {
                         // Freshen the contents of the cache for next run of the application.
@@ -344,7 +350,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                             Clipboard.SetText(firstJump.SystemName);
 
                             // Spit out an update to the grid indicating a route is set.
-                            SetMessage($"Route plotted via Spansh. First jump system name ({firstJump.SystemName}) is in the clipboard.");
+                            SetMessage($"Route {purpose} via Spansh. Next jump system name ({firstJump.SystemName}) is in the clipboard.");
                         }
 
                         PopulateRoute();
@@ -352,18 +358,18 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 }
                 else if (result == DialogResult.Abort) // Cleared route.
                 {
-                    dlgSpanshOptions.CarrierDataForSelectedCommander.Route = null;
+                    creatorForm.CarrierDataForSelectedCommander.Route = null;
                     _commanderPlugin.SerializeDataCache();
 
                     ClearRoute("Route cleared.");
                 }
 
-                _core.UnregisterControl(dlgSpanshOptions);
-                dlgSpanshOptions.Dispose();
+                _core.UnregisterControl(theUI);
+                theUI.Dispose();
             }
             catch (Exception ex)
             {
-                _core.GetPluginErrorLogger(_commanderPlugin).Invoke(ex, "PlotCarrierRoute");
+                _core.GetPluginErrorLogger(_commanderPlugin).Invoke(ex, $"CreateCarrierRoute-{purpose}");
             }
         }
 
@@ -482,7 +488,16 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         private void btnNewRoute_Click(object sender, EventArgs e)
         {
-            PlotCarrierRoute();
+            SpanshCarrierRouterForm dlgSpanshCreate = new(_core, _commanderPlugin, _data.OwningCommander, _manager);
+
+            CreateCarrierRoute(dlgSpanshCreate, "plotted");
+        }
+
+        private void btnOpenFromSpansh_Click(object sender, EventArgs e)
+        {
+            SpanshImportCarrierRouteForm dlgSpanshImport = new(_core, _commanderPlugin, _data.OwningCommander, _manager);
+
+            CreateCarrierRoute(dlgSpanshImport, "imported");
         }
 
         private void Countdown_Tick(object sender, ElapsedEventArgs e)
@@ -545,5 +560,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
+
     }
 }

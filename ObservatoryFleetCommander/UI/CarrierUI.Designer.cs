@@ -35,19 +35,20 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             lblNextJumpValue = new Label();
             lblTimerTitle = new Label();
             flowLayoutPanel1 = new FlowLayoutPanel();
-            btnNewRoute = new UI.ThemeableIconButton();
-            btnClearRoute = new UI.ThemeableIconButton();
-            btnOpenSpansh = new UI.ThemeableIconButton();
+            btnNewRoute = new ThemeableIconButton();
+            btnOpenFromSpansh = new ThemeableIconButton();
+            btnClearRoute = new ThemeableIconButton();
+            btnOpenSpansh = new ThemeableIconButton();
             clbRoute = new CheckedListBox();
             ctxRouteMenu = new ContextMenuStrip(components);
             ctxRouteMenu_CopySystemName = new ToolStripMenuItem();
             ctxRouteMenu_SetCurrentPosition = new ToolStripMenuItem();
             txtMessages = new TextBox();
             lblMessages = new Label();
-            pbFuelLevel = new UI.ThemeableProgressBar();
+            pbFuelLevel = new ThemeableProgressBar();
             tableLayoutPanel1 = new TableLayoutPanel();
             lblTimerValue = new Label();
-            btnPopOutTimer = new UI.ThemeableIconButton();
+            btnPopOutTimer = new ThemeableIconButton();
             ttipCarrierUI = new ToolTip(components);
             tlpCarrierLayout.SuspendLayout();
             flowLayoutPanel1.SuspendLayout();
@@ -265,6 +266,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // flowLayoutPanel1
             // 
             flowLayoutPanel1.Controls.Add(btnNewRoute);
+            flowLayoutPanel1.Controls.Add(btnOpenFromSpansh);
             flowLayoutPanel1.Controls.Add(btnClearRoute);
             flowLayoutPanel1.Controls.Add(btnOpenSpansh);
             flowLayoutPanel1.Dock = DockStyle.Fill;
@@ -287,15 +289,28 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             btnNewRoute.UseVisualStyleBackColor = true;
             btnNewRoute.Click += btnNewRoute_Click;
             // 
+            // btnOpenFromSpansh
+            // 
+            btnOpenFromSpansh.FlatAppearance.BorderSize = 0;
+            btnOpenFromSpansh.FlatStyle = FlatStyle.Flat;
+            btnOpenFromSpansh.Location = new Point(35, 3);
+            btnOpenFromSpansh.Name = "btnOpenFromSpansh";
+            btnOpenFromSpansh.Size = new Size(26, 26);
+            btnOpenFromSpansh.TabIndex = 4;
+            ttipCarrierUI.SetToolTip(btnOpenFromSpansh, "Import route from Spansh URL");
+            btnOpenFromSpansh.UseVisualStyleBackColor = true;
+            btnOpenFromSpansh.Visible = false;
+            btnOpenFromSpansh.Click += btnOpenFromSpansh_Click;
+            // 
             // btnClearRoute
             // 
             btnClearRoute.FlatAppearance.BorderSize = 0;
             btnClearRoute.FlatStyle = FlatStyle.Flat;
-            btnClearRoute.Location = new Point(35, 3);
+            btnClearRoute.Location = new Point(67, 3);
             btnClearRoute.Name = "btnClearRoute";
             btnClearRoute.Padding = new Padding(1);
             btnClearRoute.Size = new Size(26, 26);
-            btnClearRoute.TabIndex = 4;
+            btnClearRoute.TabIndex = 5;
             ttipCarrierUI.SetToolTip(btnClearRoute, "Clear route");
             btnClearRoute.UseVisualStyleBackColor = true;
             btnClearRoute.Click += btnClearRoute_Click;
@@ -304,11 +319,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // 
             btnOpenSpansh.FlatAppearance.BorderSize = 0;
             btnOpenSpansh.FlatStyle = FlatStyle.Flat;
-            btnOpenSpansh.Location = new Point(67, 3);
+            btnOpenSpansh.Location = new Point(99, 3);
             btnOpenSpansh.Name = "btnOpenSpansh";
             btnOpenSpansh.Padding = new Padding(1);
             btnOpenSpansh.Size = new Size(26, 26);
-            btnOpenSpansh.TabIndex = 5;
+            btnOpenSpansh.TabIndex = 6;
             ttipCarrierUI.SetToolTip(btnOpenSpansh, "Open route on Spansh");
             btnOpenSpansh.UseVisualStyleBackColor = true;
             btnOpenSpansh.Click += btnOpenSpansh_Click;
@@ -474,5 +489,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         private UI.ThemeableIconButton btnOpenSpansh;
         private Label lblCapacityTitle;
         private Label lblCapacityValue;
+        private ThemeableIconButton btnOpenFromSpansh;
     }
 }

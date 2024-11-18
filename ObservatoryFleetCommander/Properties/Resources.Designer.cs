@@ -63,6 +63,16 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
+        internal static System.Drawing.Icon OpenFromLinkIcon {
+            get {
+                object obj = ResourceManager.GetObject("OpenFromLinkIcon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
         internal static System.Drawing.Icon OpenInBrowserIcon {
             get {
                 object obj = ResourceManager.GetObject("OpenInBrowserIcon", resourceCulture);

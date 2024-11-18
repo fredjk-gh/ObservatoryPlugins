@@ -32,6 +32,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             for (int j = 0; j < jumpsArray.GetArrayLength(); j++)
             {
                 var jump = JumpInfo.FromSpanshResultJson(jumpsArray[j]);
+                if (j > 0 && jump.SystemName == route.Jumps[route.Jumps.Count-1].SystemName)
+                {
+                    // This is a waypoint destination which appears twice in the results; don't include it.
+                    continue;
+                }
                 route.Jumps.Add(jump);
             }
 
