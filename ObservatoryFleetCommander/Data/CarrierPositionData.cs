@@ -1,5 +1,6 @@
 ﻿using Observatory.Framework.Files.Converters;
 using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Files.ParameterTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,12 +13,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
     public class CarrierPositionData
     {
         // A global cache of system positions to improve availability of these values and reduce the need to request.
-        private static Dictionary<string, (double x, double y, double z)> _knownSystemPositions = new();
+        private static Dictionary<string, StarPosition> _knownSystemPositions = new();
 
         private bool _deserialized = false;
         private string _body = "";
 
-        public static void CachePosition(string systemName, (double x, double y, double z) coords)
+        public static void CachePosition(string systemName, StarPosition coords)
         {
             if (!_knownSystemPositions.ContainsKey(systemName))
                 _knownSystemPositions[systemName] = coords;
@@ -63,7 +64,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         public ulong SystemAddress { get; set; }
 
         [JsonConverter(typeof(CoordConverter))]
-        public (double x, double y, double z)? StarPos
+        public StarPosition StarPos
         {
             get
             {
@@ -74,8 +75,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             set
             {
                 // If it's a non-null system position; cache it!
-                if (value.HasValue && !_knownSystemPositions.ContainsKey(SystemName))
-                    _knownSystemPositions[SystemName] = value.Value;
+                if (value != null && !_knownSystemPositions.ContainsKey(SystemName))
+                    _knownSystemPositions[SystemName] = value;
             }
         }
 

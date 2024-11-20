@@ -1,4 +1,5 @@
 ﻿using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -65,17 +66,17 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 
 
             // TODO: Consider using ID64CoordHelper to minimize lookups from edastro (with a cache in-play, do NOT set estimated coords to the StarPos property).
-            if (!Position.StarPos.HasValue) Position.StarPos = MaybeFetchStarPos(Position.SystemName, core, worker);
-            if (!newPosition.StarPos.HasValue) newPosition.StarPos = MaybeFetchStarPos(newPosition.SystemName, core, worker);
+            if (Position.StarPos != null) Position.StarPos = MaybeFetchStarPos(Position.SystemName, core, worker);
+            if (newPosition.StarPos != null) newPosition.StarPos = MaybeFetchStarPos(newPosition.SystemName, core, worker);
 
             // Ideal case: two detailed positions.
             int estFuelUsage = 0;
             double distanceLy = 0;
-            (double x, double y, double z)? pos1 = Position.StarPos;
-            (double x, double y, double z)? pos2 = newPosition.StarPos;
-            if (pos1.HasValue && pos2.HasValue)
+            StarPosition pos1 = Position.StarPos;
+            StarPosition pos2 = newPosition.StarPos;
+            if (pos1 != null && pos2 != null)
             {
-                distanceLy = Math.Sqrt(Math.Pow(pos1.Value.x - pos2.Value.x, 2) + Math.Pow(pos1.Value.y - pos2.Value.y, 2) + Math.Pow(pos1.Value.z - pos2.Value.z, 2));
+                distanceLy = Math.Sqrt(Math.Pow(pos1.x - pos2.x, 2) + Math.Pow(pos1.y - pos2.y, 2) + Math.Pow(pos1.z - pos2.z, 2));
                 long capacityUsage = LastCarrierStats.SpaceUsage.TotalCapacity - LastCarrierStats.SpaceUsage.FreeSpace;
                 double fuelCost = 5 + (distanceLy / 8.0) * (1.0 + ((capacityUsage + CarrierFuel) / 25000.0));
 
@@ -83,8 +84,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             }
             else if (!core.IsLogMonitorBatchReading)
             {
-                Debug.WriteLineIf(!Position.StarPos.HasValue, $"No coordinates for current system (after fetching!): {Position.SystemName}");
-                Debug.WriteLineIf(!newPosition.StarPos.HasValue, $"No coordinates for new system (after fetching!): {newPosition.SystemName}");
+                Debug.WriteLineIf(Position.StarPos != null, $"No coordinates for current system (after fetching!): {Position.SystemName}");
+                Debug.WriteLineIf(newPosition.StarPos != null, $"No coordinates for new system (after fetching!): {newPosition.SystemName}");
             }
 
             // Fallback to the spansh estimate from the route.
@@ -97,7 +98,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             return estFuelUsage;
         }
 
-        private (double x, double y, double z)? MaybeFetchStarPos(string systemName, IObservatoryCore core, IObservatoryWorker worker)
+        private StarPosition MaybeFetchStarPos(string systemName, IObservatoryCore core, IObservatoryWorker worker)
         {
             // We'll get rate-limited.
             if (core.IsLogMonitorBatchReading || string.IsNullOrEmpty(systemName)) return null;
@@ -119,8 +120,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                     {
                         var coordsArray = root[0].GetProperty("coordinates");
 
-                        (double x, double y, double z)? position = (
-                            coordsArray[0].GetDouble(), coordsArray[1].GetDouble(), coordsArray[2].GetDouble());
+                        StarPosition position = new()
+                        {
+                            x = coordsArray[0].GetDouble(),
+                            y = coordsArray[1].GetDouble(),
+                            z = coordsArray[2].GetDouble()
+                        };
                         return position;
                     }
                 }
