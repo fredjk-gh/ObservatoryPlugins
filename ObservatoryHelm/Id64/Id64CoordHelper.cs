@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Observatory.Framework.Files.ParameterTypes;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.Id64
 {
@@ -19,9 +20,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Id64
         public const int GAL_CENTER_z = 25815;
         public const int SECTOR_OFFSET_z = -1065;
 
-        public static double Distance((double, double, double) pos1, (double, double, double) pos2)
+        public static double Distance(StarPosition pos1, StarPosition pos2)
         {
-            double dist = Math.Sqrt(Math.Pow(pos1.Item1 - pos2.Item1, 2) + Math.Pow(pos1.Item2 - pos2.Item2, 2) + Math.Pow(pos1.Item3 - pos2.Item3, 2));
+            double dist = Math.Sqrt(Math.Pow(pos1.x - pos2.x, 2) + Math.Pow(pos1.y - pos2.y, 2) + Math.Pow(pos1.z - pos2.z, 2));
             return Math.Round(dist, 2);
         }
 
