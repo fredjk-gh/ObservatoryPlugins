@@ -51,31 +51,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
                 SizeType = SizeType.Percent,
                 Height = 100,
             });
-            _tablePanel.RowStyles.Add(new()
-            {
-                SizeType = SizeType.Absolute,
-                Height = 50,
-            });
+
 
             // First row: Controls for each carrier.
             _tablePanel.Controls.Add(_flowLayoutPanel = new FlowLayoutPanel());
             _flowLayoutPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             _flowLayoutPanel.AutoScroll = true;
-
-            // Second row: Settings button.
-            var btnSettingsCog = new ThemeableIconButton()
-            {
-                Name = "btnSettingsCog",
-                FlatStyle = FlatStyle.Flat,
-                Margin = new(5),
-                Size = new(36, 36),
-                Padding = new(1),
-            };
-            btnSettingsCog.FlatAppearance.BorderSize = 0;
-            btnSettingsCog.SetIcon(Properties.Resources.SettingsIcon.ToBitmap(), btnSettingsCog.Size);
-            btnSettingsCog.Click += btnSettingsCog_Click;
-            _ttip.SetToolTip(btnSettingsCog, "Open settings");
-            _tablePanel.Controls.Add(btnSettingsCog);
         }
 
         public bool IsReadAll { get => _core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch); }
@@ -101,11 +82,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 
                 _flowLayoutPanel.Controls.Add(lblNoCarriers);
             }
-        }
-
-        private void btnSettingsCog_Click(object sender, EventArgs e)
-        {
-            _core.OpenSettings(_worker);
         }
 
         public void Repaint()
