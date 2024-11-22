@@ -37,35 +37,10 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                 SizeType = SizeType.Percent,
                 Height = 100,
             });
-            _tablePanel.RowStyles.Add(new()
-            {
-                SizeType = SizeType.Absolute,
-                Height = 50,
-            });
 
             // First row: Main UI.
             _tablePanel.Controls.Add(_context.UI = new ArchivistUI(context));
             _context.UI.Dock = DockStyle.Fill;
-
-            // Second row: Settings button.
-            var btnSettingsCog = new ThemeableIconButton()
-            {
-                Name = "btnSettingsCog",
-                FlatStyle = FlatStyle.Flat,
-                Margin = new(5),
-                Size = new(36, 36),
-                Padding = new(1),
-            };
-            btnSettingsCog.FlatAppearance.BorderSize = 0;
-            btnSettingsCog.Click += btnSettingsCog_Click;
-            btnSettingsCog.SetIcon(Properties.Resources.SettingsIcon.ToBitmap(), btnSettingsCog.Size);
-            _ttip.SetToolTip(btnSettingsCog, "Open settings");
-            _tablePanel.Controls.Add(btnSettingsCog);
-        }
-
-        private void btnSettingsCog_Click(object sender, EventArgs e)
-        {
-            _context.Core.OpenSettings(_context.PluginWorker);
         }
     }
 }
