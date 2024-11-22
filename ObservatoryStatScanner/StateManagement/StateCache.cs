@@ -173,12 +173,16 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
 
         public void CheckForNewAssemblyVersion()
         {
+#if !DEBUG
+            // This is check is never false in DEBUG mode because the debug version is ~always newer than last read-all.
+            // And in theory, I know what I'm doing. So skip the check in Debug.
             if (IsAssemblyVersionNewerThanLastUsed(_lastUsedVersion))
             {
                 _lastUsedVersion = _assemblyVersion;
                 SetReadAllRequired("New plugin version");
                 _isDirty = true;
             }
+#endif
         }
 
         public bool IsAssemblyVersionNewerThanLastUsed(string lastUsedVersion)
