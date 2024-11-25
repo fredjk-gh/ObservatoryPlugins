@@ -247,7 +247,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (IsReadAll) return;
 
-            lblCommanderStateValue.Text = _data.CommanderIsDockedOrOnFoot ? "Docked or on-foot" : "Away";
+            lblCommanderStateValue.Text = _data.CommanderIsDockedOrOnFoot ? "Aboard" : "Away";
         }
 
         #endregion

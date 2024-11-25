@@ -127,6 +127,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                         if (carrierData != null && carrierData.OwningCommander == _currentCommander)
                         {
                             carrierData.CommanderIsDockedOrOnFoot = true;
+                            Core.ExecuteOnUIThread(() =>
+                            {
+                                _ui.Get(carrierData)?.UpdateCommanderState();
+                            });
                         }
                     }
                     break;
@@ -137,6 +141,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                         if (carrierData != null && carrierData.OwningCommander == _currentCommander)
                         {
                             carrierData.CommanderIsDockedOrOnFoot = false;
+                            Core.ExecuteOnUIThread(() =>
+                            {
+                                _ui.Get(carrierData)?.UpdateCommanderState();
+                            });
                         }
                     }
                     break;
