@@ -24,7 +24,7 @@ After installation, be sure to look at the plugin's options and adjust as you li
 NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need to enable the "Use beta versions" option.
 
 *  Status: Released + Beta
-*  Download latest stable (requires Observatory Core >= 1.0.4): [ObservatoryPluginAutoUpdater-v1.0.1.27202.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.1.27202/ObservatoryPluginAutoUpdater-v1.0.1.27202.eop) (Sep 26, 2024)
+*  Download latest stable (requires Observatory Core >= 1.2.x): [ObservatoryPluginAutoUpdater-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryPluginAutoUpdater-v1.0.3.32704-beta.eop) (Nov. 22, 2024)
 *  Download Beta (requires Observatory Core >= 1.2.x): [ObservatoryPluginAutoUpdater-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryPluginAutoUpdater-v1.0.3.32704-beta.eop) (Nov. 22, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater)
 
@@ -33,7 +33,7 @@ NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need 
 The Aggregator plugin is a notification log -- collecting notifications from all other plugins into one place to reduce the number of times you need to switch between plugins.
 
 *  Status: Released + Beta
-*  Download latest stable (Requires Observatory Core >= 1.0.4): [ObservatoryAggregator-v1.0.2.30804.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.30804/ObservatoryAggregator-v1.0.2.30804.eop) (Nov 3, 2024)
+*  Download latest stable (requires Observatory Core >= 1.2.x): [ObservatoryAggregator-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryAggregator-v1.0.3.32704-beta.eop)
 *  Download Beta (requires Observatory Core >= 1.2.x): [ObservatoryAggregator-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryAggregator-v1.0.3.32704-beta.eop) (Nov 22, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator)
 
@@ -50,7 +50,7 @@ The Archivist plugin captures exploration related journals and stores them in a 
 A companion for fleet carrier owners. My favourite feature is the jump cooldown timer. Beta includes Spansh carrier routing integration.
 
 *  Status: Released + Beta
-*  Download latest stable (Observatory Core >= 1.0.4): [ObservatoryFleetCommander-v1.0.2.31703.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.2.31703/ObservatoryFleetCommander-v1.0.2.31703.eop) (Nov 9, 2024)
+*  Download latest stable (requires Observatory Core >= 1.2.x): [ObservatoryFleetCommander-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryFleetCommander-v1.0.3.32704-beta.eop) (Nov 22, 2024)
 *  Download Beta (requires Observatory Core >= 1.2.x): [ObservatoryFleetCommander-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryFleetCommander-v1.0.3.32704-beta.eop) (Nov 22, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Fleet-Commander)
 
@@ -79,7 +79,7 @@ Prospector is a miner's must-have tool, assisting you through the entire prospec
 -  It also provides a static display of the content of your cargo hold (limpets vs. paydirt).
 
 *  Status: Released + Beta
-*  Download latest stable (Observatory Core <= 0.2.x): [ObservatoryProspectorBasic.0.22.348.0223-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.22.348.0241-beta/ObservatoryProspectorBasic.0.22.348.0223-beta.eop) (Dec. 13, 2022)
+*  Download latest stable (requires Observatory Core >= 1.2.x): [ObservatoryProspectorBasic-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryProspectorBasic-v1.0.3.32704-beta.eop) (Nov 22, 2024)
 *  Download Beta (requires Observatory Core >= 1.2.x): [ObservatoryProspectorBasic-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryProspectorBasic-v1.0.3.32704-beta.eop) (Nov 22, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector)
 
@@ -88,6 +88,6 @@ Prospector is a miner's must-have tool, assisting you through the entire prospec
 This plugin monitors your discoveries to see if your discovery is near, tied with or better than a known record. It can also track personal bests!
 
 *  Status: Released + Beta
-*  Download latest stable (Observatory Core <= 0.2.x): [ObservatoryStatScanner-0.23.165.2200-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/0.23.165.2200-beta/ObservatoryStatScanner-0.23.165.2200-beta.eop) (June 14, 2023)
+*  Download latest stable (requires Observatory Core >= 1.2.x): [ObservatoryStatScanner-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryStatScanner-v1.0.3.32704-beta.eop) (Nov 22, 2024)
 *  Download Beta (requires Observatory Core >= 1.2.x): [ObservatoryStatScanner-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryStatScanner-v1.0.3.32704-beta.eop) (Nov 22, 2024)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner)
