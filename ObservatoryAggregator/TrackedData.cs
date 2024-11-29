@@ -124,6 +124,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             if (commanderShips.ContainsKey(shipId))
             {
                 commanderShips[shipId].Name = userShipName;
+                IsDirty = true;
             }
             else
             {
@@ -135,6 +136,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             var commanderShips = GetShipsForCommander();
             commanderShips[shipId] = new(shipId, name);
+            IsDirty = true;
             return commanderShips[shipId];
         }
 
