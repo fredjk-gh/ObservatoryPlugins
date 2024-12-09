@@ -54,6 +54,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
             get => !string.IsNullOrWhiteSpace(_stateCache.LastSeenCommanderFID) && _stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderFID);
         }
 
+        public List<string> KnownCommanderFids
+        {
+            get => _stateCache.KnownCommanders.Keys.ToList();
+        }
+
         public bool NeedsReadAll
         {
             get => _stateCache.ReadAllRequired || _stateCache.KnownCommanders.Count == 0;

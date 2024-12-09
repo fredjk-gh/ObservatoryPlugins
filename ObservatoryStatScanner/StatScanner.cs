@@ -327,7 +327,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             MaybeAddHeaderRows();
 
             if (!_state.IsCommanderFidKnown || _state.NeedsReadAll) return;
-            var recordBook = _state.GetRecordBook();
 
             List<RecordTable> tableOrder  = new()
             {
@@ -341,6 +340,24 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             };
 
             var gridItems = new List<Result>();
+#if DEBUG
+            foreach (var fid in _state.KnownCommanderFids)
+            {
+                var recordBook = _state.GetRecordBookForFID(fid);
+                foreach (var rt in tableOrder)
+                {
+                    foreach (var best in recordBook.GetPersonalBests(rt))
+                    {
+                        gridItems.AddRange(best.Summary());
+                    }
+                }
+                gridItems.Add(new(
+                    NotificationClass.None,
+                    new(),
+                    Constants.HEADER_COALESCING_ID));
+            }
+#else
+            var recordBook = _state.GetRecordBook();
             foreach ( var rt in tableOrder )
             {
                 foreach (var best in recordBook.GetPersonalBests(rt))
@@ -348,6 +365,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     gridItems.AddRange(best.Summary());
                 }
             }
+#endif
             AddResultsToGrid(gridItems);
         }
 
