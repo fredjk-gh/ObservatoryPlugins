@@ -104,7 +104,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public string GetCommanderAndShipString()
         {
-            return $"{CurrentCommander} - {CurrentShip.Name}";
+            return $"{(CurrentCommander ?? "(unknown commander)")} - {(CurrentShip?.Name ?? "(unknown ship)")}";
         }
 
 
