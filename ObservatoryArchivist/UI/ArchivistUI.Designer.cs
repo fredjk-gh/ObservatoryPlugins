@@ -362,6 +362,7 @@
             lbJournals.Items.AddRange(new object[] { "{\"timestamp\":\"2024-04-11T19:39:33\" \"event\":\"FSDJump\" ... }" });
             lbJournals.Location = new Point(3, 102);
             lbJournals.Name = "lbJournals";
+            lbJournals.SelectionMode = SelectionMode.MultiExtended;
             lbJournals.Size = new Size(462, 373);
             lbJournals.TabIndex = 5;
             lbJournals.MouseDown += lbJournals_MouseDown;

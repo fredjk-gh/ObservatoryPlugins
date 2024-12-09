@@ -22,7 +22,6 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         };
 
         private ArchivistContext _context;
-        private int _selectedIndex = ListBox.NoMatches;
         private System.Windows.Forms.Timer _filterTimer = new();
         private JsonViewer _viewer;
         private VisitedSystem _lastResult = null;
@@ -271,18 +270,29 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (_selectedIndex == ListBox.NoMatches || _selectedIndex > lbJournals.Items.Count) return;
-            string journalEntry = lbJournals.Items[_selectedIndex].ToString();
+            if (lbJournals.SelectedItems.Count == 0) return;
 
-            Clipboard.SetText(journalEntry);
+            StringBuilder journals = new();
+            
+            foreach(var journal in lbJournals.SelectedItems)
+            {
+                journals.AppendLine(journal.ToString());
+            }
+
+            Clipboard.SetText(journals.ToString());
         }
 
         private void viewToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (_selectedIndex == ListBox.NoMatches || _selectedIndex > lbJournals.Items.Count) return;
-            string journalEntry = lbJournals.Items[_selectedIndex].ToString();
+            if (lbJournals.SelectedItems.Count == 0) return;
 
-            OpenJsonViewer(journalEntry);
+            foreach (var journal in lbJournals.SelectedItems)
+            {
+                string journalEntry = journal.ToString();
+
+                OpenJsonViewer(journalEntry);
+                break;
+            }
         }
 
         private void _viewer_FormClosed(object sender, FormClosedEventArgs e)
@@ -310,11 +320,19 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                 if (ctxResultsMenu.Visible) ctxResultsMenu.Visible = false;
                 return;
             }
-            var index = lbJournals.IndexFromPoint(e.Location);
-            if (index != ListBox.NoMatches)
+
+            if (lbJournals.SelectedItems.Count > 1 )
             {
-                _selectedIndex = index;
-                lbJournals.SelectedIndex = index;
+                ctxResultsMenu.Show(Cursor.Position);
+                ctxResultsMenu.Visible = true;
+            }
+            else if (lbJournals.SelectedItems.Count <= 1)
+            {
+                var index = lbJournals.IndexFromPoint(e.Location);
+                if (index != ListBox.NoMatches)
+                {
+                    lbJournals.SelectedIndex = index;
+                }
                 ctxResultsMenu.Show(Cursor.Position);
                 ctxResultsMenu.Visible = true;
             }
