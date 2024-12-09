@@ -52,6 +52,33 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         public Dictionary<string, Scan> Scans { get; private set; }
         public bool AllBodiesFound { get; set; }
         public bool UndiscoveredSystem { get; set; }
+        public bool? IsInSuppressionZone(HelmSettings settings, FSDJump jump = null)
+        {
+            jump ??= LastJumpEvent;
+            if (jump == null) return null;
+
+            if (jump.StarPos == null) return null;
+
+            // Yeah -- FDev done goofed up, these should be all be &&... But anyway.
+            var radius = settings.SuppressionZoneRadiusLy;
+            if (Math.Abs(jump.StarPos.y) < radius && (Math.Abs(jump.StarPos.x) < radius || Math.Abs(jump.StarPos.z) < radius)) return true;
+
+            return false;
+        }
+
+        public bool? IsInBubble(FSDJump jump = null)
+        {
+            jump ??= LastJumpEvent;
+            if (jump == null) return null;
+
+            if (jump.StarPos == null) return null;
+
+            // The bubble is the area ~250 Ly around Sol. Some may say it's larger.
+            var radius = 250;
+            if (Math.Abs(jump.StarPos.y) < radius && Math.Abs(jump.StarPos.x) < radius && Math.Abs(jump.StarPos.z) < radius) return true;
+
+            return false;
+        }
 
         public void SystemReset(string systemName, double fuelLevel, double jumpDist)
         {

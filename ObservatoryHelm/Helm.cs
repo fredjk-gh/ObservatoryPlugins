@@ -45,7 +45,20 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         public object Settings
         {
             get => settings;
-            set =>  settings = (HelmSettings)value;
+            set {
+                settings = (HelmSettings)value;
+                MaybeFixUnsetSettings();
+            }
+        }
+
+        private void MaybeFixUnsetSettings()
+        {
+            if (settings.GravityAdvisoryThreshold == 0)
+                settings.GravityAdvisoryThreshold = HelmSettings.DEFAULT.GravityAdvisoryThreshold;
+            if (settings.SuppressionZoneRadiusLy == 0)
+                settings.SuppressionZoneRadiusLy = HelmSettings.DEFAULT.SuppressionZoneRadiusLy;
+            if (settings.MaxNearbyScoopableDistance == 0)
+                settings.MaxNearbyScoopableDistance = HelmSettings.DEFAULT.MaxNearbyScoopableDistance;
         }
 
         public void Load(IObservatoryCore observatoryCore)
@@ -190,7 +203,15 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             break;
                         }
 
-                        MakeGridItem(jump.Timestamp, (data.CommanderData.JumpsRemainingInRoute == 0 ? "(no route)" : ""));
+                        string coords = "";
+                        if (jump.StarPos != null)
+                            coords = $" ({jump.StarPos.x}, {jump.StarPos.y}, {jump.StarPos.z})";
+                        string isInSuppressionZone = (data.CommanderData.IsInSuppressionZone(settings) ?? false ? $"This system is in the suppression zone{coords}." : coords.Trim());
+                        if (data.CommanderData.IsInBubble() ?? false)
+                        {
+                            isInSuppressionZone = $"This system is in the bubble (~250Ly from Sol{coords}).";
+                        }
+                        MakeGridItem(jump.Timestamp, (data.CommanderData.JumpsRemainingInRoute == 0 ? $"(no route) {isInSuppressionZone}" : isInSuppressionZone));
                         string arrivalStarScoopableStr = (data.CommanderData.LastStartJumpEvent != null && !Constants.Scoopables.Contains(data.CommanderData.LastStartJumpEvent.StarClass))
                                 ? $"Arrival star (type: {data.CommanderData.LastStartJumpEvent.StarClass}) is not scoopable!"
                                 : "";
@@ -199,7 +220,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             Title = "Route Progress",
                             Detail = $"{data.CommanderData.JumpsRemainingInRoute} jumps remaining{(!string.IsNullOrEmpty(data.CommanderData.Destination) ? $" to {data.CommanderData.Destination}" : "")}",
                             Sender = AboutInfo.ShortName,
-                            ExtendedDetails = arrivalStarScoopableStr,
+                            ExtendedDetails = $"{arrivalStarScoopableStr} {isInSuppressionZone}",
                             Rendering = NotificationRendering.PluginNotifier,
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
