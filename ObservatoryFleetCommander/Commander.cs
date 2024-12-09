@@ -501,8 +501,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 Core.ExecuteOnUIThread(() =>
                 {
-                    Clipboard.SetText(nextJumpInfo.SystemName);
-                    _ui.Get(carrierData)?.SetMessage("System name for the next jump in your carrier route is in the clipboard.");
+                    try
+                    {
+                        Clipboard.SetText(nextJumpInfo.SystemName);
+                        _ui.Get(carrierData)?.SetMessage("System name for the next jump in your carrier route is in the clipboard.");
+                    } catch (Exception ex)
+                    {
+                        // Boo.
+                    }
                 });
             }
         }
