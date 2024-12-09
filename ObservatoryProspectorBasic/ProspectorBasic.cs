@@ -8,12 +8,14 @@ using System.Collections.ObjectModel;
 using Observatory.Framework.Files.ParameterTypes;
 using System.Diagnostics;
 using static com.github.fredjk_gh.ObservatoryProspectorBasic.SynthRecipes;
+using Microsoft.VisualBasic;
 
 namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
     public class ProspectorBasic : IObservatoryWorker
     {
         private bool enableDebug = false; // Not const to avoid unreachable code warnings.
+        private const int ALERT_COALESCING_ID = -2;
 
         private const string LimpetDronesKey = "drones";
         private const string LimpetDronesName = "Limpets";
@@ -162,7 +164,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     UpdateCargoNotification(false /* newNotification */);
                     break;
                 case Loadout loadout:
-                    _data.CargoMax = loadout.CargoCapacity;
+                    _data.LoadoutChanged(loadout);
                     Debug.WriteLineIf(_data.CargoMax > 0 && enableDebug, $"Loadout: New cargoMax: {loadout.CargoCapacity}");
                     UpdateCargoNotification(false /* newNotification */);
                     break;
@@ -250,7 +252,29 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                         _data.RawMatInventorySubtract(matTrade.Received.Material, matTrade.Received.Quantity);
 
                     break;
-
+                case Undocked undock:
+                    int? miningModules = _data.MiningModuleCount();
+                    if ((miningModules ?? 0) > 0 && !_data.Cargo.ContainsKey(LimpetDronesKey))
+                    {
+                        Debug.WriteLineIf(enableDebug, $"Undocked with {miningModules} mining modules and no limpets on board!");
+                        Core.SendNotification(new()
+                        {
+                            Sender = AboutInfo.ShortName,
+                            CoalescingId = ALERT_COALESCING_ID,
+                            Title = "Don't forget limpets!",
+                            Detail = "You have mining gear equipped but no limpets in your hold.",
+                            ExtendedDetails = $"Found {miningModules} mining modules on-board.",
+                            Rendering = NotificationRendering.All,
+                        });
+                        Core.AddGridItem(this, new ProspectorGrid()
+                        {
+                            Location = "",
+                            Commodity = "Limpets",
+                            Percentage = "",
+                            Details = $"Going mining (found {miningModules} mining modules)? Don't forget limpets!",
+                        });
+                    }
+                    break;
                 // Maybe todo: Handle other events which could affect mat inventory:
                 // - Mission rewards
                 // - Techbroker unlocks
@@ -328,7 +352,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 Core.SendNotification(new()
                 {
                     Sender = AboutInfo.ShortName,
-                    CoalescingId = -22,
+                    CoalescingId = ALERT_COALESCING_ID,
                     Title = "Surface materials available",
                     Detail = $"For {recipeName}",
                     ExtendedDetails = $"Levels: {levelsStr}",

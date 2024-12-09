@@ -31,6 +31,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         private readonly Dictionary<string, List<BodyMaterialContent>> _matContentByMat = new();
         private readonly HashSet<string> _alreadyReportedScansSaaSignals = new();
         private readonly Dictionary<string, int> _cargo = new();
+        private Loadout _lastLoadout = null;
 
         public string SystemName { get; private set; }
         public string LocationName { get; private set;  }
@@ -164,5 +165,83 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             }
             return $"Body {bodyName}";
         }
+
+        public void LoadoutChanged(Loadout loadout)
+        {
+            CargoMax = loadout.CargoCapacity;
+            _lastLoadout = loadout;
+        }
+
+        public int? MiningModuleCount()
+        {
+            if (_lastLoadout == null) return null;
+
+            int count = 0;
+            foreach (var mod in _lastLoadout.Modules)
+            {
+                if (MINING_MODULES.Contains(mod.Item.ToLower()))
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private readonly HashSet<string> MINING_MODULES = new()
+        {
+            "hpt_mininglaser_turret_small",
+            "hpt_mininglaser_turret_medium",
+            "hpt_mininglaser_fixed_small_advanced",
+            "hpt_mining_subsurfdispmisle_fixed_small",
+            "hpt_mining_subsurfdispmisle_turret_small",
+            "hpt_mining_subsurfdispmisle_fixed_medium",
+            "hpt_mining_subsurfdispmisle_turret_medium",
+            "hpt_mining_abrblstr_fixed_small",
+            "hpt_mining_abrblstr_turret_small",
+            "hpt_mining_seismchrgwarhd_fixed_medium",
+            "hpt_mining_seismchrgwarhd_turret_medium",
+            "int_multidronecontrol_mining_size3_class1",
+            "int_multidronecontrol_mining_size3_class3",
+            "int_refinery_size1_class1",
+            "int_refinery_size2_class1",
+            "int_refinery_size3_class1",
+            "int_refinery_size4_class1",
+            "int_refinery_size1_class2",
+            "int_refinery_size2_class2",
+            "int_refinery_size3_class2",
+            "int_refinery_size4_class2",
+            "int_refinery_size1_class3",
+            "int_refinery_size2_class3",
+            "int_refinery_size3_class3",
+            "int_refinery_size4_class3",
+            "int_refinery_size1_class4",
+            "int_refinery_size2_class4",
+            "int_refinery_size3_class4",
+            "int_refinery_size4_class4",
+            "int_refinery_size1_class5",
+            "int_refinery_size2_class5",
+            "int_refinery_size3_class5",
+            "int_refinery_size4_class5",
+            "int_dronecontrol_prospector_size1_class1",
+            "int_dronecontrol_prospector_size1_class2",
+            "int_dronecontrol_prospector_size1_class3",
+            "int_dronecontrol_prospector_size1_class4",
+            "int_dronecontrol_prospector_size1_class5",
+            "int_dronecontrol_prospector_size3_class1",
+            "int_dronecontrol_prospector_size3_class2",
+            "int_dronecontrol_prospector_size3_class3",
+            "int_dronecontrol_prospector_size3_class4",
+            "int_dronecontrol_prospector_size3_class5",
+            "int_dronecontrol_prospector_size5_class1",
+            "int_dronecontrol_prospector_size5_class2",
+            "int_dronecontrol_prospector_size5_class3",
+            "int_dronecontrol_prospector_size5_class4",
+            "int_dronecontrol_prospector_size5_class5",
+            "int_dronecontrol_prospector_size7_class1",
+            "int_dronecontrol_prospector_size7_class2",
+            "int_dronecontrol_prospector_size7_class3",
+            "int_dronecontrol_prospector_size7_class4",
+            "int_dronecontrol_prospector_size7_class5",
+        };
     }
 }
