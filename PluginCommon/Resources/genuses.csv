@@ -1,0 +1,24 @@
+id,name,colony_range
+$Codex_Ent_Aleoids_Genus_Name;,Aleoida,150
+$Codex_Ent_Bacterial_Genus_Name;,Bacterium,500
+$Codex_Ent_Cactoid_Genus_Name;,Cactoida,300
+$Codex_Ent_Clypeus_Genus_Name;,Clypeus,150
+$Codex_Ent_Clepeus_Genus_Name;;,Clypeus,150
+$Codex_Ent_Conchas_Genus_Name;,Concha,150
+$Codex_Ent_Electricae_Genus_Name;,Electricae,1000
+$Codex_Ent_Fonticulus_Genus_Name;,Fonticulua,500
+$Codex_Ent_Shrubs_Genus_Name;,Frutexa,150
+$Codex_Ent_Fumerolas_Genus_Name;,Fumerola,100
+$Codex_Ent_Fungoids_Genus_Name;,Fungoida,300
+$Codex_Ent_Osseus_Genus_Name;,Osseus,800
+$Codex_Ent_Recepta_Genus_Name;,Recepta,150
+$Codex_Ent_Stratum_Genus_Name;,Stratum,500
+$Codex_Ent_Tubus_Genus_Name;,Tubus,800
+$Codex_Ent_Tussocks_Genus_Name;,Tussock,200
+$Codex_Ent_Ground_Struct_Ice_Name;,Crystalline Shards,100
+$Codex_Ent_Brancae_Name;,Brain Trees,100
+$Codex_Ent_Seed_Name;,Brain Tree,100
+$Codex_Ent_Sphere_Name;,Anemone,100
+$Codex_Ent_Tube_Name;,Sinuous Tubers,100
+$Codex_Ent_Vents_Name;,Amphora Plant,100
+$Codex_Ent_Cone_Name;,Bark Mounds,100

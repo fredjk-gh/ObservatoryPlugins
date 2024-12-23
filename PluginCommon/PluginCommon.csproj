@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+	</PropertyGroup>
+	
+	<PropertyGroup>
+		<VersionSuffix>1.0.3.$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))$([System.DateTime]::UtcNow.Hour.ToString().PadLeft(2, "0"))</VersionSuffix>
+		<AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">0.0.0.1</AssemblyVersion>
+		<AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionSuffix)</AssemblyVersion>
+		<Version Condition=" '$(VersionSuffix)' == '' ">0.0.1.0</Version>
+		<Version Condition=" '$(VersionSuffix)' != '' ">$(VersionSuffix)</Version>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+	</PropertyGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\deps\&quot; /y" />
+	</Target>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\ObservatoryCore\ObservatoryFramework\ObservatoryFramework.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Data\Journals\FDevIDs\CSV.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>CSV.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Resources\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Data\Journals\FDevIDs\CSV.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>CSV.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+</Project>

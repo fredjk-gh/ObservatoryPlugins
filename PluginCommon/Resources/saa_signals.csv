@@ -1,0 +1,8 @@
+id,name
+$SAA_SignalType_Biological;,Biological
+$SAA_SignalType_Geological;,Geological
+$SAA_SignalType_Guardian;,Guardian
+$SAA_SignalType_Human;,Human
+$SAA_SignalType_Other;,Other
+$SAA_SignalType_PlanetAnomaly;,Major Anomaly
+$SAA_SignalType_Thargoid;,Thargoid
