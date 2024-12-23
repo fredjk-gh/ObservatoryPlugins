@@ -63,9 +63,49 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
+        internal static System.Drawing.Icon CopyIcon {
+            get {
+                object obj = ResourceManager.GetObject("CopyIcon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon DBSearchIcon {
+            get {
+                object obj = ResourceManager.GetObject("DBSearchIcon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon FontSizeIcon {
+            get {
+                object obj = ResourceManager.GetObject("FontSizeIcon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
         internal static System.Drawing.Icon OpenInNewIcon {
             get {
                 object obj = ResourceManager.GetObject("OpenInNewIcon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon ReplayAllIcon {
+            get {
+                object obj = ResourceManager.GetObject("ReplayAllIcon", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }
@@ -86,6 +126,16 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.Properties {
         internal static System.Drawing.Icon SettingsIcon {
             get {
                 object obj = ResourceManager.GetObject("SettingsIcon", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SpanshIcon {
+            get {
+                object obj = ResourceManager.GetObject("SpanshIcon", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }

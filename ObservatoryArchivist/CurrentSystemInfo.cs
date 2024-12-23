@@ -25,6 +25,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             _internalData.SystemId64 = systemId64;
             _internalData.FirstVisitDateTime = firstVisit;
             _internalData.VisitCount = 1;
+            _internalData.LastVisitDateTime = firstVisit;
             _isDirty = true;
         }
 
@@ -38,8 +39,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public List<string> PreambleJournalEntries { get => _internalData.PreambleJournalEntries; }
         public string SystemName { get => _internalData.SystemName; }
         public UInt64 SystemId64 { get => _internalData.SystemId64; }
-        public DateTime VisitedDateTime { get => _internalData.FirstVisitDateTime; }
-        public DateTime? LatestDateTime {
+        public DateTime FirstVisitedDateTime { get => _internalData.FirstVisitDateTime; }
+        public DateTime? LatestSystemJournalDateTime {
             get
             {
                 if (SystemJournalEntries.Count == 0) return null;
@@ -56,6 +57,16 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             get => _internalData.VisitCount;
             set {
                 _internalData.VisitCount = value;
+                _isDirty = true;
+            }
+        }
+
+        public DateTime LastVisitedDateTime
+        { 
+            get => _internalData.LastVisitDateTime;
+            set
+            {
+                _internalData.LastVisitDateTime = value;
                 _isDirty = true;
             }
         }

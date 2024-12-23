@@ -12,10 +12,16 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public static readonly ArchivistSettings DEFAULT = new()
         {
             ShareSystemData = true,
+            JsonViewerFontSize = -1,
         };
 
         [SettingNewGroup("Plugin Interop")]
         [SettingDisplayName("Share data for known systems (WIP)")]
         public bool ShareSystemData { get; set; }
+
+        [SettingNewGroup("UI")]
+        [SettingDisplayName("Json viewer default font size")]
+        [SettingNumericBounds(5, 24, 1, 1)]
+        public int JsonViewerFontSize { get; set; }
     }
 }

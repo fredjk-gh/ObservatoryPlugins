@@ -48,7 +48,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             {
                 if (c.CurrentSystem != null && c.CurrentSystem.IsDirty)
                 {
-                    Manager.UpsertSystemData(c.CurrentSystem);
+                    Manager.UpsertVisitedSystemData(c.CurrentSystem);
                 }
             }
         }
@@ -80,7 +80,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                     // Fetch current system data from DB (not serialized to the cache for brevity/simplicity).
                     if (!string.IsNullOrWhiteSpace(cmdrData.Value.CurrentSystemName) && cmdrData.Value.CurrentSystem == null)
                     {
-                        var currentSystem = Manager.Get(cmdrData.Value.CurrentSystemName, cmdrData.Key);
+                        var currentSystem = Manager.GetVisitedSystemExactMatch(cmdrData.Value.CurrentSystemName, cmdrData.Key);
                         if (currentSystem != null) // This may happen after an aborted Read-all.
                             cmdrData.Value.CurrentSystem = new(currentSystem);
                     }
@@ -94,7 +94,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public void DisplaySummary(string prefix = "")
         {
-            var summaryData = Manager.GetSummary();
+            var summaryData = Manager.GetVisitedSystemSummary();
             StringBuilder sb = new StringBuilder(prefix);
 
             if (!string.IsNullOrWhiteSpace(prefix)) sb.AppendLine();

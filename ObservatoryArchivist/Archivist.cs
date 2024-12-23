@@ -48,7 +48,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             {
                 Core = observatoryCore,
                 PluginWorker = this,
-                Settings = ArchivistSettings.DEFAULT,
+                Settings = settings,
                 ErrorLogger = observatoryCore.GetPluginErrorLogger(this),
                 Manager = new(observatoryCore.PluginStorageFolder, observatoryCore.GetPluginErrorLogger(this)),
             };
@@ -56,6 +56,16 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
             _archivistPanel = new ArchivistPanel(_context);
             pluginUI = new PluginUI(PluginUI.UIType.Panel, _archivistPanel);
+
+            MaybeFixNewSettings();
+        }
+
+        private void MaybeFixNewSettings()
+        {
+            if (settings.JsonViewerFontSize < 5 || settings.JsonViewerFontSize > 24)
+            {
+                settings.JsonViewerFontSize = (int)_archivistPanel.Font.Size;
+            }
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -67,7 +77,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
                 // Re-connect in Direct mode for performance.
                 _context.Manager.Connect(ConnectionMode.Direct);
-                _context.Manager.Clear();
+                _context.Manager.ClearVisitedSystems();
                 _context.Manager.BatchModeProcessing = true;
                 _context.UI.SetMessage("Read All started");
             }
@@ -76,7 +86,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             {
                 _context.FlushIfDirty(/* force= */ true);
                 _context.Manager.BatchModeProcessing = false;
-                _context.Manager.FlushDeferred();
+                _context.Manager.FlushDeferredVisitedSystems();
                 _context.Manager.Connect(ConnectionMode.Shared);
 
                 // ReadAll -> Cancelled
@@ -187,6 +197,18 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             }
         }
 
+        public byte[] ExportContent(string delimiter, ref string filetype)
+        {
+            if (_context.Data.LastSearchResult != null)
+            {
+                byte[] content = Encoding.UTF8.GetBytes(string.Join(Environment.NewLine, _context.Data.LastSearchResult.SystemJournalEntries));
+                filetype = $"{_context.Data.LastSearchResult.Commander}-{_context.Data.LastSearchResult.SystemName}.json";
+                return content;
+            }
+
+            return null;
+        }
+
         private void ProcessNewLocation(string newSystemName, ulong newSystemAddress, DateTime timestamp, string json)
         {
             if (((_context.Core.CurrentLogMonitorState & LogMonitorState.PreRead) == 0)
@@ -201,8 +223,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             {
                 // Initialize the current system during pre-read in case we find/do more stuff or haven't flushed it yet.
                 // Duplicate entries should be filtered out by AddSystemJournalJason.
-                _context.Data.ForCommander().CurrentSystem = _context.Manager.LoadOrInitSystemInfo(
+                _context.Data.ForCommander().CurrentSystem = _context.Manager.LoadOrInitVisitedSystemInfo(
                     _context.Data.ForCommander().FileHeaderInfo, newSystemName, newSystemAddress, timestamp);
+                _context.Data.MaybeAddToRecentSystems(newSystemName);
                 _context.SerializeState();
             }
 

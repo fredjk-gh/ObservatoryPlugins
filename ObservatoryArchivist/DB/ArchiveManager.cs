@@ -24,6 +24,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         private ILiteDatabase ArchivistMainDB;
         private ILiteCollection<VisitedSystem> VisitedSystemsCol;
+        private ILiteCollection<VisitedSystem> AugmentedSystemsCol;
         string dbPath;
 #if DEBUG
         private ConnectionMode connectionMode = ConnectionMode.Shared;
@@ -50,6 +51,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 if (newConnectionMode != CurrentConnectionMode)
                 {
                     VisitedSystemsCol = null;
+                    AugmentedSystemsCol = null;
                     ArchivistMainDB.Dispose();
                     ArchivistMainDB = null;
                 }
@@ -68,7 +70,17 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             VisitedSystemsCol.EnsureIndex(sys => sys.SystemId64);
             VisitedSystemsCol.EnsureIndex(sys => sys.SystemName);
             VisitedSystemsCol.EnsureIndex(sys => sys.FirstVisitDateTime);
+            VisitedSystemsCol.EnsureIndex(sys => sys.LastVisitDateTime);
             VisitedSystemsCol.EnsureIndex(sys => sys.Commander);
+
+            AugmentedSystemsCol = ArchivistMainDB.GetCollection<VisitedSystem>("augmentedSystems");
+            // https://github.com/mbdavid/LiteDB/issues/739 - fake multi-column unique key.
+            AugmentedSystemsCol.EnsureIndex("unique_cmdr_sysname_a", "{cmdr:$.Commander, sysname:$.SystemName}", true);
+            AugmentedSystemsCol.EnsureIndex(sys => sys.SystemId64);
+            AugmentedSystemsCol.EnsureIndex(sys => sys.SystemName);
+            AugmentedSystemsCol.EnsureIndex(sys => sys.FirstVisitDateTime);
+            AugmentedSystemsCol.EnsureIndex(sys => sys.LastVisitDateTime);
+            AugmentedSystemsCol.EnsureIndex(sys => sys.Commander);
         }
 
         public bool Connected { get => ArchivistMainDB != null; }
@@ -77,7 +89,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public ConnectionMode CurrentConnectionMode { get => connectionMode; }
 
-        public int CountSystems(string commanderName = "")
+        public int CountVisitedSystems(string commanderName = "")
         {
             if (!Connected) throw new DBNotConnectedException();
 
@@ -91,22 +103,15 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             }
         }
 
-        public List<BsonDocument> GetSummary()
+        public List<BsonDocument> GetVisitedSystemSummary()
         {
             return VisitedSystemsCol.Query().GroupBy("Commander")
                 .Select("{ Cmdr:@key, SystemCount:COUNT(*)  }")
                 .ToList();
         }
 
-        public List<VisitedSystem> Get(string systemName)
-        {
-            if (!Connected) throw new DBNotConnectedException();
-            if (BatchModeProcessing) return new(); // Shouldn't be possible, but the database is likely to be empty.
-
-            return VisitedSystemsCol.Find(sys => sys.SystemName == systemName).ToList();
-        }
-
-        public VisitedSystem Get(string systemName, string commanderName)
+        // Primarily for pre-loading
+        public VisitedSystem GetVisitedSystemExactMatch(string systemName, string commanderName)
         {
             if (!Connected) throw new DBNotConnectedException();
 
@@ -124,7 +129,74 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 return VisitedSystemsCol.FindOne(sys => sys.SystemName == systemName && sys.Commander == commanderName);
         }
 
-        public void Upsert(VisitedSystem system)
+        public List<VisitedSystem> GetVisitedSystem(string systemName, string commanderName = "")
+        {
+            if (!Connected) throw new DBNotConnectedException();
+            if (BatchModeProcessing) return new(); // Shouldn't be possible, but the database is likely to be empty.
+
+            if (!string.IsNullOrEmpty(commanderName))
+                return VisitedSystemsCol
+                    .Find(sys => sys.SystemName == systemName && sys.Commander == commanderName)
+                    .OrderByDescending(sys => sys.SystemJournalEntries.Count)
+                    .ToList();
+            else
+                return VisitedSystemsCol
+                    .Find(sys => sys.SystemName == systemName)
+                    .OrderByDescending(sys => sys.SystemJournalEntries.Count)
+                    .ToList();
+        }
+
+        public List<VisitedSystem> GetVisitedSystem(ulong id64, string commanderName = "")
+        {
+            if (!Connected) throw new DBNotConnectedException();
+            if (BatchModeProcessing) return new(); // Shouldn't be possible, but the database is likely to be empty.
+
+            if (!string.IsNullOrEmpty(commanderName))
+                return VisitedSystemsCol
+                    .Find(sys => sys.SystemId64 == id64 && sys.Commander == commanderName)
+                    .OrderByDescending(sys => sys.SystemJournalEntries.Count)
+                    .ToList();
+            else
+                return VisitedSystemsCol
+                    .Find(sys => sys.SystemId64 == id64)
+                    .OrderByDescending(sys => sys.SystemJournalEntries.Count)
+                    .ToList();
+        }
+
+        // For auto-complete droplist.
+        public List<string> FindVisitedSystemNames(string substring, string commanderName = "")
+        {
+            if (!string.IsNullOrEmpty(commanderName))
+                return VisitedSystemsCol
+                    .Find(sys => sys.SystemName.Contains(substring) && sys.Commander == commanderName)
+                    .OrderByDescending(sys => sys.FirstVisitDateTime)
+                    .Select(sys => sys.SystemName)
+                    .Distinct()
+                    .Take(20)
+                    .ToList();
+            else
+                return VisitedSystemsCol
+                    .Find(sys => sys.SystemName.Contains(substring))
+                    .OrderByDescending(sys => sys.FirstVisitDateTime)
+                    .Select(sys => sys.SystemName)
+                    .Distinct()
+                    .Take(20)
+                    .ToList();
+        }
+
+        public List<string> GetRecentVisitedsystems()
+        {
+            return VisitedSystemsCol
+                .FindAll()
+                .OrderByDescending(sys => sys.LastVisitDateTime)
+                .ThenByDescending(sys => sys.FirstVisitDateTime)
+                .Select(sys => sys.SystemName)
+                .Distinct()
+                .Take(25)
+                .ToList();
+        }
+
+        public void UpsertVisitedSystem(VisitedSystem system)
         {
             if (system.PreambleJournalEntries.Count == 0 || system.SystemJournalEntries.Count == 0)
                 return;
@@ -132,19 +204,20 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             VisitedSystemsCol.Upsert(system);
         }
 
-        public void Clear()
+        public void ClearVisitedSystems()
         {
             VisitedSystemsCol.DeleteAll();
         }
 
-        public CurrentSystemInfo LoadOrInitSystemInfo(FileHeaderInfo lastFileHeaderInfo, string starSystem, ulong systemAddress, DateTime timestampDateTime)
+        public CurrentSystemInfo LoadOrInitVisitedSystemInfo(FileHeaderInfo lastFileHeaderInfo, string starSystem, ulong systemAddress, DateTime timestampDateTime)
         {
             CurrentSystemInfo systemInfo = null;
-            VisitedSystem systemData = Get(starSystem, lastFileHeaderInfo.Commander);
+            VisitedSystem systemData = GetVisitedSystemExactMatch(starSystem, lastFileHeaderInfo.Commander);
             if (systemData != null)
             {
                 systemInfo = new(systemData);
                 systemInfo.VisitCount++;
+                systemInfo.LastVisitedDateTime = timestampDateTime;
             }
             else
             {
@@ -153,7 +226,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             return systemInfo;
         }
 
-        public void UpsertSystemData(CurrentSystemInfo currentSystemInfo)
+        public void UpsertVisitedSystemData(CurrentSystemInfo currentSystemInfo)
         {
             if (currentSystemInfo == null) return;
 
@@ -166,15 +239,34 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             }
             else
             {
-                Upsert(currentSystemInfo.ToSystemInfo(true));
+                UpsertVisitedSystem(currentSystemInfo.ToSystemInfo(true));
             }
         }
 
-        public void FlushDeferred()
+        public void FlushDeferredVisitedSystems()
         {
             if (_deferredChanges.Count == 0) return;
 
             VisitedSystemsCol.Upsert(_deferredChanges.Select(csi => csi.Value.ToSystemInfo(true)));
+        }
+
+        public void UpsertAugmentedSystem(VisitedSystem system)
+        {
+            if (system.PreambleJournalEntries.Count == 0 || system.SystemJournalEntries.Count == 0)
+                return;
+
+            AugmentedSystemsCol.Upsert(system);
+        }
+
+        public VisitedSystem? GetExactMatchAugmentedSystem(ulong id64)
+        {
+            if (!Connected) throw new DBNotConnectedException();
+            if (BatchModeProcessing) return new(); // Shouldn't be possible, but the database is likely to be empty.
+
+            // We don't discriminate between commanders here.
+            return AugmentedSystemsCol
+                .Find(sys => sys.SystemId64 == id64)
+                .FirstOrDefault();
         }
     }
 

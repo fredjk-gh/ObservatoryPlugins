@@ -1,13 +1,19 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
+using com.github.fredjk_gh.PluginCommon.Data.Spansh;
+using Observatory.Framework;
+using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -24,7 +30,6 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         private ArchivistContext _context;
         private System.Windows.Forms.Timer _filterTimer = new();
         private JsonViewer _viewer;
-        private VisitedSystem _lastResult = null;
 
         internal ArchivistUI(ArchivistContext context)
         {
@@ -34,6 +39,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
             btnOpenInViewer.SetIcon(Properties.Resources.OpenInNewIcon.ToBitmap(), new(32, 32));
             btnOpenInSearch.SetIcon(Properties.Resources.SearchIcon.ToBitmap(), new(32, 32));
+            btnSearchDB.SetIcon(Properties.Resources.DBSearchIcon.ToBitmap(), new(32, 32));
+            btnLoadFromSpansh.SetIcon(Properties.Resources.SpanshIcon.ToBitmap(), new(32, 32));
+            btnResendAll.SetIcon(Properties.Resources.ReplayAllIcon.ToBitmap(), new(32, 32));
+            btnCopy.SetIcon(Properties.Resources.CopyIcon.ToBitmap(), new(32, 32));
+            btnView.SetIcon(Properties.Resources.OpenInNewIcon.ToBitmap(), new(32, 32));
 
             Draw();
 
@@ -52,8 +62,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // Search tab
             // TODO: Show Commander as well in result?
             PopulateCommandersList();
-            PopulateRecentSystems(_context.Data.CurrentCommander);
-            lblFindMessages.Text = string.Empty;
+            PopulateRecentSystems();
+            txtFindMessages.Text = string.Empty;
             lbJournals.Items.Clear();
 
             SetMessage(msg);
@@ -96,19 +106,17 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             PopulateLatestRecord(cmdrData);
         }
 
-        public void PopulateRecentSystems(string commander = "")
+        public void PopulateRecentSystems()
         {
             if (_context.IsReadAll) return;
 
-            var cmdrData = _context.Data.ForCommander(commander);
-            if (string.IsNullOrWhiteSpace(_context.Data.CurrentCommander) || cmdrData == null || cmdrData.RecentSystems.Count == 0)
+            if (_context.Data.RecentSystems.Count == 0)
             {
-                return;
+                _context.Data.RecentSystems = _context.Manager.GetRecentVisitedsystems();
             }
 
-            lblRecentSystems.Text = $"Recent systems for {cmdrData.CommanderName}";
             lbRecentSystems.Items.Clear();
-            foreach (var item in cmdrData.RecentSystems)
+            foreach (var item in _context.Data.RecentSystems)
             {
                 lbRecentSystems.Items.Add(item);
             }
@@ -127,7 +135,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             if (_context.IsReadAll) return;
 
             if (!string.IsNullOrWhiteSpace(message))
-                lblFindMessages.Text = message;
+                txtFindMessages.Text = message;
         }
 
         public void ClearMessage()
@@ -135,7 +143,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             if (_context.IsReadAll) return;
 
             txtMessages.Text = string.Empty;
-            lblFindMessages.Text = string.Empty;
+            txtFindMessages.Text = string.Empty;
         }
 
 
@@ -161,65 +169,82 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         private void DoSearch()
         {
             ClearMessage();
-            lbJournals.Items.Clear();
 
-            VisitedSystem result = null;
+            string searchText = cboFindSystem.Text?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(searchText) || searchText.Length < 3)
+            {
+                SetFindMessage("Search canceled: search text is empty or less than 3 characters.");
+                return;
+            }
+
+            ClearSearchResult();
+
+            ulong id64 = 0;
+            string cmdrName = "";
             if (cboCommanderFilter.SelectedIndex > 0)
             {
-                result = _context.Manager.Get(txtFindSystem.Text, cboCommanderFilter.SelectedItem.ToString());
-                if (result != null) SetFindMessage($"Match found with {result.SystemJournalEntries.Count} records");
+                cmdrName = cboCommanderFilter.SelectedItem.ToString();
+            }
+
+            List<VisitedSystem> results = null;
+            VisitedSystem result = null;
+            string resultMessage = "";
+            if (UInt64.TryParse(searchText, out id64))
+            {
+                // Search by system ID (and/or commander)
+                results = _context.Manager.GetVisitedSystem(id64, cmdrName);
             }
             else
             {
-                var results = _context.Manager.Get(txtFindSystem.Text);
-                if (results.Count > 0)
-                {
-                    result = results[0];
-                    if (results.Count > 1)
-                    {
-                        SetFindMessage($"Results for multiple commanders found; showing result with {result.SystemJournalEntries.Count} from {result.Commander}");
-                    }
-                    else
-                    {
-                        SetFindMessage($"Match found with {result.SystemJournalEntries.Count} records");
-                    }
-                }
+                results = _context.Manager.GetVisitedSystem(searchText, cmdrName);
             }
 
-            if (result == null)
+            if (results.Count > 0)
             {
-                ClearSearchResult();
+                result = results[0];
+            }
+            else
+            {
                 SetFindMessage("Nothing found");
                 return;
             }
 
-            _lastResult = result;
+            if (results.Count > 1)
+                resultMessage = $"Results for multiple commanders found; showing result with {result.SystemJournalEntries.Count} records from {result.Commander}";
+            else
+                resultMessage = $"Match found with {result.SystemJournalEntries.Count} records";
+
+            SetFindMessage(resultMessage);
+            _context.Data.LastSearchResult = result;
         }
 
         public void ClearSearchResult()
         {
-            _lastResult = null;
+            _context.Data.LastSearchResult = null;
             lbJournals.Items.Clear();
+            btnLoadFromSpansh.Enabled = false;
+            btnView.Enabled = false;
             ClearMessage();
         }
 
         private void PopulateSearchResult()
         {
-            if (_lastResult == null) return;
+            if (_context.Data.LastSearchResult == null) return;
 
             lbJournals.Items.Clear();
-            foreach (var journal in _lastResult.SystemJournalEntries)
+            foreach (var journal in _context.Data.LastSearchResult.SystemJournalEntries)
             {
                 if (string.IsNullOrEmpty(txtFilter.Text) || journal.Contains(txtFilter.Text.Trim()))
                     lbJournals.Items.Add(journal);
             }
+            btnLoadFromSpansh.Enabled = true;
         }
 
         private void OpenJsonViewer(string contents)
         {
             if (_viewer == null || _viewer.IsDisposed)
             {
-                _viewer = new JsonViewer();
+                _viewer = new JsonViewer(_context);
                 _context.Core.RegisterControl(_viewer);
                 _viewer.FormClosed += _viewer_FormClosed;
 
@@ -233,19 +258,116 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             }
         }
 
-        private void txtFindSystem_KeyPress(object sender, KeyPressEventArgs e)
+        private async void AugmentFromSpansh(UInt64 systemId)
         {
-            if (e.KeyChar != Convert.ToChar(Keys.Enter))
+            var url = $"https://spansh.co.uk/api/dump/{systemId}";
+
+            var task = _context.Core.HttpClient.GetStringAsync(url);
+            string spanshJson = string.Empty;
+
+            try
             {
-                return;
+                await task;
+            }
+            catch (Exception ex)
+            {
+                SetFindMessage($"Spansh data fetch failed: {ex.Message}"
+                    + $"{Environment.NewLine}Spansh may not know this system.");
             }
 
-            if (string.IsNullOrWhiteSpace(txtFindSystem.Text))
+            spanshJson = task.Result;
+            string status = "Fetch complete; parsing response...";
+            SetFindMessage(status);
+
+            try
             {
+                var processTask = Task.Run(() =>
+                {
+                    return ParseSpanshSystemDump(spanshJson);
+                });
+                await processTask;
+
+                SpanshSystem result = processTask.Result;
+                status = "Spansh response parsed, converting...";
+                SetFindMessage(status);
+
+                // Convert to Framework objects and serialize to Journal events.
+                VisitedSystem lastSearch = _context.Data.LastSearchResult;
+                var convertTask = Task.Run(() =>
+                {
+                    return JournalGenerator.FromSpansh(result, lastSearch.FirstVisitDateTime);
+                });
+                await convertTask;
+
+                List<JournalBase> augmentedJournals = convertTask.Result;
+                VisitedSystem augmented = JournalUtilities.AugmentJournals(lastSearch, augmentedJournals);
+                _context.Manager.UpsertAugmentedSystem(augmented);
+
                 ClearSearchResult();
-                return;
+                _context.Data.LastSearchResult = augmented;
+                PopulateSearchResult();
+                status = $"Conversion complete; {augmentedJournals.Count} journal entries displayed; data cached";
+                SetFindMessage(status);
+            }
+            catch (Exception ex)
+            {
+                SetFindMessage($"Failed to parse Spansh data: {ex.Message}");
+            }
+        }
+
+
+        private SpanshSystem ParseSpanshSystemDump(string spanshJson)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                AllowTrailingCommas = true,
+            };
+            var deserialized = JsonSerializer.Deserialize<SpanshSystemDump>(spanshJson, options);
+
+            return deserialized.System;
+        }
+
+        private void DoCopy()
+        {
+            StringBuilder journals = new();
+
+            if (lbJournals.SelectedItems.Count == 0)
+            {
+                foreach (var journal in lbJournals.Items)
+                {
+                    journals.AppendLine(journal.ToString());
+                }
+            }
+            else
+            {
+                foreach (var journal in lbJournals.SelectedItems)
+                {
+                    journals.AppendLine(journal.ToString());
+                }
             }
 
+            try
+            {
+                Clipboard.SetText(journals.ToString());
+            }
+            catch (Exception ex) { } // Ignore.
+        }
+
+        private void DoOpenViewer()
+        {
+            if (lbJournals.SelectedItems.Count != 1) return;
+
+            foreach (var journal in lbJournals.SelectedItems)
+            {
+                string journalEntry = journal.ToString();
+
+                OpenJsonViewer(journalEntry);
+                break;
+            }
+        }
+
+        private void btnSearchDB_Click(object sender, EventArgs e)
+        {
             DoSearch();
             PopulateSearchResult();
         }
@@ -263,36 +385,18 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
         private void cboCommanderFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
-
             DoSearch();
             PopulateSearchResult();
         }
 
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (lbJournals.SelectedItems.Count == 0) return;
-
-            StringBuilder journals = new();
-            
-            foreach(var journal in lbJournals.SelectedItems)
-            {
-                journals.AppendLine(journal.ToString());
-            }
-
-            Clipboard.SetText(journals.ToString());
+            DoCopy();
         }
 
         private void viewToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (lbJournals.SelectedItems.Count == 0) return;
-
-            foreach (var journal in lbJournals.SelectedItems)
-            {
-                string journalEntry = journal.ToString();
-
-                OpenJsonViewer(journalEntry);
-                break;
-            }
+            DoOpenViewer();
         }
 
         private void _viewer_FormClosed(object sender, FormClosedEventArgs e)
@@ -315,30 +419,24 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
         private void lbJournals_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Right)
+            switch (e.Button)
             {
-                if (ctxResultsMenu.Visible) ctxResultsMenu.Visible = false;
-                return;
-            }
+                case MouseButtons.Right:
+                    var index = lbJournals.IndexFromPoint(e.Location);
+                    if (index != ListBox.NoMatches)
+                    {
+                        lbJournals.SelectedIndices.Add(index);
+                    }
 
-            if (lbJournals.SelectedItems.Count > 1 )
-            {
-                ctxResultsMenu.Show(Cursor.Position);
-                ctxResultsMenu.Visible = true;
-            }
-            else if (lbJournals.SelectedItems.Count <= 1)
-            {
-                var index = lbJournals.IndexFromPoint(e.Location);
-                if (index != ListBox.NoMatches)
-                {
-                    lbJournals.SelectedIndex = index;
-                }
-                ctxResultsMenu.Show(Cursor.Position);
-                ctxResultsMenu.Visible = true;
-            }
-            else
-            {
-                ctxResultsMenu.Visible = false;
+                    viewToolStripMenuItem.Enabled = (lbJournals.SelectedItems.Count == 1);
+                    btnView.Enabled = (lbJournals.SelectedItems.Count == 1);
+
+                    ctxResultsMenu.Show(Cursor.Position);
+                    ctxResultsMenu.Visible = !ctxResultsMenu.Visible;
+                    break;
+                default:
+                    if (ctxResultsMenu.Visible) ctxResultsMenu.Visible = false;
+                    break;
             }
         }
 
@@ -346,7 +444,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         {
             if (string.IsNullOrWhiteSpace(txtSystemName.Text)) return;
 
-            txtFindSystem.Text = txtSystemName.Text;
+            cboFindSystem.Text = txtSystemName.Text;
             tabPanels.SelectedTab = tabSearch;
 
             DoSearch();
@@ -364,10 +462,141 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         {
             if (lbRecentSystems.SelectedIndex < 0 || string.IsNullOrWhiteSpace(lbRecentSystems.SelectedItem?.ToString())) return;
 
-            txtFindSystem.Text = lbRecentSystems.SelectedItem?.ToString();
-            
+            cboFindSystem.Text = lbRecentSystems.SelectedItem?.ToString();
+
             DoSearch();
             PopulateSearchResult();
+        }
+
+        private void btnLoadFromSpansh_Click(object sender, EventArgs e)
+        {
+            if (_context.Data.LastSearchResult == null) return;
+
+            btnLoadFromSpansh.Enabled = false;
+            VisitedSystem? augmentedSystem = _context.Manager.GetExactMatchAugmentedSystem(_context.Data.LastSearchResult.SystemId64);
+            if (augmentedSystem == null)
+            {
+                SetFindMessage($"Fetching data for '{_context.Data.LastSearchResult.SystemName}' from Spansh...");
+                AugmentFromSpansh(_context.Data.LastSearchResult.SystemId64);
+            }
+            else
+            {
+                ClearSearchResult();
+                _context.Data.LastSearchResult = augmentedSystem;
+                PopulateSearchResult();
+                SetFindMessage($"Data previously fetched from Spansh loaded; {augmentedSystem.SystemJournalEntries.Count} journal entries displayed");
+            }
+            btnLoadFromSpansh.Enabled = true;
+        }
+
+        private void cboFindSystem_TextUpdate(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(cboFindSystem.Text) || cboFindSystem.Text.Length < 3)
+            {
+                // Don't trigger for empty/short values.
+                autoCompleteFetchTimer.Stop();
+                cboFindSystem.DroppedDown = false;
+                return;
+            }
+
+            // User typed something non-trivial, reset timer.
+            if (autoCompleteFetchTimer.Enabled)
+                autoCompleteFetchTimer.Stop();
+            autoCompleteFetchTimer.Start();
+        }
+
+        private void autoCompleteFetchTimer_Tick(object sender, EventArgs e)
+        {
+            autoCompleteFetchTimer.Stop();
+
+            try
+            {
+                var commanderName = "";
+                if (cboCommanderFilter.SelectedIndex > 0)
+                {
+                    commanderName = cboCommanderFilter.SelectedItem.ToString();
+                }
+
+                var search = cboFindSystem.Text;
+                var autoCompleteItems = _context.Manager.FindVisitedSystemNames(search, commanderName);
+
+                if (autoCompleteItems.Count > 0)
+                {
+                    cboFindSystem.DataSource = autoCompleteItems;
+                    cboFindSystem.SelectedItem = null;
+                    cboFindSystem.DroppedDown = true;
+
+                    cboFindSystem.Text = search;
+                    cboFindSystem.SelectionStart = search.Length;
+
+                    Cursor.Current = Cursors.Default;
+                }
+                else
+                {
+                    cboFindSystem.DroppedDown = false;
+                    cboFindSystem.SelectionStart = search.Length;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Autocomplete item update failed: {ex.ToString()}");
+            }
+        }
+
+        private void cboFindSystem_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            autoCompleteFetchTimer.Stop();
+        }
+
+        private void btnCopy_Click(object sender, EventArgs e)
+        {
+            DoCopy();
+        }
+
+        private void btnView_Click(object sender, EventArgs e)
+        {
+            DoOpenViewer();
+        }
+
+        private void lbJournals_MouseUp(object sender, MouseEventArgs e)
+        {
+            switch (e.Button)
+            {
+                case MouseButtons.Left:
+                    if (ctxResultsMenu.Visible) ctxResultsMenu.Visible = false;
+
+                    viewToolStripMenuItem.Enabled = lbJournals.SelectedItems.Count == 1;
+                    btnView.Enabled = lbJournals.SelectedItems.Count == 1;
+
+                    break;
+            }
+        }
+
+        private void lbJournals_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                case Keys.A:
+                    if (e.Modifiers == Keys.Control)
+                    {
+                        lbJournals.SelectedItems.Clear();
+                        for (int i = lbJournals.Items.Count - 1; i >= 0 ; i--)
+                        {
+                            lbJournals.SelectedIndices.Add(i);
+                        }
+                        btnView.Enabled = false;
+                        e.Handled = true;
+                    }
+                    break;
+                case Keys.C:
+                    if (e.Modifiers == Keys.Control)
+                    {
+                        DoCopy();
+                        e.Handled = true;
+                    }
+
+                    break;
+            }
         }
     }
 }

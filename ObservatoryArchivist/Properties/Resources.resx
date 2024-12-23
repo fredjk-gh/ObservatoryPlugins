@@ -127,4 +127,19 @@
   <data name="SearchIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\search_32.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="SpanshIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\spansh_favicon.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="DBSearchIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\db_search_32.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ReplayAllIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\replay_32.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FontSizeIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\font_size_32.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CopyIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\copy_32.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

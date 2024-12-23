@@ -12,6 +12,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
     {
         private string _currentCommander = "";
         private Dictionary<string, ArchivistCommanderData> _knownCommanders = new();
+        private VisitedSystem _lastSearchResult = null;
+        private List<string> _recentSystems = new();
 
         public Dictionary<string, ArchivistCommanderData> KnownCommanders
         {
@@ -21,6 +23,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         [JsonIgnore]
         public FileHeader LastFileHeader { get; set; }
+
+        [JsonIgnore]
+        public VisitedSystem LastSearchResult { get; set; }
 
         public string CurrentCommander {
             get => _currentCommander;
@@ -49,6 +54,28 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public void ResetForReadAll()
         {
             _knownCommanders.Clear();
+            _lastSearchResult = null;
+            _recentSystems.Clear();
+        }
+
+        public List<string> RecentSystems
+        {
+            get => _recentSystems;
+            internal set => _recentSystems = value;
+        }
+
+        public void MaybeAddToRecentSystems(string? systemName)
+        {
+            if (!string.IsNullOrWhiteSpace(systemName))
+            {
+                // De-dupe by removing the item and re-inserting it at the top of the list.
+                _recentSystems.Remove(systemName);
+                _recentSystems.Insert(0, systemName);
+                if (_recentSystems.Count > 25)
+                {
+                    _recentSystems.RemoveRange(25, _recentSystems.Count - 25);
+                }
+            }
         }
     }
 }

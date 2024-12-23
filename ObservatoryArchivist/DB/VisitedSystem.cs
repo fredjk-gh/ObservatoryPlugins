@@ -20,8 +20,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public UInt64 SystemId64 { get; set; }
         public DateTime FirstVisitDateTime { get; set; }
         public int VisitCount { get; set; }
+        public DateTime LastVisitDateTime { get; set; }
         public List<string> PreambleJournalEntries { get; set; }
-
         public List<string> SystemJournalEntries { get; set; }
     }
 }
