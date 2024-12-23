@@ -34,7 +34,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         private Loadout _lastLoadout = null;
 
         public string SystemName { get; private set; }
-        public string LocationName { get; private set;  }
+        public string LocationName { get; private set; }
         public bool CurrentLocationShown { get; set; }
         public int? CargoMax { get; set; }
         public int? CargoCur { get; set; }
