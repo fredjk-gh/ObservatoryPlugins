@@ -9,6 +9,7 @@ using Observatory.Framework.Files.ParameterTypes;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
+    // DEPRECATED
     public class CoordConverter : JsonConverter<StarPosition>
     {
         public override StarPosition Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

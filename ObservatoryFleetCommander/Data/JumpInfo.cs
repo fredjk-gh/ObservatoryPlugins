@@ -1,4 +1,5 @@
-﻿using Observatory.Framework.Files.ParameterTypes;
+﻿using Observatory.Framework.Files.Converters;
+using Observatory.Framework.Files.ParameterTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         public string SystemName { get; set; }
         public ulong SystemAddress { get; set; }
 
-        [JsonConverter(typeof(CoordConverter))]
+        [JsonConverter(typeof(StarPosConverter))]
         public StarPosition Position { get; set; }
         public double Distance { get; set; }
         public double DistanceFromDestination { get; set; }

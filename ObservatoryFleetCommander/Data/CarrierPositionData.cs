@@ -63,7 +63,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         public string SystemName { get; set; }
         public ulong SystemAddress { get; set; }
 
-        [JsonConverter(typeof(CoordConverter))]
+        [JsonConverter(typeof(StarPosConverter))]
         public StarPosition StarPos
         {
             get

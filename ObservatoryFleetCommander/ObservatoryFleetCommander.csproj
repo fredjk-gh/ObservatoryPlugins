@@ -21,6 +21,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\ObservatoryCore\ObservatoryFramework\ObservatoryFramework.csproj" />
+		<ProjectReference Include="..\PluginCommon\PluginCommon.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

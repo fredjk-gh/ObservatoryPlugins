@@ -1,4 +1,4 @@
-﻿using com.github.fredjk_gh.ObservatoryFleetCommander.UI;
+﻿using com.github.fredjk_gh.PluginCommon.UI;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
@@ -479,14 +479,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         private ToolStripMenuItem ctxRouteMenu_SetCurrentPosition;
         private TextBox txtMessages;
         private Label lblMessages;
-        private UI.ThemeableProgressBar pbFuelLevel;
+        private ThemeableProgressBar pbFuelLevel;
         private TableLayoutPanel tableLayoutPanel1;
         private Label lblTimerValue;
-        private UI.ThemeableIconButton btnPopOutTimer;
+        private ThemeableIconButton btnPopOutTimer;
         private ToolTip ttipCarrierUI;
-        private UI.ThemeableIconButton btnNewRoute;
-        private UI.ThemeableIconButton btnClearRoute;
-        private UI.ThemeableIconButton btnOpenSpansh;
+        private ThemeableIconButton btnNewRoute;
+        private ThemeableIconButton btnClearRoute;
+        private ThemeableIconButton btnOpenSpansh;
         private Label lblCapacityTitle;
         private Label lblCapacityValue;
         private ThemeableIconButton btnOpenFromSpansh;
