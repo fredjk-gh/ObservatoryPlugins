@@ -11,7 +11,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Id64
     /// ID64 coordinate helper functions.
     /// 
     /// Adapted from https://github.com/Orvidius/edastro/blob/main/EDSM.pm
-    /// Required Reading: http://disc.thargoid.space/ID64
+    /// Required Reading: https://web.archive.org/web/20220618134655/http://disc.thargoid.space/ID64
     /// </summary>
     internal class Id64CoordHelper
     {

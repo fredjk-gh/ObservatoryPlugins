@@ -209,7 +209,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                         string isInSuppressionZone = (data.CommanderData.IsInSuppressionZone(settings) ?? false ? $"This system is in the suppression zone{coords}." : coords.Trim());
                         if (data.CommanderData.IsInBubble() ?? false)
                         {
-                            isInSuppressionZone = $"This system is in the bubble (~250Ly from Sol{coords}).";
+                            isInSuppressionZone = $"This system is in the bubble (< 250Ly from Sol{coords}).";
                         }
                         MakeGridItem(jump.Timestamp, (data.CommanderData.JumpsRemainingInRoute == 0 ? $"(no route) {isInSuppressionZone}" : isInSuppressionZone));
                         string arrivalStarScoopableStr = (data.CommanderData.LastStartJumpEvent != null && !Constants.Scoopables.Contains(data.CommanderData.LastStartJumpEvent.StarClass))
