@@ -57,13 +57,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const int EDASTRO_PRECISION = 12;
 
         // Conversion constants (divisor or factor).
-        public const double CONV_MperS2_TO_G_DIVISOR = 9.81;
-        public const double CONV_M_TO_SOLAR_RAD_DIVISOR = 696340000.0;
-        public const double CONV_M_TO_KM_DIVISOR = 1000.0;
-        public const double CONV_M_TO_LS_DIVISOR = 299792458.0;
-        public const double CONV_S_TO_DAYS_DIVISOR = 86400.0;
-        public const double CONV_S_TO_HOURS_DIVISOR = 3600.0;
-        public const double CONV_PA_TO_ATM_DIVISOR = 101325.0;
+        public const float CONV_MperS2_TO_G_DIVISOR = 9.81f;
+        public const float CONV_M_TO_SOLAR_RAD_DIVISOR = 695500000.0f;
+        public const float CONV_M_TO_KM_DIVISOR = 1000.0f;
+        public const float CONV_M_TO_LS_DIVISOR = 299792458.0f;
+        public const float CONV_S_TO_DAYS_DIVISOR = 86400.0f;
+        public const float CONV_S_TO_HOURS_DIVISOR = 3600.0f;
+        public const float CONV_PA_TO_ATM_DIVISOR = 101325.0f;
 
         // Variable names from the edastro CSV.
         public const string V_SOLAR_MASSES = "solarMasses";
@@ -87,6 +87,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         // Personal best variable names
         public const string V_BODY_BIO_COUNT = "bodyBioCount";
         public const string V_BODY_TYPE_COUNT = "bodyTypeCount";
+        public const string V_BODY_ELW_SIMILARITY = "earthSimilarityScore";
+        public const string V_BODY_MARS_SIMILARITY = "marsSimilarityScore";
         public const string V_SYS_BIO_COUNT = "sysBioCount";
         public const string V_SYS_BODY_COUNT = "sysBodyCount";
         public const string V_SYS_UNDISCOVERED_COUNT = "sysUndiscoveredCount";
@@ -104,6 +106,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string EDASTRO_METAL_RICH_BODY = "Metal-rich body";
         public const string EDASTRO_STAR_BLACK_HOLE = "Black Hole";
         public const string EDASTRO_STAR_SM_BLACK_HOLE = "Supermassive BH";
+        public const string EDASTRO_ELW_PROCGEN = "Earth-like world ProcGen";
 
         // Values from the Scan which are used in multiple places.
         public const string SCAN_EARTHLIKE = "Earthlike body";
@@ -128,7 +131,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             { "Class III gas giant", "Sudarsky class III gas giant" },
             { "Class IV gas giant", "Sudarsky class IV gas giant" },
             { "Class V gas giant", "Sudarsky class V gas giant" },
-            { "Earth-like world ProcGen", SCAN_EARTHLIKE },
+            { EDASTRO_ELW_PROCGEN, SCAN_EARTHLIKE },
             { "Gas giant with ammonia-based life", "Gas giant with ammonia based life" },
             { "Gas giant with water-based life", "Gas giant with water based life" },
             { "Helium gas giant", "Helium gas giant" },
@@ -266,6 +269,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         public static readonly PersonalBestData PB_BodyBiosData =
             new(RecordTable.Planets, OBJECT_TYPE_ODYSSEY_PLANET, V_BODY_BIO_COUNT);
+        public static readonly PersonalBestData PB_EarthSimilarityScoreData =
+            new(RecordTable.Planets, EDASTRO_ELW_PROCGEN, V_BODY_ELW_SIMILARITY, SCAN_EARTHLIKE);
+        public static readonly PersonalBestData PB_MarsSimilarityScoreData =
+            new(RecordTable.Planets, EDASTRO_ELW_PROCGEN, V_BODY_MARS_SIMILARITY, SCAN_EARTHLIKE);
 
         public static List<PersonalBestData> GeneratePersonalBestRecords()
         {
@@ -276,6 +283,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 { PB_SystemBodyCountData },
                 { PB_UndiscoveredSystemTallyData },
                 { PB_BodyBiosData },
+                { PB_EarthSimilarityScoreData },
+                { PB_MarsSimilarityScoreData },
                 { PB_RegionsVisited },
             };
 
@@ -303,6 +312,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         public static readonly List<Tuple<RecordTable, string>> PB_RecordTypesForFssScans = new()
         {
+            { Tuple.Create(RecordTable.Planets, SCAN_EARTHLIKE) },
             { Tuple.Create(RecordTable.Planets, OBJECT_TYPE_ODYSSEY_PLANET)  },
             { Tuple.Create(RecordTable.Systems, OBJECT_TYPE_SYSTEM) },
         };

@@ -132,15 +132,33 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 case Location location:
                     _state.CurrentSystem = location.StarSystem;
                     break;
+                case DiscoveryScan discoveryScan:
+                    _state.SystemBodyCount = discoveryScan.Bodies;
+                    break;
+                case NavBeaconScan navBeaconScan:
+                    _state.SystemBodyCount = navBeaconScan.NumBodies;
+                    _state.NavBeaconScanned = true;
+                    break;
                 case Scan scan:
                     OnScan(scan);
+
+                    if (_state.NavBeaconScanned && _state.Scans.Count == _state.SystemBodyCount)
+                    {
+                        // Nav beacon was used; generate an AllBodies Found event.
+                        OnFssAllBodiesFound(new()
+                        {
+                            Count = _state.Scans.Count,
+                            SystemName = _state.CurrentSystem,
+                            Event = "FSSAllBodiesFound",
+                            SystemAddress = scan.SystemAddress,
+                        });
+                    }
                     break;
                 case FSSBodySignals bodySignals:
                     OnFssBodySignals(bodySignals);
                     break;
                 case FSSAllBodiesFound fssAllBodies:
-                    // TODO: gather scans
-                    OnFssAllBodiesFound(fssAllBodies, new List<Scan>());
+                    OnFssAllBodiesFound(fssAllBodies);
                     break;
                 case CodexEntry codexEntry:
                     OnCodexEntry(codexEntry);
@@ -457,6 +475,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void OnScan(Scan scan)
         {
+            _state.AddScan(scan);
             // Determine type of object from scan (stars, planets, rings, systems)
             // Look up records for the specific variant of the object (type + variant).
             List<Result> results = new();
@@ -523,7 +542,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             AddResultsToGrid(results, /* notify */ true);
         }
 
-        private void OnFssAllBodiesFound(FSSAllBodiesFound fssAllBodies, List<Scan> scans)
+        private void OnFssAllBodiesFound(FSSAllBodiesFound fssAllBodies)
         {
             var readMode = _state.Core.CurrentLogMonitorState;
             List<Result> results = new();
@@ -532,7 +551,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 foreach (var record in _state.GetRecordBook().GetRecords(t.Item1, t.Item2))
                 {
                     if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
-                        results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, scans));
+                        results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, _state.Scans));
                 }
             }
             AddResultsToGrid(results, /* notify */ true);

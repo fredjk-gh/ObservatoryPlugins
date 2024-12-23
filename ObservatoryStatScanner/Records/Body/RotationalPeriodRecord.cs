@@ -15,6 +15,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableRotationalPeriodRecord;
 
+        // Neutrons and BHs have very short rotational periods. Conditional format doesn't help in all cases.
         public override string ValueFormat { get => (MaxValue < 1.0 ? "{0:0.00000###}" : "{0:0.##}"); }
         public override string Units { get => "d"; }
 

@@ -57,7 +57,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         {
             return new();
         }
-        public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
+        public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
             return new();
         }

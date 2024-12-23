@@ -104,6 +104,36 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
             }
         }
 
+        public void AddScan(Scan scan)
+        {
+            if (_stateCache.CurrentCommander == null) return;
+            _stateCache.CurrentCommander.Scans[scan.BodyID] = scan;
+        }
+
+        public Dictionary<int, Scan> Scans
+        {
+            get => _stateCache.CurrentCommander?.Scans ?? new();
+        }
+        public int SystemBodyCount
+        {
+            get => _stateCache.CurrentCommander?.SystemBodyCount ?? 0;
+            internal set
+            {
+                if (_stateCache.CurrentCommander == null) return;
+                _stateCache.CurrentCommander.SystemBodyCount = value;
+            }
+        }
+
+        public bool NavBeaconScanned 
+        { 
+            get => _stateCache.CurrentCommander?.NavBeaconScanned ?? false;
+            internal set
+            {
+                if (_stateCache.CurrentCommander == null) return;
+                _stateCache.CurrentCommander.NavBeaconScanned = value;
+            }
+        }
+
         public LoadGame LastLoadGame
         {
             get => _stateCache.CurrentCommander?.LastLoadGame;

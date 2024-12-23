@@ -15,7 +15,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override bool Enabled => Settings.EnableSurfaceGravityRecord;
 
-        public override string ValueFormat { get => "{0:0.##}"; }
+        public override string ValueFormat { get => "{0:0.00##}"; }
         public override string Units { get => "g"; }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)

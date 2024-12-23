@@ -22,7 +22,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public override string Units { get => "bios"; }
         public override Function MaxFunction { get => Function.Sum; }
 
-        public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
+        public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
             if (!Enabled) return new();
 

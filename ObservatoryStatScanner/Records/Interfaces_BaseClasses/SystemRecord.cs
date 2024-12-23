@@ -52,7 +52,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public DateTime MinRecordDateTime => Data.MinRecordDateTime;
         public virtual Function MinFunction { get => Function.Minimum; }
 
-        public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
+        public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
             return new();
         }

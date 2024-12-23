@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
-    [SettingSuggestedColumnWidth(500)]
     class StatScannerSettings
     {
         internal readonly static StatScannerSettings DEFAULT = new()
@@ -43,6 +42,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             EnableRingMassRecord = true,
             EnableRingDensityRecord = true,
             EnableOdysseySurfaceBioRecord = true,
+            EnableElwSimilarityRecords = true,
             EnableSystemBodyCountRecords = true,
             EnableRegionCodexCountRecords = false,
             EnableVisitedRegionRecords = true,
@@ -144,6 +144,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         [SettingDisplayName("Check Odyssey surface bio records")]
         public bool EnableOdysseySurfaceBioRecord { get; set; }
+
+        [SettingDisplayName("Check Earth/Mars similarity records")]
+        public bool EnableElwSimilarityRecords { get; set; }
 
         // Stars
         [SettingNewGroup("Star-specific records")]

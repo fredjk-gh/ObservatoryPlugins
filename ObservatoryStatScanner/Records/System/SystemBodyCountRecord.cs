@@ -18,7 +18,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public override string ValueFormat { get => "{0}"; }
         public override string Units { get => "bodies"; }
 
-        public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
+        public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
             if (!Enabled) return new();
 

@@ -85,6 +85,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 case Constants.V_BODY_BIO_COUNT:
                     typeToCreate = typeof(PlanetaryOdysseyBiosRecord);
                     break;
+                case Constants.V_BODY_ELW_SIMILARITY:
+                    typeToCreate = typeof(EarthSimilarityScoreRecord);
+                    break;
+                case Constants.V_BODY_MARS_SIMILARITY:
+                    typeToCreate = typeof(MarsSimilarityScoreRecord);
+                    break;
 
                 // Both Planets & Stars
                 case Constants.V_SURFACE_TEMPERATURE:

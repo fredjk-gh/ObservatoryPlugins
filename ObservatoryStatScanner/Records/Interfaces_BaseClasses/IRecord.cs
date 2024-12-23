@@ -66,7 +66,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         Function MinFunction { get; }
 
         List<Result> Summary();
-        List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans);
+        List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans);
         List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey);
         List<Result> CheckScan(Scan scan, string currentSystem);
         List<Result> CheckCodexEntry(CodexEntry codexEntry);

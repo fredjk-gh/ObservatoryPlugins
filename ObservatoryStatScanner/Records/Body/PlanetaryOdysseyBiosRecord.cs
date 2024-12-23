@@ -52,7 +52,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
             return new();
         }
-        public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, List<Scan> scans)
+        public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
             BodyBioSignals.Clear();
 
