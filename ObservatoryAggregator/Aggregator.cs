@@ -144,10 +144,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                         {
                             _data.CurrentSystem.IsUndiscovered = true;
                         }
+
                         // This generates a ton of flicker. Maybe this can be handled by Core (suppressing re-paints?)
                         // Make this somewhat conditional or only if data is "dirty"?
                         RedrawGrid();
                     }
+                    break;
+                case ScanBaryCentre scanBarycentre:
+                    _data.AddScanBarycentre(scanBarycentre);
+                    RedrawGrid();
                     break;
                 case SAAScanComplete scanComplete:
                     _data.AddScanComplete(scanComplete);

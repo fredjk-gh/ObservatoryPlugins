@@ -220,6 +220,30 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             GetBody(scan.BodyID)
                 .Scan = scan;
+
+            if (scan.Parent != null && scan.Parent.Count > 0)
+            {
+                // TODO: Walk up all the barycenters and add the parent/child relation??
+                //var p = scan.Parent.First();
+                //if (p.ParentType == ParentType.Null)
+                //{
+                //    // This parent is a barycentre; inform them of a child.
+                //    var parentBodySummary = GetBody(p.Body);
+                //    parentBodySummary.BarycentreChildren.Add(scan);
+                //}
+
+                ScanBaryCentre childScan = scan;
+                var childBodyId = -1;
+                foreach (var p in scan.Parent)
+                {
+                    if (p.ParentType != ParentType.Null || childScan == null) break;
+
+                    var parentBodySummary = GetBody(p.Body);
+                    parentBodySummary.BarycentreChildren.Add(childScan);
+                    childBodyId = p.Body;
+                    childScan = parentBodySummary.ScanBarycentre; // may be null. Not much we can do.
+                }
+            }
         }
 
         public void AddBodySignals(FSSBodySignals bodySignals)
@@ -232,6 +256,12 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             GetBody(scanComplete.BodyID)
                 .ScanComplete = scanComplete;
+        }
+
+        public void AddScanBarycentre(ScanBaryCentre scanBarycentre)
+        {
+            GetBody(scanBarycentre.BodyID)
+                .ScanBarycentre = scanBarycentre;
         }
 
         public void MarkForVisit(int bodyId)
@@ -261,7 +291,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public BodySummary GetBody(int bodyID)
         {
             if (!_bodies.ContainsKey(bodyID))
-                _bodies[bodyID] = new(this);
+                _bodies[bodyID] = new(this, bodyID);
 
             return _bodies[bodyID];
         }

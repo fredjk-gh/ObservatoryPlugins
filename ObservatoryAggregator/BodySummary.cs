@@ -3,6 +3,7 @@ using Microsoft.VisualBasic;
 using Observatory.Framework.Files.Journal;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,11 +14,17 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
     {
         private TrackedData _allData;
         private AggregatorGrid _gridItem = null;
+        private int? _explicitBodyID = null;
         private Scan _scan = null;
+        private SAAScanComplete _saaScan = null;
+        private ScanBaryCentre _scanBarycentre = null;
+        private ObservableCollection<ScanBaryCentre> _barycentreChildren = new();
 
-        internal BodySummary(TrackedData allData)
+        internal BodySummary(TrackedData allData, int bodyID)
         {
-            _allData = allData; 
+            _allData = allData;
+            _barycentreChildren.CollectionChanged += ChildrenChanged;
+            _explicitBodyID = bodyID;
         }
 
         public FSSBodySignals BodySignals { get; set; }
@@ -28,44 +35,65 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             {
                 _scan = value;
                 // Regenerate the grid item in case it was generated before the Scan (and thus doesn't have a short-name).
-                if (_gridItem != null)
-                {
-                    _gridItem = null;
-                    ToGrid();
-                }
+                RegenerateGridItem();
             }
         }
 
-        public SAAScanComplete ScanComplete { get; set; }
+        public SAAScanComplete ScanComplete
+        { 
+            get => _saaScan;
+            set
+            {
+                _saaScan = value;
+                // Regenerate the grid item in case it was generated before the Scan (and thus doesn't have a short-name).
+                // This is mainly for rings.
+                RegenerateGridItem();
+            }
+        }
 
-        // Ring scans???
+        public ScanBaryCentre ScanBarycentre
+        {
+            get => _scanBarycentre;
+            set
+            {
+                _scanBarycentre = value;
+                // Regenerate the grid item in case it was generated before the Scan (and thus doesn't have a short-name).
+                // This is mainly for barycentres.
+                RegenerateGridItem();
+            }
+        }
+
+        public ObservableCollection<ScanBaryCentre> BarycentreChildren
+        {
+            get => _barycentreChildren;
+        }
+
+        // Ring scans??? Unfortunately, no SystemName; Fallback to global system name.
         public string SystemName
         {
-            get
-            {
-                if (Scan != null) return Scan.StarSystem;
-                return "";
-            }
+            get => Scan?.StarSystem
+                    ?? ScanBarycentre?.StarSystem 
+                    ?? _allData.CurrentSystem?.Name 
+                    ?? "";
         }
 
         public int BodyID
         {
-            get
-            {
-                if (Scan != null) return Scan.BodyID;
-                if (BodySignals != null) return BodySignals.BodyID;
-                return -1;
-            }
+            get => _explicitBodyID
+                    ?? Scan?.BodyID
+                    ?? ScanBarycentre?.BodyID
+                    ?? BodySignals?.BodyID
+                    ?? ScanComplete?.BodyID
+                    ?? 0; // System implicit barycentre? Or there's no barycentre scan (hence the _explicitBodyID fallback)
+            set => _explicitBodyID = value;
         }
 
         public string BodyName
         {
-            get
-            {
-                if (Scan != null) return Scan.BodyName;
-                if (BodySignals != null) return BodySignals.BodyName;
-                return "";
-            }
+            get =>  Scan?.BodyName
+                ?? BodySignals?.BodyName
+                ?? ScanComplete?.BodyName
+                ?? $"X{{{BodyID}}}";
         }
 
         public string BodyShortName
@@ -74,13 +102,20 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             {
                 {
                     string shortName = BodyName;
-                    if (Scan != null) shortName = BodyName.Replace(SystemName, "").Trim();
-
+                    if (IsBarycentre && BarycentreChildren.Count >= 1)
+                    {
+                        var childIds = BarycentreChildren.Select(bc => bc.BodyID).ToHashSet();
+                        shortName = $"({string.Join("-", _allData.BodyData.Where(e => childIds.Contains(e.Key)).Select(e => e.Value.BodyShortName))})";
+                    }
+                    else if (!IsBarycentre)
+                    {
+                        var sysName = SystemName;
+                        if (!string.IsNullOrWhiteSpace(sysName)) shortName = BodyName.Replace(sysName, "").Trim();
+                    }
                     return (string.IsNullOrEmpty(shortName) ? Constants.PRIMARY_STAR : shortName);
                 }
             }
         }
-
 
         public bool IsMapped
         {
@@ -97,13 +132,25 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             get => Scan != null && (Scan.StarType != null && Constants.Scoopables.Contains(Scan.StarType));
         }
 
+        public bool IsBarycentre
+        {
+            get => ScanBarycentre != null
+                || BarycentreChildren.Count > 0;
+        }
+
         public string GetBodyNameDisplayString()
         {
-            // TODO: Suppart Barycenters
             if (Scan?.PlanetClass != null)
                 return $"Body {BodyShortName}";
             else if (Scan?.StarType != null)
                 return $"{(BodyShortName == Constants.PRIMARY_STAR ? "" : "Body ")}{BodyShortName}";
+            else if (IsBarycentre)
+            {
+                if (BodyID == 0)
+                    return "System barycentre";
+                else
+                    return $"Barycentre {BodyShortName}";
+            }
             return BodyShortName;
         }
 
@@ -193,6 +240,23 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 _gridItem = new(_allData, this);
             }
             return _gridItem;
+        }
+
+        private void RegenerateGridItem()
+        {
+            if (_gridItem != null)
+            {
+                _gridItem = null;
+                ToGrid();
+            }
+        }
+
+        private void ChildrenChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (_barycentreChildren.Count >= 2)
+            {
+                RegenerateGridItem();
+            }
         }
     }
 }
