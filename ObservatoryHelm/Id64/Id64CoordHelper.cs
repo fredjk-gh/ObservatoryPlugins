@@ -11,7 +11,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Id64
     /// ID64 coordinate helper functions.
     /// 
     /// Adapted from https://github.com/Orvidius/edastro/blob/main/EDSM.pm
-    /// Required Reading: https://web.archive.org/web/20220618134655/http://disc.thargoid.space/ID64
+    /// Required Reading:
+    /// - https://web.archive.org/web/20220618134655/http://disc.thargoid.space/ID64
+    /// - https://web.archive.org/web/20240303181408/http://disc.thargoid.space/Sector_Naming:
+    ///     -- Note: Hash function used to determine if class 1 or class 2 is used is the Jenkins function:
+    ///        https://en.wikipedia.org/wiki/Jenkins_hash_function
+    ///     -- Example, see: https://bitbucket.org/Esvandiary/edts/src/5ff04315/edtslib/util.py#lines-231
     /// </summary>
     internal class Id64CoordHelper
     {
