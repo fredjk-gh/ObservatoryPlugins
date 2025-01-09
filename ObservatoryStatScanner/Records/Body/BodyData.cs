@@ -80,12 +80,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
             AxialTiltDegrees = elwScan.AxialTilt * 180.0f / (float)Math.PI;
             Eccentricity = elwScan.Eccentricity;
             TidalLock = elwScan.TidalLock;
-            IsTerraformed = "terraformed".Equals(elwScan.TerraformState, StringComparison.InvariantCultureIgnoreCase);
+            IsTerraformed = "terraformed".Equals(elwScan.TerraformState, StringComparison.OrdinalIgnoreCase);
             IsMoon = elwScan.Parent.Any(p => p.ParentType == ParentType.Planet);
             IsBinary = elwScan.Parent[0].ParentType == ParentType.Null;
             StarCount = allScans.Values.Count(s => !string.IsNullOrWhiteSpace(s.StarType));
             MoonCount = allScans.Values.Count(s => s.Parent?.Any(p => p.Body == elwScan.BodyID) ?? false);
-            GGCount = allScans.Values.Count(s => !string.IsNullOrWhiteSpace(s.PlanetClass) && s.PlanetClass.Contains("gas giant", StringComparison.InvariantCultureIgnoreCase));
+            GGCount = allScans.Values.Count(s => !string.IsNullOrWhiteSpace(s.PlanetClass) && s.PlanetClass.Contains("gas giant", StringComparison.OrdinalIgnoreCase));
         }
 
         #region Static methods

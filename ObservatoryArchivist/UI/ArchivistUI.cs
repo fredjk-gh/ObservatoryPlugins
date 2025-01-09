@@ -232,9 +232,10 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             if (_context.Data.LastSearchResult == null) return;
 
             lbJournals.Items.Clear();
+            var filterText = txtFilter.Text?.ToLowerInvariant().Trim() ?? "";
             foreach (var journal in _context.Data.LastSearchResult.SystemJournalEntries)
             {
-                if (string.IsNullOrEmpty(txtFilter.Text) || journal.Contains(txtFilter.Text.Trim()))
+                if (string.IsNullOrEmpty(filterText) || journal.Contains(filterText, StringComparison.OrdinalIgnoreCase))
                     lbJournals.Items.Add(journal);
             }
             btnLoadFromSpansh.Enabled = true;

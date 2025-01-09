@@ -502,7 +502,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         {
             foreach (var m in modules)
             {
-                if (m.Slot.Equals("FrameShiftDrive", StringComparison.InvariantCultureIgnoreCase))
+                if (m.Slot.Equals("FrameShiftDrive", StringComparison.OrdinalIgnoreCase))
                 {
                     return m;
                 }

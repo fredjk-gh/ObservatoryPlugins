@@ -133,7 +133,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     // No redraw -- no body info yet, typically.
                     break;
                 case Scan scan:
-                    if (!scan.BodyName.Contains("belt", StringComparison.InvariantCultureIgnoreCase))
+                    if (!scan.BodyName.Contains("belt", StringComparison.OrdinalIgnoreCase))
                     {
                         _data.AddScan(scan);
                         if (_data.CurrentSystem != null
@@ -244,10 +244,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             foreach (string f in settings.Filters)
             {
                 if (f.Trim().Length == 0) continue;
-                if (nData.Title.Contains(f, StringComparison.InvariantCultureIgnoreCase)
-                    || nData.Detail.Contains(f, StringComparison.InvariantCultureIgnoreCase)
-                    || (nData.Sender.Contains(f, StringComparison.InvariantCultureIgnoreCase))
-                    || (nData.ExtendedDetails?.Contains(f, StringComparison.InvariantCultureIgnoreCase) ?? false))
+                if (nData.Title.Contains(f, StringComparison.OrdinalIgnoreCase)
+                    || nData.Detail.Contains(f, StringComparison.OrdinalIgnoreCase)
+                    || (nData.Sender.Contains(f, StringComparison.OrdinalIgnoreCase))
+                    || (nData.ExtendedDetails?.Contains(f, StringComparison.OrdinalIgnoreCase) ?? false))
                 {
                     show = false;
                     break;

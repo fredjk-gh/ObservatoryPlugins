@@ -270,12 +270,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
                             // Format has changed!
                             throw new RecordsCSVFormatChangedException("Galactic Records Format has changed; Reverting to previous good file, if available. Please check for an updated plugin!");
                         }
-                        if (fields[0].Equals("type", StringComparison.InvariantCultureIgnoreCase)) // Header row.
+                        if (fields[0].Equals("type", StringComparison.OrdinalIgnoreCase)) // Header row.
                         {
                             // Check that fields in the header row are as expected. If these 
                             for (int i = 0; i < fields.Length; i++)
                             {
-                                if (!fields[i].Equals(Constants.ExpectedFields[i], StringComparison.InvariantCultureIgnoreCase))
+                                if (!fields[i].Equals(Constants.ExpectedFields[i], StringComparison.OrdinalIgnoreCase))
                                 {
                                     throw new RecordsCSVFormatChangedException(string.Format("Galactic Records CSV Format has changed! Field {0} of galactic records file is expected to be {1}, but is {2}", i, Constants.ExpectedFields[i], fields[i]));
                                 }
@@ -285,9 +285,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
                         }
 
                         // Filter a bunch of stuff we don't plan on using.
-                        if (fields[0].Contains(" (as ", StringComparison.InvariantCultureIgnoreCase)) continue; // Not handled
-                        if (fields[0].Contains(" (any)", StringComparison.InvariantCultureIgnoreCase)) continue; // Not handled.
-                        if (fields[0].Contains(" (landable)", StringComparison.InvariantCultureIgnoreCase)) continue; // Not handled.
+                        if (fields[0].Contains(" (as ", StringComparison.OrdinalIgnoreCase)) continue; // Not handled
+                        if (fields[0].Contains(" (any)", StringComparison.OrdinalIgnoreCase)) continue; // Not handled.
+                        if (fields[0].Contains(" (landable)", StringComparison.OrdinalIgnoreCase)) continue; // Not handled.
 
                         // Hey, a potentially usable record. See if we have a handler for it and if so, add it to the book of records we're tracking.
                         IRecord record;
