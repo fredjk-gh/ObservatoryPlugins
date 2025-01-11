@@ -52,7 +52,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
             // Set up columns.
-            _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
+            int titleColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet,
                 FillWeight = 200,
@@ -64,6 +64,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 SortMode = DataGridViewColumnSortMode.NotSortable,
                 Width = 300,
             });
+            _dgvGrid.Columns[titleColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
