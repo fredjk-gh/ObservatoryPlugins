@@ -11,11 +11,8 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<VersionSuffix>1.0.3.$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))$([System.DateTime]::UtcNow.Hour.ToString().PadLeft(2, "0"))</VersionSuffix>
-		<AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">0.0.0.1</AssemblyVersion>
-		<AssemblyVersion Condition=" '$(VersionSuffix)' != '' ">$(VersionSuffix)</AssemblyVersion>
-		<Version Condition=" '$(VersionSuffix)' == '' ">0.0.1.0</Version>
-		<Version Condition=" '$(VersionSuffix)' != '' ">$(VersionSuffix)</Version>
+		<VersionPrefix>1.0.4.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
+		<VersionSuffix></VersionSuffix>
 		<RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
 
