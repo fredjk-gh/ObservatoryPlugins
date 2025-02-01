@@ -269,6 +269,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             try
             {
                 await task;
+                spanshJson = task.Result;
             }
             catch (Exception ex)
             {
@@ -276,7 +277,6 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                     + $"{Environment.NewLine}Spansh may not know this system.");
             }
 
-            spanshJson = task.Result;
             string status = "Fetch complete; parsing response...";
             SetFindMessage(status);
 
