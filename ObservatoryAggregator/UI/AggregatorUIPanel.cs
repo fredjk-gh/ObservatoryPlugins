@@ -5,11 +5,30 @@ using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using static com.github.fredjk_gh.ObservatoryAggregator.AggregatorSettings;
 
 namespace com.github.fredjk_gh.ObservatoryAggregator.UI
 {
     internal class AggregatorUIPanel : Panel
     {
+        private const string COL_TITLE = "colTitle";
+        private const string COL_TRACKING = "colTracking";
+        private const string COL_DETAILS = "colDetails";
+        private const string COL_EXT_DETAILS = "colExtDetails";
+        private const string COL_FLAGS = "colFlags";
+        private const string COL_SENDER = "colSender";
+
+        private Dictionary<string, (bool IsSizeable, int Width, int MinWidth, int FillWeight, DataGridViewAutoSizeColumnMode AutoSizeMode)> _colSizingInfo = new()
+        {
+            { COL_TITLE, ( true, 300, 100, 200, DataGridViewAutoSizeColumnMode.NotSet ) },
+            { COL_TRACKING, ( true, 40, 30, 0, DataGridViewAutoSizeColumnMode.None ) },
+            { COL_DETAILS, ( true, 350, 300, 200, DataGridViewAutoSizeColumnMode.Fill ) },
+            { COL_EXT_DETAILS, ( true, 750, 200, 400, DataGridViewAutoSizeColumnMode.Fill ) },
+            { COL_FLAGS, ( true, 160, 40, 0, DataGridViewAutoSizeColumnMode.NotSet ) },
+            { COL_SENDER, ( true, 150, 100, 100, DataGridViewAutoSizeColumnMode.NotSet ) },
+        };
+
+        private bool _isLoadingOrApplyingSettings = true;
         private TrackedData _data;
         private List<AggregatorGrid> _readAllGridItems = new();
         private List<AggregatorGrid> gridItems = new();
@@ -23,6 +42,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             _data.Settings.PropertyChanged += Settings_PropertyChanged;
 
             #region Initialize Component code.
+            DoubleBuffered = true;
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
             _dgvGrid = new DataGridView()
             {
@@ -48,95 +69,68 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             _dgvGrid.RowHeadersDefaultCellStyle.ForeColor = _dgvGrid.ForeColor;
             _dgvGrid.DefaultCellStyle.Alignment = DataGridViewContentAlignment.TopLeft;
 
-            DoubleBuffered = true;
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
-
             // Set up columns.
             int titleColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet,
-                FillWeight = 200,
                 HeaderText = "Title",
-                MinimumWidth = 100,
-                Name = "colTitle",
+                Name = COL_TITLE,
                 ReadOnly = true,
-                Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 300,
             });
             _dgvGrid.Columns[titleColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
                 Tag = Constants.TAG_INSPECT,
                 FlatStyle = FlatStyle.Flat,
                 HeaderText = "✅",
-                MinimumWidth = 30,
-                Name = "colTracking",
+                Name = COL_TRACKING,
                 ReadOnly = true,
-                Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
                 ToolTipText = "Interest and completion tracking",
-                Width = 40,
             });
             int detailsColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                FillWeight = 200,
                 HeaderText = "Details",
-                MinimumWidth = 300,
-                Name = "colDetails",
+                Name = COL_DETAILS,
                 ReadOnly = true,
-                Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 350,
             });
             _dgvGrid.Columns[detailsColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             int extDetailsColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                FillWeight = 400,
                 HeaderText = "Extended Details",
-                MinimumWidth = 200,
-                Name = "colExtDetails",
+                Name = COL_EXT_DETAILS,
                 ReadOnly = true,
-                Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-                Width = 750,
             });
             _dgvGrid.Columns[extDetailsColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet,
                 HeaderText = "Flags",
-                MinimumWidth = 40,
-                Name = "colFlags",
+                Name = COL_FLAGS,
                 ReadOnly = true,
-                Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
                 ToolTipText = "Icons indicating other states (hover an icon for more help)",
-                Width = 160,
-
             });
             _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.NotSet,
-                FillWeight = 100,
                 Tag = Constants.TAG_SENDER,
                 HeaderText = "Sender",
-                MinimumWidth = 100,
-                Name = "colSender",
+                Name = COL_SENDER,
                 ReadOnly = true,
-                Resizable = DataGridViewTriState.True,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
                 ToolTipText = "Click the name to navigate to the sending plugin",
-                Width = 150,
             });
+
+            ApplyResizeMode(true);
+            ApplyColumnOrder();
 
             _dgvGrid.CellMouseClick += Grid_CellMouseClick;
             _dgvGrid.CellPainting += Grid_CellPainting;
             _dgvGrid.BackgroundColorChanged += Grid_BackgroundColorChanged;
             _dgvGrid.ForeColorChanged += Grid_ForeColorChanged;
+            _dgvGrid.ColumnWidthChanged += Grid_ColumnWidthChanged;
+            _dgvGrid.ColumnDisplayIndexChanged += Grid_ColumnDisplayIndexChanged;
 
             Controls.Add(_dgvGrid);
 
@@ -168,6 +162,92 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             ResumeLayout(false);
             PerformLayout();
             #endregion
+
+            _isLoadingOrApplyingSettings = false;
+        }
+
+        private void ApplyResizeMode(bool initializing = false)
+        {
+            _isLoadingOrApplyingSettings = true;
+
+            GridSizingMode sizingMode = _data.Settings.GridSizingModeEnum;
+            var colSizes = _data.Settings.ColumnSizes;
+
+            foreach (DataGridViewColumn col in _dgvGrid.Columns)
+            {
+                if (_colSizingInfo[col.Name].IsSizeable)
+                {
+                    col.Resizable = DataGridViewTriState.True;
+                    col.AutoSizeMode = sizingMode == GridSizingMode.Manual ? DataGridViewAutoSizeColumnMode.None : _colSizingInfo[col.Name].AutoSizeMode;
+                    if (initializing) col.Width = _colSizingInfo[col.Name].Width;
+                    col.MinimumWidth = Math.Max(2, _colSizingInfo[col.Name].MinWidth);
+                    col.FillWeight = Math.Max(1, _colSizingInfo[col.Name].FillWeight);
+                }
+                else
+                {
+                    col.Resizable = DataGridViewTriState.False;
+                    col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                    col.Width = colSizes.ContainsKey(col.Name) ? colSizes[col.Name] : _colSizingInfo[col.Name].Width;
+                    col.MinimumWidth = 2; // minimum valid value
+                    col.FillWeight = 1; // minimum valid value
+                }
+            }
+            _isLoadingOrApplyingSettings = false;
+        }
+        private void SaveGridColumnWidths()
+        {
+            // Only save manual column sizes.
+            if (_isLoadingOrApplyingSettings || _data.Settings.GridSizingModeEnum != GridSizingMode.Manual) return;
+
+            foreach (DataGridViewColumn col in _dgvGrid.Columns)
+            {
+                _data.Settings.ColumnSizes[col.Name] = col.Width;
+            }
+            _data.Core.SaveSettings(_data.Worker);
+        }
+
+        private void ApplyColumnOrder()
+        {
+            _isLoadingOrApplyingSettings = true;
+            foreach (DataGridViewColumn c in _dgvGrid.Columns)
+            {
+                if (_data.Settings.ColumnOrder.ContainsKey(c.Name))
+                {
+                    c.DisplayIndex = _data.Settings.ColumnOrder[c.Name];
+                }
+            }
+            _isLoadingOrApplyingSettings = false;
+        }
+
+        private void SaveGridColumnOrder()
+        {
+            // Don't do this if programmatically changing things.
+            if (_isLoadingOrApplyingSettings) return;
+
+            // If there's more events to come, punt.
+            // Adapted from: https://stackoverflow.com/questions/53849396/detect-column-reordering-columndisplayindexchanged-raises-multiple-times
+            var p = typeof(DataGridViewColumn).GetProperty("DisplayIndexHasChanged", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (_dgvGrid.Columns.Cast<DataGridViewColumn>().Any(col => (bool)p.GetValue(col))) return;
+
+            foreach (DataGridViewColumn c in _dgvGrid.Columns)
+            {
+                if (c.DisplayIndex != c.Index)
+                    _data.Settings.ColumnOrder[c.Name] = c.DisplayIndex;
+                else if (_data.Settings.ColumnOrder.ContainsKey(c.Name))
+                    _data.Settings.ColumnOrder.Remove(c.Name);
+            }
+
+            _data.Core.SaveSettings(_data.Worker);
+        }
+
+        private void Grid_ColumnDisplayIndexChanged(object sender, DataGridViewColumnEventArgs e)
+        {
+            SaveGridColumnOrder();
+        }
+
+        private void Grid_ColumnWidthChanged(object sender, DataGridViewColumnEventArgs e)
+        {
+            SaveGridColumnWidths();
         }
 
         private void tsbSettings_Click(object sender, EventArgs e)
@@ -190,6 +270,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                     break;
                 case "ShowAllBodySummaries":
                     SetGridItems(_data.ToGrid());
+                    RepaintAll();
+                    break;
+                case "GridSizingMode":
+                    ApplyResizeMode();
                     RepaintAll();
                     break;
             }

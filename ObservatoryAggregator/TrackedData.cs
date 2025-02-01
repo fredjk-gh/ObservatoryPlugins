@@ -38,9 +38,9 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         public bool IsDirty { get; internal set; }
 
         public AggregatorSettings Settings { get => _settings; }
+
         public void ApplySettings(AggregatorSettings newSettings)
         {
-            // TODO Wire up events for when specific settings values change so I can trigger re-draw when those change.
             _settings = newSettings;
             IsDirty = true;
         }

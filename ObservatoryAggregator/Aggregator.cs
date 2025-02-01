@@ -45,7 +45,16 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             set {
                 settings = (AggregatorSettings)value;
 
+                MaybeFixUnsetSettings();
                 _data.ApplySettings(settings);
+            }
+        }
+
+        private void MaybeFixUnsetSettings()
+        {
+            if (string.IsNullOrEmpty(settings.GridSizingModeString))
+            {
+                settings.GridSizingModeEnum = AggregatorSettings.GridSizingMode.AutoFit;
             }
         }
 
