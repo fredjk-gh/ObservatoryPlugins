@@ -36,8 +36,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         ObservableCollection<object> GridCollection = new();
         private readonly TrackedData _data = new();
         private readonly TrackedStats _stats = new();
-        private readonly Guid[] _prospectorNotifications = new Guid[2];
-        private Guid _cargoNotification = Guid.Empty;
+        private readonly Guid?[] _prospectorNotifications = new Guid?[2];
+        private Guid? _cargoNotification = null;
         private AboutInfo _aboutInfo = new()
         {
             FullName = "Prospector Basic",
@@ -408,14 +408,16 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 YPos = 15,
                 Rendering = NotificationRendering.NativeVisual,
                 Sender = AboutInfo.ShortName,
+                Guid = _cargoNotification,
             };
-            if (_cargoNotification == Guid.Empty)
+            if (_cargoNotification == null || _cargoNotification == Guid.Empty)
             {
-                _cargoNotification = Core.SendNotification(args);
+                args.Guid =_cargoNotification = Guid.NewGuid();
+                Core.SendNotification(args);
             }
             else
             {
-                Core.UpdateNotification(_cargoNotification, args);
+                Core.UpdateNotification(_cargoNotification.Value, args);
             }
         }
 
@@ -426,21 +428,24 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (!_settings.ShowProspectorNotifications || Core.IsLogMonitorBatchReading) return;
 
             // This method supports notifications with timeout OR persistent notifications.
-            if (args.Timeout > 0 && _prospectorNotifications[counter % 2] != Guid.Empty)
+            if (args.Timeout > 0
+                && _prospectorNotifications[counter % 2] != null
+                && _prospectorNotifications[counter % 2] != Guid.Empty)
             {
                 // Notifications have a time out: Guid should be assumed invalid. Close it explicitly and clear the guid.
                 // Would be nice if we could interrogate Core for the state of a notification ID (ie. is the Guid still associated with a valid notification)?
-                Core.CancelNotification(_prospectorNotifications[counter % 2]);
-                _prospectorNotifications[counter % 2] = Guid.Empty;
+                Core.CancelNotification(_prospectorNotifications[counter % 2].Value);
+                _prospectorNotifications[counter % 2] = null;
             }
 
-            if (_prospectorNotifications[counter % 2] == Guid.Empty)
+            if (_prospectorNotifications[counter % 2] == null || _prospectorNotifications[counter % 2] == Guid.Empty)
             {
-                _prospectorNotifications[counter % 2] = Core.SendNotification(args);
+                args.Guid = _prospectorNotifications[counter % 2] = Guid.NewGuid();
+                Core.SendNotification(args);
             }
             else
             {
-                Core.UpdateNotification(_prospectorNotifications[counter % 2], args);
+                Core.UpdateNotification(_prospectorNotifications[counter % 2].Value, args);
             }
         }
 
@@ -449,11 +454,11 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             bool notificationsClosed = false;
             for (int i = 0; i < _prospectorNotifications.Length; i++)
             {
-                Guid notification = _prospectorNotifications[i];
-                if (notification != Guid.Empty)
+                Guid? notification = _prospectorNotifications[i];
+                if (notification != null && notification != Guid.Empty)
                 {
-                    Core.CancelNotification(notification);
-                    _prospectorNotifications[i] = Guid.Empty;
+                    Core.CancelNotification(notification.Value);
+                    _prospectorNotifications[i] = null;
                     notificationsClosed = true;
                 }
             }
@@ -469,11 +474,11 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         
         private bool MaybeCloseCargoNotification()
         {
-            if (_cargoNotification != Guid.Empty)
+            if (_cargoNotification != null && _cargoNotification != Guid.Empty)
             {
                 // Close the notification.
-                Core.CancelNotification(_cargoNotification);
-                _cargoNotification = Guid.Empty;
+                Core.CancelNotification(_cargoNotification.Value);
+                _cargoNotification = null;
                 return true;
             }
             return false;
