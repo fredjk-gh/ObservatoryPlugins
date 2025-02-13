@@ -179,7 +179,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 {
                     col.Resizable = DataGridViewTriState.True;
                     col.AutoSizeMode = sizingMode == GridSizingMode.Manual ? DataGridViewAutoSizeColumnMode.None : _colSizingInfo[col.Name].AutoSizeMode;
-                    if (initializing) col.Width = _colSizingInfo[col.Name].Width;
+                    if (initializing)
+                        col.Width = sizingMode == GridSizingMode.Manual && colSizes.ContainsKey(col.Name)
+                            ? colSizes[col.Name]
+                            : _colSizingInfo[col.Name].Width;
                     col.MinimumWidth = Math.Max(2, _colSizingInfo[col.Name].MinWidth);
                     col.FillWeight = Math.Max(1, _colSizingInfo[col.Name].FillWeight);
                 }
@@ -194,6 +197,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             }
             _isLoadingOrApplyingSettings = false;
         }
+
         private void SaveGridColumnWidths()
         {
             // Only save manual column sizes.
