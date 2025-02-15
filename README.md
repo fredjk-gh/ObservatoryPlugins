@@ -33,8 +33,8 @@ NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need 
 The Aggregator plugin is a notification log -- collecting notifications from all other plugins into one place to reduce the number of times you need to switch between plugins.
 
 *  Status: Released + Beta
-*  Download latest stable (requires Observatory Core >= 1.2.x): [ObservatoryAggregator-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryAggregator-v1.0.3.32704-beta.eop)
-*  Download Beta (requires Observatory Core >= 1.2.x): [ObservatoryAggregator-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryAggregator-v1.0.3.32704-beta.eop) (Nov 22, 2024)
+*  Download latest stable (requires Observatory Core >= 1.2.7): [ObservatoryAggregator-v1.0.4.25046.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25046/ObservatoryAggregator-v1.0.4.25046.eop) (Feb 15, 2025)
+*  Download Beta (requires Observatory Core >= 1.2.7): [ObservatoryAggregator-v1.0.4.25046.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25046/ObservatoryAggregator-v1.0.4.25046.eop) (Feb 15, 2025)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator)
 
 ## Archivist

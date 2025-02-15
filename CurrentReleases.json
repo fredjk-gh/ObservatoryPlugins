@@ -2,14 +2,14 @@
     {
         "PluginName": "ObservatoryAggregator",
         "Production": {
-            "Version": "1.0.3.32704",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryAggregator-v1.0.3.32704-beta.eop",
-            "MinRequiredCoreVersion": "1.2.0"
+            "Version": "1.0.4.25046",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25046/ObservatoryAggregator-v1.0.4.25046.eop",
+            "MinRequiredCoreVersion": "1.2.7"
         },
         "Beta":{
-            "Version": "1.0.3.32704",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryAggregator-v1.0.3.32704-beta.eop",
-            "MinRequiredCoreVersion": "1.2.0"
+            "Version": "1.0.4.25046",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25046/ObservatoryAggregator-v1.0.4.25046.eop",
+            "MinRequiredCoreVersion": "1.2.7"
         }
     },
     {
