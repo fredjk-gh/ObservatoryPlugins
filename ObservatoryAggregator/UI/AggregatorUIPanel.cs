@@ -343,7 +343,18 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                     if (data != null && data.State != VisitedState.None)
                     {
                         VisitedState currentState = data.State;
-                        data.State = currentState.NextState(); // Also updates the UI.
+                        switch (data.State)
+                        {
+                            case VisitedState.MarkForVisit:
+                                _data.MarkForVisit(data.CoalescingId);
+                                break;
+                            case VisitedState.Unvisited:
+                                _data.MarkVisited(data.CoalescingId);
+                                break;
+                            case VisitedState.Visited:
+                                _data.ResetMark(data.CoalescingId);
+                                break;
+                        }
                     }
                 }
                 else if (colTag == Constants.TAG_SENDER)
@@ -363,7 +374,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                     AggregatorGrid data = row.Tag as AggregatorGrid;
                     if (data != null && data.State != VisitedState.None)
                     {
-                        data.State = VisitedState.MarkForVisit; // Also updates the UI.
+                        _data.ResetMark(data.CoalescingId);
                     }
                 }
             }

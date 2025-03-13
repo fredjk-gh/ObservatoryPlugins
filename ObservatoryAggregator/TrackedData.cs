@@ -29,11 +29,13 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             Core = core;
             Worker = worker;
+            Interop = new PluginInterop(core, worker);
             _settings = settings;
         }
 
         public IObservatoryCore Core { get; internal set; }
         public Aggregator Worker { get; internal set; }
+        public PluginInterop Interop { get; internal set; }
 
         public bool IsDirty { get; internal set; }
 
@@ -199,7 +201,6 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             NotificationData shifted = n;
             if (n.CoalescingID >= Constants.MIN_BODY_COALESCING_ID && n.CoalescingID <= Constants.MAX_BODY_COALESCING_ID
                 && string.IsNullOrWhiteSpace(n.ExtendedDetails) && !n.Title.StartsWith(GetBody(n.CoalescingID).GetBodyNameDisplayString()))
-            //if (string.IsNullOrWhiteSpace(n.ExtendedDetails) && !n.Title.StartsWith(GetBody(n.CoalescingID).BodyShortName))
             {
                 // we have a notification that does not start with the body short name and has an empty extended details. This
                 // means the title won't suppress -- let's shift values right.
@@ -274,6 +275,21 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     if (n.VisitedState == VisitedState.MarkForVisit || Core.IsLogMonitorBatchReading)
                         n.VisitedState = VisitedState.Unvisited;
                 });
+
+            Interop.EvaluatorAddBodyToRoute(CurrentSystem.SystemAddress, bodyId);
+        }
+
+        public void ResetMark(int bodyId)
+        {
+            if (!_notifications.ContainsKey(bodyId)) return;
+
+            GetNotifications(bodyId)
+                .ForEach(n =>
+                {
+                    n.VisitedState = VisitedState.MarkForVisit;
+                });
+
+            Interop.EvaluatorRemoveBodyFromRoute(CurrentSystem.SystemAddress, bodyId);
         }
 
         public void MarkVisited(int bodyId)
@@ -286,6 +302,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     if (n.VisitedState == VisitedState.Unvisited || Core.IsLogMonitorBatchReading)
                         n.VisitedState = VisitedState.Visited;
                 });
+
+            Interop.EvaluatorSetBodyVisited(CurrentSystem.SystemAddress, bodyId);
         }
 
         public BodySummary GetBody(int bodyID)
