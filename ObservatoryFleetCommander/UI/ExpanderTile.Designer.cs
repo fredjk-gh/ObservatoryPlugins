@@ -57,7 +57,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // 
             lblTileTitle.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             lblTileTitle.AutoSize = true;
-            lblTileTitle.Font = new Font("Segoe UI", 16F, FontStyle.Regular, GraphicsUnit.Point);
+            lblTileTitle.Font = new Font("Segoe UI", 16F);
             lblTileTitle.Location = new Point(43, 0);
             lblTileTitle.Name = "lblTileTitle";
             lblTileTitle.Size = new Size(79, 40);
@@ -71,7 +71,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             btnToggle.Dock = DockStyle.Fill;
             btnToggle.FlatAppearance.BorderSize = 0;
             btnToggle.FlatStyle = FlatStyle.Flat;
-            btnToggle.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            btnToggle.Font = new Font("Segoe UI", 12F);
             btnToggle.Location = new Point(5, 5);
             btnToggle.Margin = new Padding(5);
             btnToggle.Name = "btnToggle";

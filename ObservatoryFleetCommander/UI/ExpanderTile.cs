@@ -25,6 +25,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             tlpLayout.Controls.Add(_contentControl, 0, 1);
             tlpLayout.SetColumnSpan(_contentControl, 2);
 
+            MinimumSize = new Size(content.Width, Math.Max(btnToggle.Height, lblTileTitle.Height));
+
             DoToggleView(expanded);
         }
 
