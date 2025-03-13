@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.PluginCommon.Data.Spansh
+namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.CommonGeneric
 {
     public class CompositionItem : GenericJsonBase
     {

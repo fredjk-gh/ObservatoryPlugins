@@ -1,6 +1,6 @@
 ﻿using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
-using com.github.fredjk_gh.PluginCommon.Data.Spansh;
 using com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters;
+using com.github.fredjk_gh.PluginCommon.Data.Spansh.System;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
 using System;
@@ -28,7 +28,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
             List<JournalBase> convertedPostFSS = new();
             JournalDateGenerator dateGenerator = new(journalVisitDate);
 
-            Body mainStar = spansh.Bodies.Where(b => b.MainStar).First();
+            SystemBody mainStar = spansh.Bodies.Where(b => b.MainStar).First();
             Location loc = new Location()
             {
                 Timestamp = dateGenerator.NextFormatted(),
@@ -262,7 +262,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
             return converted;
         }
         
-        private static void MaybeAddBarycentre(List<JournalBase> converted, Dictionary<int, ScanBaryCentre> bcByBodyId, Body body)
+        private static void MaybeAddBarycentre(List<JournalBase> converted, Dictionary<int, ScanBaryCentre> bcByBodyId, SystemBody body)
         {
             if (body.Parents == null) return;
             foreach (var p in body.Parents)

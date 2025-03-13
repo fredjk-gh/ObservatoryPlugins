@@ -1,4 +1,6 @@
 ﻿using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
+using com.github.fredjk_gh.PluginCommon.Data.Spansh.CommonGeneric;
+using com.github.fredjk_gh.PluginCommon.Data.Spansh.System;
 using Observatory.Framework.Files.ParameterTypes;
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,6 @@
 ﻿using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
-using com.github.fredjk_gh.PluginCommon.Data.Spansh;
+using com.github.fredjk_gh.PluginCommon.Data.Spansh.System;
 using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
