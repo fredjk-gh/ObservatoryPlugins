@@ -21,8 +21,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         private bool HasHeaderRows = false;
         private StatScannerState _state = null;
         private List<Result> _batchResults = new List<Result>();
-
-        private AboutInfo _aboutInfo = new()
+        private static AboutInfo _aboutInfo = new()
         {
             FullName = "Stat Scanner",
             ShortName = "Stat Scanner",
@@ -36,6 +35,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 new AboutLink("edastro.com Records", "https://edastro.com/records/")
             }
         };
+
+        public static Guid Guid => new("398750b9-ffab-4d28-959b-3fc5648853eb");
 
         public AboutInfo AboutInfo => _aboutInfo;
         public string Version => typeof(StatScanner).Assembly.GetName().Version.ToString();
@@ -87,6 +88,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public void ObservatoryReady()
         {
             ShowPersonalBestSummary();
+
+            // TODO: Send ready message.
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase

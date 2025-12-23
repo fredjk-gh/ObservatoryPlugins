@@ -13,16 +13,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         private string _lastSeenFid = string.Empty;
         private bool _readAllRequired = true;
         private string _lastUsedVersion = "";
-        private string _assemblyVersion;
-
+        private string _assemblyVersion = typeof(StatScanner).Assembly.GetName().Version.ToString();
         private bool _isDirty = false;
-
-        public StateCache()
-        {
-            Assembly? assembly = Assembly.GetAssembly(typeof(StateCache));
-            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
-            _assemblyVersion = fvi.FileVersion;
-        }
 
         [JsonIgnore]
         public bool IsDirty { get => _isDirty; }
