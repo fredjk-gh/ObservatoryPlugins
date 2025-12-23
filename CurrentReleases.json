@@ -42,6 +42,14 @@
         }
     },
     {
+        "PluginName": "Helm",
+        "Beta":{
+            "Version": "1.0.3.32704",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryHelm-v1.0.3.32704-beta.eop",
+            "MinRequiredCoreVersion": "1.2.0"
+        }
+    },
+    {
         "PluginName": "ObservatoryPluginAutoUpdater",
         "Production":{
             "Version": "1.0.3.32704",
@@ -70,14 +78,14 @@
     {
         "PluginName": "ObservatoryStatScanner",
         "Production":{
-            "Version": "1.0.3.32704",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryStatScanner-v1.0.3.32704-beta.eop",
-            "MinRequiredCoreVersion": "1.2.0"
+            "Version": "1.0.4.25357",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25357/ObservatoryStatScanner-v1.0.4.25357.eop",
+            "MinRequiredCoreVersion": "1.4.0"
         },
         "Beta":{
-            "Version": "1.0.3.32704",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryStatScanner-v1.0.3.32704-beta.eop",
-            "MinRequiredCoreVersion": "1.2.0"
+            "Version": "1.0.4.25357",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25357/ObservatoryStatScanner-v1.0.4.25357.eop",
+            "MinRequiredCoreVersion": "1.4.0"
         }
     }
 ]
