@@ -1,23 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+	<TargetFramework>net8.0-windows</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<SignAssembly>false</SignAssembly>
 	<AssemblyOriginatorKeyFile>ObservatoryKey.snk</AssemblyOriginatorKeyFile>
+	<CopyLocalLockFileAssemblies>True</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <PropertyGroup>
-	  <VersionPrefix>1.0.4.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
+	  <VersionPrefix>1.4.0.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
 	  <VersionSuffix></VersionSuffix>
 	  <RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\ObservatoryCore\ObservatoryFramework\ObservatoryFramework.csproj" />
+    <ProjectReference Include="..\PluginCommon\PluginCommon.csproj" />
   </ItemGroup>
 	
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\&quot; /y" />
+	<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetDir)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\$(ProjectName)\&quot; /y /s /exclude:$(ProjectDir)..\xcopyExclude" />
   </Target>
 </Project>

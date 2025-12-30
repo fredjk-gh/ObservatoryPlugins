@@ -7,18 +7,19 @@ using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
-    [SettingSuggestedColumnWidth(450)]
     class ProspectorSettings
     {
-        public static readonly ProspectorSettings DEFAULT = new()
+        public ProspectorSettings()
         {
-            ShowProspectorNotifications = true,
-            ShowCargoNotification = true,
-            MinimumPercent = 10,
-            MinimumDensity = 5.0,
-            ProspectTritium = true,
-            ProspectPlatinum = true,
-        };
+            // Defaults go here.
+            ShowProspectorNotifications = true;
+            ShowCargoNotification = true;
+            MinimumPercent = 10;
+            MinimumDensity = 5.0;
+            ProspectTritium = true;
+            ProspectPlatinum = true;
+            EnableAutoUpdates = true;
+        }
 
         private Dictionary<Commodities, Boolean> ProspectingFor = new();
         internal bool getFor(Commodities commodity)
@@ -308,6 +309,14 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         [SettingDisplayName("Mats for SRV Repair")]
         public bool MatsSRVRepair { get; set; }
+
+
+        [SettingNewGroup("Updates")]
+        [SettingDisplayName("Enable automatic updates")]
+        public bool EnableAutoUpdates { get; set; }
+
+        [SettingDisplayName("Enable Beta versions (warning: things may break)")]
+        public bool EnableBetaUpdates { get; set; }
     }
 
     public class CommodityDetails

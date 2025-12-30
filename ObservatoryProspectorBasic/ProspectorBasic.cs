@@ -1,27 +1,48 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.PluginCommon.AutoUpdates;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
+using Microsoft.VisualBasic;
+using Observatory.Framework;
+using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Observatory.Framework.Files.ParameterTypes;
 using System.Diagnostics;
+using System.Linq;
+using System.Runtime;
 using static com.github.fredjk_gh.ObservatoryProspectorBasic.SynthRecipes;
-using Microsoft.VisualBasic;
 
 namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
     public class ProspectorBasic : IObservatoryWorker
     {
-        private bool enableDebug = false; // Not const to avoid unreachable code warnings.
+        private static Guid PLUGIN_GUID = new("7e43a6bd-3ccc-486a-b027-3b9fb8258bcc");
         private const int ALERT_COALESCING_ID = -2;
-
         private const string LimpetDronesKey = "drones";
         private const string LimpetDronesName = "Limpets";
         private const string TritiumKey = "tritium";
         private const string TritiumName = "Tritium";
-        // This is updated by CargoName. Keys should be lower-case for maximum matchy-ness.
+        private static AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
+        private static AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector");
+        private static AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/prospector");
+        private static AboutInfo ABOUT_INFO = new()
+        {
+            FullName = "Prospector Basic",
+            ShortName = "Prospector",
+            Description = "Prospector is a miner's must-have tool, assisting you through the entire prospecting and mining workflow.",
+            AuthorName = "fredjk-gh",
+            Links = new()
+            {
+                GH_LINK,
+                GH_RELEASE_NOTES_LINK,
+                DOC_LINK,
+            }
+        };
+
+        // TODO: Use PluginCommon version instead.
+        // This cache is updated by CommodityName. Keys should be lower-case for maximum matchy-ness.
         private readonly Dictionary<string, string> DisplayNames = new()
         {
             { "$tritium_name;", TritiumName },
@@ -30,29 +51,19 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             { LimpetDronesKey, LimpetDronesName },
         };
 
-        private ProspectorSettings _settings = ProspectorSettings.DEFAULT;
+        private bool enableDebug = false; // Not const to avoid unreachable code warnings.
+        private ProspectorSettings _settings = new();
         private PluginUI pluginUI;
         private IObservatoryCore Core;
-        ObservableCollection<object> GridCollection = new();
         private readonly TrackedData _data = new();
         private readonly TrackedStats _stats = new();
         private readonly Guid?[] _prospectorNotifications = new Guid?[2];
         private Guid? _cargoNotification = null;
-        private AboutInfo _aboutInfo = new()
-        {
-            FullName = "Prospector Basic",
-            ShortName = "Prospector",
-            Description = "Prospector is a miner's must-have tool, assisting you through the entire prospecting and mining workflow.",
-            AuthorName = "fredjk-gh",
-            Links = new()
-            {
-                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
-                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/prospector"),
-            }
-        };
+        private List<ProspectorGrid> _deferredGridItems = new();
+        ObservableCollection<object> GridCollection = new();
 
-        public AboutInfo AboutInfo => _aboutInfo;
+        public static Guid Guid => PLUGIN_GUID;
+        public AboutInfo AboutInfo => ABOUT_INFO;
         public string Version => typeof(ProspectorBasic).Assembly.GetName().Version.ToString();
         public PluginUI PluginUI => pluginUI;
 
@@ -60,6 +71,19 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         {
             get => _settings;
             set => _settings = (ProspectorSettings)value;
+        }
+
+        public PluginUpdateInfo CheckForPluginUpdate()
+        {
+            AutoUpdateHelper.Init(Core);
+            return AutoUpdateHelper.CheckForPluginUpdate(
+                this, GH_RELEASE_NOTES_LINK.Url, _settings.EnableAutoUpdates, _settings.EnableBetaUpdates);
+        }
+
+        public void ObservatoryReady()
+        {
+            var readyMsg = GenericPluginReadyMessage.New();
+            Core.SendPluginMessage(this, readyMsg.ToPluginMessage());
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -168,16 +192,17 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     Debug.WriteLineIf(_data.CargoMax > 0 && enableDebug, $"Loadout: New cargoMax: {loadout.CargoCapacity}");
                     UpdateCargoNotification(false /* newNotification */);
                     break;
-                case Cargo cargoEvent:
+                //case Cargo cargoEvent:
+                case CargoFile cargoEvent:
                     _data.CargoCur = cargoEvent.Count;
                     if (cargoEvent.Inventory != null && !cargoEvent.Inventory.IsEmpty) // Usually on game load or loadout change.
                     {
                         Debug.WriteLineIf(_data.CargoCur > 0 && enableDebug, $"Cargo w/Inventory: cargoCur: {_data.CargoCur}");
-                        Reset("Cargo w/Inventory");
+                        //Reset("Cargo w/Inventory"); // CargoFile happens constantly, not only on game load now -- this ruins stats.
                         _data.Cargo.Clear(); // This is a cargo state reset.
                         foreach (CargoType inventoryItem in cargoEvent.Inventory)
                         {
-                            string inventoryKey = CargoKey(inventoryItem.Name);
+                            string inventoryKey = CargoKey(inventoryItem.Name, inventoryItem.Name_Localised);
                             _data.CargoAdd(inventoryKey, inventoryItem.Count);
                         }
                         UpdateCargoNotification(false /* newNotification */);
@@ -253,6 +278,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
                     break;
                 case Undocked undock:
+                    // TODO: Add new mining modules (from T11).
                     int? miningModules = _data.MiningModuleCount();
                     if ((miningModules ?? 0) > 0 && !_data.Cargo.ContainsKey(LimpetDronesKey))
                     {
@@ -266,7 +292,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                             ExtendedDetails = $"Found {miningModules} mining modules on-board.",
                             Rendering = NotificationRendering.All,
                         });
-                        Core.AddGridItem(this, new ProspectorGrid()
+                        AddGridItem(new ProspectorGrid()
                         {
                             Location = "",
                             Commodity = "Limpets",
@@ -321,7 +347,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     Details = "",
                 });
             }
-            Core.AddGridItems(this, items);
+            AddGridItems(items);
         }
 
         private HashSet<string> FindAvailableSynthRecipeLevels(string recipeName, Dictionary<SynthLevel, HashSet<string>> recipe)
@@ -342,7 +368,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             {
                 var levelsStr = $"{string.Join(" | ", synthLevelMatsFound.Select(l => SynthRecipes.SynthLevelSymbols[l]))}";
                 List<ProspectorGrid> gridItems = new();
-                Core.AddGridItem(this, new ProspectorGrid()
+                AddGridItem(new ProspectorGrid()
                 {
                     Location = _data.SystemName,
                     Commodity = recipeName,
@@ -393,7 +419,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             }));
             Debug.WriteLineIf(enableDebug, $"\t--Cargo Notification update: {cargoTitle}; {cargoDetail.Replace(Environment.NewLine, "; ")}");
 
-            if (Core.IsLogMonitorBatchReading || (_cargoNotification == Guid.Empty && !newNotification))
+            if (Core.IsLogMonitorBatchReading || (!_cargoNotification.HasValue && !newNotification))
             {
                 // Read-all or this notification shouldn't spawn a new notification and that's what we'd do next -- so we're done here.
                 return;
@@ -410,14 +436,14 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 Sender = AboutInfo.ShortName,
                 Guid = _cargoNotification,
             };
-            if (_cargoNotification == null || _cargoNotification == Guid.Empty)
+            if (!_cargoNotification.HasValue)
             {
                 args.Guid =_cargoNotification = Guid.NewGuid();
                 Core.SendNotification(args);
             }
             else
             {
-                Core.UpdateNotification(_cargoNotification.Value, args);
+                Core.UpdateNotification(args);
             }
         }
 
@@ -428,9 +454,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (!_settings.ShowProspectorNotifications || Core.IsLogMonitorBatchReading) return;
 
             // This method supports notifications with timeout OR persistent notifications.
-            if (args.Timeout > 0
-                && _prospectorNotifications[counter % 2] != null
-                && _prospectorNotifications[counter % 2] != Guid.Empty)
+            if (args.Timeout > 0 && _prospectorNotifications[counter % 2].HasValue)
             {
                 // Notifications have a time out: Guid should be assumed invalid. Close it explicitly and clear the guid.
                 // Would be nice if we could interrogate Core for the state of a notification ID (ie. is the Guid still associated with a valid notification)?
@@ -438,14 +462,14 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 _prospectorNotifications[counter % 2] = null;
             }
 
-            if (_prospectorNotifications[counter % 2] == null || _prospectorNotifications[counter % 2] == Guid.Empty)
+            if (_prospectorNotifications[counter % 2] == null)
             {
                 args.Guid = _prospectorNotifications[counter % 2] = Guid.NewGuid();
                 Core.SendNotification(args);
             }
             else
             {
-                Core.UpdateNotification(_prospectorNotifications[counter % 2].Value, args);
+                Core.UpdateNotification(args);
             }
         }
 
@@ -455,7 +479,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             for (int i = 0; i < _prospectorNotifications.Length; i++)
             {
                 Guid? notification = _prospectorNotifications[i];
-                if (notification != null && notification != Guid.Empty)
+                if (notification != null)
                 {
                     Core.CancelNotification(notification.Value);
                     _prospectorNotifications[i] = null;
@@ -474,7 +498,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         
         private bool MaybeCloseCargoNotification()
         {
-            if (_cargoNotification != null && _cargoNotification != Guid.Empty)
+            if (_cargoNotification.HasValue)
             {
                 // Close the notification.
                 Core.CancelNotification(_cargoNotification.Value);
@@ -527,7 +551,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             var bodyDistance = $"distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
             Debug.WriteLineIf(enableDebug, $"Scan: Interesting rings at body {shortBodyName}: {detailsCommaSeparated}, {bodyDistance}");
 
-            Core.AddGridItem(this, new ProspectorGrid()
+            AddGridItem(new ProspectorGrid()
             {
                 Location = scan.BodyName,
                 Details = $"{detailsCommaSeparated}, {bodyDistance}",
@@ -556,7 +580,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (_settings.ProspectHighMaterialContent && prospected.Content == "$AsteroidMaterialContent_High;")
             {
                 highMaterialContent = " and has high material content";
-                Core.AddGridItem(this, new ProspectorGrid
+                AddGridItem(new ProspectorGrid
                 {
                     Location = !_data.CurrentLocationShown ? _data.LocationName : string.Empty,
                     Commodity = "Raw materials",
@@ -573,7 +597,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 _stats.GoodRocks++;
                 string name = CommodityName(prospected.MotherlodeMaterial, prospected.MotherlodeMaterial_Localised);
                 string cumulativeStats = $"{(_stats.GoodRocks * 1000.0) / (_stats.ProspectorsEngaged * 10.0):N1}% good rocks ({_stats.GoodRocks}/{_stats.ProspectorsEngaged})";
-                Core.AddGridItem(this, new ProspectorGrid
+                AddGridItem(new ProspectorGrid
                 {
                     Location = !_data.CurrentLocationShown ? _data.LocationName : string.Empty,
                     Commodity = name,
@@ -616,7 +640,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 string percentageString = $"{desireableCommoditiesPercentSum:N2}%";
                 string cumulativeStats = $"{(_stats.GoodRocks * 1000) / (_stats.ProspectorsEngaged * 10.0):N1}% good rocks ({_stats.GoodRocks}/{_stats.ProspectorsEngaged})";
 
-                Core.AddGridItem(this, new ProspectorGrid
+                AddGridItem(new ProspectorGrid
                 {
                     Location = !_data.CurrentLocationShown ? _data.LocationName : string.Empty,
                     Commodity = commodities,
@@ -681,7 +705,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     string name = CommodityName(m.Type, m.Type);
                     desireableCommodities.Add(name, m.Count);
 
-                    Core.AddGridItem(this, new ProspectorGrid
+                    AddGridItem(new ProspectorGrid
                     {
                         Location = saaSignalsFound.BodyName,
                         Commodity = name,
@@ -723,6 +747,46 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 Sender = AboutInfo.ShortName,
             };
             return args;
+        }
+
+        private void AddGridItem(ProspectorGrid item)
+        {
+            if (Core.IsLogMonitorBatchReading)
+            {
+                _deferredGridItems.Add(item);
+                return;
+            }
+            
+            if (_deferredGridItems.Count > 0)
+            {
+                _deferredGridItems.Add(item);
+                Core.AddGridItems(this, _deferredGridItems);
+                _deferredGridItems.Clear();
+            }
+            else
+            {
+                Core.AddGridItem(this, item);
+            }
+        }
+
+        private void AddGridItems(List<ProspectorGrid> items)
+        {
+            if (Core.IsLogMonitorBatchReading)
+            {
+                _deferredGridItems.AddRange(items);
+                return;
+            }
+
+            if (_deferredGridItems.Count > 0)
+            {
+                _deferredGridItems.AddRange(items);
+                Core.AddGridItems(this, _deferredGridItems);
+                _deferredGridItems.Clear();
+            }
+            else
+            {
+                Core.AddGridItems(this, items);
+            }
         }
 
         private string CargoKey(string name, string localizedName = "")
@@ -776,6 +840,16 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (LogMonitorStateChangedEventArgs.IsBatchRead(args.NewState))
             {
                 Core.ClearGrid(this, new ProspectorGrid());
+            }
+            if (LogMonitorStateChangedEventArgs.IsBatchRead(args.PreviousState)
+                && !LogMonitorStateChangedEventArgs.IsBatchRead(args.NewState))
+            {
+                // Exiting batch or pre-read: Flush deferred grid items.
+                if (_deferredGridItems.Count > 0)
+                {
+                    Core.AddGridItems(this, _deferredGridItems);
+                    _deferredGridItems.Clear();
+                }
             }
         }
 

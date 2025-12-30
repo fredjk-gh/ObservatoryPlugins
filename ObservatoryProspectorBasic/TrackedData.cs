@@ -3,6 +3,7 @@ using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -128,7 +129,25 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (!_cargo.ContainsKey(name))
                 _cargo[name] = 0;
 
-            return (_cargo[name] += qty);
+            if (CargoMax.HasValue)
+            {
+                int cargoTotal = _cargo.Values.Sum();
+                if (cargoTotal + qty > CargoMax.Value)
+                {
+                    Debug.WriteLine($"CargoMax would be exceeded by adding {qty} items of type {name}: {cargoTotal} + {qty} > {CargoMax.Value}! Adding only {CargoMax.Value - cargoTotal}!");
+                    _cargo[name] += (CargoMax.Value - cargoTotal);
+                }
+                else
+                {
+                    _cargo[name] += qty;
+                }
+            }
+            else
+            {
+                // No max to enforce; best effort.
+                _cargo[name] += qty;
+            }
+            return _cargo[name];
         }
 
         public int CargoRemove(string name, int qty)
