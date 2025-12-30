@@ -1,9 +1,11 @@
-﻿using com.github.fredjk_gh.ObservatoryArchivist.UI;
+﻿using com.github.fredjk_gh.ObservatoryArchivist.DB;
+using com.github.fredjk_gh.ObservatoryArchivist.UI;
 using Observatory.Framework;
 using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -14,6 +16,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
     {
         private const string DATA_CACHE_FILENAME = "archivistStateCache.json";
 
+        private bool _batchMode = false;
+
         public ArchivistContext()
         {
             Data = new();
@@ -23,7 +27,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         
         public Archivist PluginWorker { get; init; }
 
-        public ArchiveManager Manager { get; init; }
+        public ArchiveManager Archive { get; init; }
+
+        public CacheManager Cache { get; init; }
 
         /// <summary>
         /// Error logger; string param is an arbitrary context hint.
@@ -36,9 +42,20 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public ArchivistUI UI { get; set; }
 
-        public bool IsReadAll { get => (Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0; }
+        public bool IsReadAll { get => Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch); }
 
         public bool IsResending { get; private set; }
+
+        public ulong LastSystemId64DataShared { get; set; }
+
+        public bool BatchModeProcessing {
+            get => _batchMode;
+            set {
+                _batchMode = value;
+                Archive.BatchModeProcessing = value;
+                Cache.BatchModeProcessing = value;
+            }
+        }
 
         public void FlushIfDirty(bool forceFlush = false)
         {
@@ -48,7 +65,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             {
                 if (c.CurrentSystem != null && c.CurrentSystem.IsDirty)
                 {
-                    Manager.UpsertVisitedSystemData(c.CurrentSystem);
+                    Archive.UpsertVisitedSystemData(c.CurrentSystem);
                 }
             }
         }
@@ -80,7 +97,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                     // Fetch current system data from DB (not serialized to the cache for brevity/simplicity).
                     if (!string.IsNullOrWhiteSpace(cmdrData.Value.CurrentSystemName) && cmdrData.Value.CurrentSystem == null)
                     {
-                        var currentSystem = Manager.GetVisitedSystemExactMatch(cmdrData.Value.CurrentSystemName, cmdrData.Key);
+                        var currentSystem = Archive.GetVisitedSystemExactMatch(cmdrData.Value.CurrentSystemName, cmdrData.Key);
                         if (currentSystem != null) // This may happen after an aborted Read-all.
                             cmdrData.Value.CurrentSystem = new(currentSystem);
                     }
@@ -94,15 +111,21 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public void DisplaySummary(string prefix = "")
         {
-            var summaryData = Manager.GetVisitedSystemSummary();
+            var summaryData = Archive.GetVisitedSystemSummary();
+            var cachedSystems = Cache.CountCachedSystems();
             StringBuilder sb = new StringBuilder(prefix);
 
             if (!string.IsNullOrWhiteSpace(prefix)) sb.AppendLine();
 
             foreach (var r in summaryData)
             {
-                sb.AppendLine($"{r["SystemCount"]} known systems for Cmdr {r["Cmdr"]}.");
+                if ("Augmented".Equals(r["Cmdr"], StringComparison.OrdinalIgnoreCase))
+                    sb.AppendLine($"{r["SystemCount"]} systems augmented with Spansh data");
+                else
+                    sb.AppendLine($"{r["SystemCount"]} known systems for Cmdr {r["Cmdr"]}.");
             }
+
+            sb.AppendLine($"System address cache contains {cachedSystems} systems.");
 
             UI.SetMessage(sb.ToString());
         }

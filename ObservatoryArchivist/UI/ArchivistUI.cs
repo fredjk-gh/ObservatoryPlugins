@@ -1,21 +1,13 @@
-﻿using com.github.fredjk_gh.PluginCommon.Data.Journals;
-using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
+﻿using com.github.fredjk_gh.PluginCommon.Data.Id64;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.Data.Spansh.System;
-using Observatory.Framework;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
+using com.github.fredjk_gh.PluginCommon.UI.Shared;
 using Observatory.Framework.Files.Journal;
-using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using static com.github.fredjk_gh.PluginCommon.UI.ThemeableImageLabel;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 {
@@ -37,6 +29,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
             InitializeComponent();
 
+            // TODO: convert to Image buttons and update resources.
             btnOpenInViewer.SetIcon(Properties.Resources.OpenInNewIcon.ToBitmap(), new(32, 32));
             btnOpenInSearch.SetIcon(Properties.Resources.SearchIcon.ToBitmap(), new(32, 32));
             btnSearchDB.SetIcon(Properties.Resources.DBSearchIcon.ToBitmap(), new(32, 32));
@@ -44,6 +37,14 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             btnResendAll.SetIcon(Properties.Resources.ReplayAllIcon.ToBitmap(), new(32, 32));
             btnCopy.SetIcon(Properties.Resources.CopyIcon.ToBitmap(), new(32, 32));
             btnView.SetIcon(Properties.Resources.OpenInNewIcon.ToBitmap(), new(32, 32));
+
+            btnSendViaMsg.OriginalImage = PluginCommon.Images.ReplayViaMessageImage;
+            btnSendViaMsg.ImageSize = new(32, 32);
+
+            btnMessagesClear.OriginalImage = PluginCommon.Images.RouteClearImage;
+            btnMessagesClear.ImageSize = new(32, 32);
+            btnFindMessagesClear.OriginalImage = PluginCommon.Images.RouteClearImage;
+            btnFindMessagesClear.ImageSize = new(32, 32);
 
             Draw();
 
@@ -93,6 +94,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                 txtSystemName.Text = string.Empty;
                 lblRecordCommanderValue.Text = string.Empty;
                 txtLastEntry.Text = string.Empty;
+                txtId64Details.Text = string.Empty;
 
                 if (cmdrData == null)
                     SetMessage("Current commander is unknown.");
@@ -103,7 +105,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
             txtSystemName.Text = cmdrData.CurrentSystem.SystemName;
             lblRecordCommanderValue.Text = cmdrData.CommanderName;
-            PopulateLatestRecord(cmdrData);
+            PopulateLatestEntry(cmdrData);
+            PopulateId64Details(cmdrData);
         }
 
         public void PopulateRecentSystems()
@@ -112,7 +115,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
             if (_context.Data.RecentSystems.Count == 0)
             {
-                _context.Data.RecentSystems = _context.Manager.GetRecentVisitedsystems();
+                _context.Data.RecentSystems = _context.Archive.GetRecentVisitedsystems();
             }
 
             lbRecentSystems.Items.Clear();
@@ -122,20 +125,15 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             }
         }
 
-        public void SetMessage(string message = "")
+        public void SetMessage(string message, TextBox txtBox = null)
         {
             if (_context.IsReadAll) return;
 
-            if (!string.IsNullOrWhiteSpace(message))
-                txtMessages.Text = message;
-        }
-
-        public void SetFindMessage(string message = "")
-        {
-            if (_context.IsReadAll) return;
+            if (txtBox == null) txtBox = txtMessages;
 
             if (!string.IsNullOrWhiteSpace(message))
-                txtFindMessages.Text = message;
+                txtBox.Text = message
+                    + (string.IsNullOrEmpty(txtBox.Text) ? "" : Environment.NewLine + txtBox.Text);
         }
 
         public void ClearMessage()
@@ -147,7 +145,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         }
 
 
-        internal void PopulateLatestRecord(ArchivistCommanderData data = null)
+        internal void PopulateLatestEntry(ArchivistCommanderData data = null)
         {
             if (_context.IsReadAll) return;
 
@@ -157,6 +155,16 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             string rawJson = cmdrData.CurrentSystem.SystemJournalEntries.Last();
             string prettyPrintJson = PrettyPrintJson(rawJson);
             txtLastEntry.Text = prettyPrintJson;
+        }
+
+        internal void PopulateId64Details(ArchivistCommanderData data = null)
+        {
+            if (_context.IsReadAll) return;
+
+            var cmdrData = data ?? _context.Data.ForCommander();
+            if (cmdrData == null) return;
+
+            txtId64Details.Text = Id64Details.FromId64(cmdrData.CurrentSystem.SystemId64).ToString();
         }
 
         private string PrettyPrintJson(string rawJson)
@@ -173,7 +181,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             string searchText = cboFindSystem.Text?.Trim() ?? "";
             if (string.IsNullOrWhiteSpace(searchText) || searchText.Length < 3)
             {
-                SetFindMessage("Search canceled: search text is empty or less than 3 characters.");
+                SetMessage("Search canceled: search text is empty or less than 3 characters.", txtFindMessages);
                 return;
             }
 
@@ -192,11 +200,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             if (UInt64.TryParse(searchText, out id64))
             {
                 // Search by system ID (and/or commander)
-                results = _context.Manager.GetVisitedSystem(id64, cmdrName);
+                results = _context.Archive.GetVisitedSystem(id64, cmdrName);
             }
             else
             {
-                results = _context.Manager.GetVisitedSystem(searchText, cmdrName);
+                results = _context.Archive.GetVisitedSystem(searchText, cmdrName);
             }
 
             if (results.Count > 0)
@@ -205,7 +213,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             }
             else
             {
-                SetFindMessage("Nothing found");
+                SetMessage("Nothing found", txtFindMessages);
                 return;
             }
 
@@ -214,7 +222,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             else
                 resultMessage = $"Match found with {result.SystemJournalEntries.Count} records";
 
-            SetFindMessage(resultMessage);
+            SetMessage(resultMessage, txtFindMessages);
             _context.Data.LastSearchResult = result;
         }
 
@@ -273,12 +281,12 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             }
             catch (Exception ex)
             {
-                SetFindMessage($"Spansh data fetch failed: {ex.Message}"
-                    + $"{Environment.NewLine}Spansh may not know this system.");
+                SetMessage($"Spansh data fetch failed: {ex.Message}{Environment.NewLine}Spansh may not know this system.",
+                    txtFindMessages);
             }
 
             string status = "Fetch complete; parsing response...";
-            SetFindMessage(status);
+            SetMessage(status, txtFindMessages);
 
             try
             {
@@ -290,7 +298,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
                 SpanshSystem result = processTask.Result;
                 status = "Spansh response parsed, converting...";
-                SetFindMessage(status);
+                SetMessage(status, txtFindMessages);
 
                 // Convert to Framework objects and serialize to Journal events.
                 VisitedSystem lastSearch = _context.Data.LastSearchResult;
@@ -302,17 +310,17 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
                 List<JournalBase> augmentedJournals = convertTask.Result;
                 VisitedSystem augmented = JournalUtilities.AugmentJournals(lastSearch, augmentedJournals);
-                _context.Manager.UpsertAugmentedSystem(augmented);
+                _context.Archive.UpsertAugmentedSystem(augmented);
 
                 ClearSearchResult();
                 _context.Data.LastSearchResult = augmented;
                 PopulateSearchResult();
                 status = $"Conversion complete; {augmentedJournals.Count} journal entries displayed; data cached";
-                SetFindMessage(status);
+                SetMessage(status, txtFindMessages);
             }
             catch (Exception ex)
             {
-                SetFindMessage($"Failed to parse Spansh data: {ex.Message}");
+                SetMessage($"Failed to parse Spansh data: {ex.Message}", txtFindMessages);
             }
         }
 
@@ -418,6 +426,31 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             _context.SetResendAll(false);
         }
 
+        private void btnSendViaMsg_Click(object sender, EventArgs e)
+        {
+            if (_context.Data.LastSearchResult == null) return;
+
+            CurrentSystemInfo systemInfo = new(_context.Data.LastSearchResult);
+            List<JournalBase> preamble = ArchivistData.ToJournalObj(_context.Core, systemInfo.PreambleJournalEntries);
+            List<JournalBase> systemJournals = ArchivistData.ToJournalObj(_context.Core, systemInfo.SystemJournalEntries);
+
+            if (!ArchivistData.IsSystemScanComplete(preamble, systemJournals))
+            {
+                _context.UI.SetMessage($"WARNING: Search result data does not represent a incomplete system scan!", txtFindMessages);
+            }
+
+            ArchivistScansMessage msg = ArchivistScansMessage.New(
+                systemInfo.SystemName,
+                systemInfo.SystemId64,
+                preamble,
+                systemJournals,
+                false,
+                systemInfo.Commander,
+                systemInfo.VisitCount);
+
+            _context.Core.SendPluginMessage(_context.PluginWorker, msg.ToPluginMessage());
+        }
+
         private void lbJournals_MouseDown(object sender, MouseEventArgs e)
         {
             switch (e.Button)
@@ -474,10 +507,10 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             if (_context.Data.LastSearchResult == null) return;
 
             btnLoadFromSpansh.Enabled = false;
-            VisitedSystem? augmentedSystem = _context.Manager.GetExactMatchAugmentedSystem(_context.Data.LastSearchResult.SystemId64);
+            VisitedSystem? augmentedSystem = _context.Archive.GetExactMatchAugmentedSystem(_context.Data.LastSearchResult.SystemId64);
             if (augmentedSystem == null)
             {
-                SetFindMessage($"Fetching data for '{_context.Data.LastSearchResult.SystemName}' from Spansh...");
+                SetMessage($"Fetching data for '{_context.Data.LastSearchResult.SystemName}' from Spansh...", txtFindMessages);
                 AugmentFromSpansh(_context.Data.LastSearchResult.SystemId64);
             }
             else
@@ -485,7 +518,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                 ClearSearchResult();
                 _context.Data.LastSearchResult = augmentedSystem;
                 PopulateSearchResult();
-                SetFindMessage($"Data previously fetched from Spansh loaded; {augmentedSystem.SystemJournalEntries.Count} journal entries displayed");
+                SetMessage($"Data previously fetched from Spansh loaded; {augmentedSystem.SystemJournalEntries.Count} journal entries displayed", txtFindMessages);
             }
             btnLoadFromSpansh.Enabled = true;
         }
@@ -519,7 +552,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                 }
 
                 var search = cboFindSystem.Text;
-                var autoCompleteItems = _context.Manager.FindVisitedSystemNames(search, commanderName);
+                var autoCompleteItems = _context.Archive.FindVisitedSystemNames(search, commanderName);
 
                 if (autoCompleteItems.Count > 0)
                 {
@@ -581,7 +614,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                     if (e.Modifiers == Keys.Control)
                     {
                         lbJournals.SelectedItems.Clear();
-                        for (int i = lbJournals.Items.Count - 1; i >= 0 ; i--)
+                        for (int i = lbJournals.Items.Count - 1; i >= 0; i--)
                         {
                             lbJournals.SelectedIndices.Add(i);
                         }
@@ -598,6 +631,16 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
                     break;
             }
+        }
+
+        private void btnMessagesClear_Click(object sender, EventArgs e)
+        {
+            txtMessages.Text = string.Empty;
+        }
+
+        private void btnFindMessagesClear_Click(object sender, EventArgs e)
+        {
+            txtFindMessages.Text = string.Empty;
         }
     }
 }

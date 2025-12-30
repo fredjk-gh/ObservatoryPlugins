@@ -11,7 +11,6 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
     {
         private CurrentSystemInfo _currentSystemInfo = null;
         private string _currentSystemName = "";
-        private List<string> _recentSystems = new();
 
         public ArchivistCommanderData()
         {

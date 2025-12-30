@@ -6,16 +6,11 @@ using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryArchivist
+namespace com.github.fredjk_gh.ObservatoryArchivist.DB
 {
-    enum ConnectionMode
-    {
-        Shared,
-        Direct
-    }
-
     internal class ArchiveManager
     {
+        private const string ARCHIVE_DB_NAME = "Main";
         private const string ARCHIVE_DB_FILENAME = "Archivist_Main.db";
         /// <summary>
         /// Error logger; string param is an arbitrary context hint.
@@ -25,7 +20,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         private ILiteDatabase ArchivistMainDB;
         private ILiteCollection<VisitedSystem> VisitedSystemsCol;
         private ILiteCollection<VisitedSystem> AugmentedSystemsCol;
-        string dbPath;
+        private string dbPath;
 #if DEBUG
         private ConnectionMode connectionMode = ConnectionMode.Shared;
 #else
@@ -91,7 +86,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public int CountVisitedSystems(string commanderName = "")
         {
-            if (!Connected) throw new DBNotConnectedException();
+            if (!Connected) throw new DBNotConnectedException(ARCHIVE_DB_NAME);
 
             if (string.IsNullOrEmpty(commanderName))
             {
@@ -105,15 +100,19 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public List<BsonDocument> GetVisitedSystemSummary()
         {
-            return VisitedSystemsCol.Query().GroupBy("Commander")
+            var result = VisitedSystemsCol.Query().GroupBy("Commander")
                 .Select("{ Cmdr:@key, SystemCount:COUNT(*)  }")
                 .ToList();
+            result.AddRange(
+                AugmentedSystemsCol.Query()
+                    .Select("{ Cmdr:'Augmented', SystemCount:COUNT(*) }").ToList());
+            return result;
         }
 
         // Primarily for pre-loading
         public VisitedSystem GetVisitedSystemExactMatch(string systemName, string commanderName)
         {
-            if (!Connected) throw new DBNotConnectedException();
+            if (!Connected) throw new DBNotConnectedException(ARCHIVE_DB_NAME);
 
             //var bsonKeyDoc = new BsonDocument() { ["cmdr"] = commanderName, ["sysname"] = systemName };
             //var bsonExpr = Query.EQ("unique_cmdr_sysname", bsonKeyDoc);
@@ -131,7 +130,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public List<VisitedSystem> GetVisitedSystem(string systemName, string commanderName = "")
         {
-            if (!Connected) throw new DBNotConnectedException();
+            if (!Connected) throw new DBNotConnectedException(ARCHIVE_DB_NAME);
             if (BatchModeProcessing) return new(); // Shouldn't be possible, but the database is likely to be empty.
 
             if (!string.IsNullOrEmpty(commanderName))
@@ -148,7 +147,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public List<VisitedSystem> GetVisitedSystem(ulong id64, string commanderName = "")
         {
-            if (!Connected) throw new DBNotConnectedException();
+            if (!Connected) throw new DBNotConnectedException(ARCHIVE_DB_NAME);
             if (BatchModeProcessing) return new(); // Shouldn't be possible, but the database is likely to be empty.
 
             if (!string.IsNullOrEmpty(commanderName))
@@ -248,6 +247,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             if (_deferredChanges.Count == 0) return;
 
             VisitedSystemsCol.Upsert(_deferredChanges.Select(csi => csi.Value.ToSystemInfo(true)));
+            _deferredChanges.Clear();
         }
 
         public void UpsertAugmentedSystem(VisitedSystem system)
@@ -260,7 +260,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         public VisitedSystem? GetExactMatchAugmentedSystem(ulong id64)
         {
-            if (!Connected) throw new DBNotConnectedException();
+            if (!Connected) throw new DBNotConnectedException(ARCHIVE_DB_NAME);
             if (BatchModeProcessing) return new(); // Shouldn't be possible, but the database is likely to be empty.
 
             // We don't discriminate between commanders here.
@@ -268,10 +268,5 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 .Find(sys => sys.SystemId64 == id64)
                 .FirstOrDefault();
         }
-    }
-
-    class DBNotConnectedException : Exception
-    {
-        public DBNotConnectedException() : base("Archivist internal DB is not connected") { }
     }
 }

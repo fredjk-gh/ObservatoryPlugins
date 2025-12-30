@@ -1,37 +1,48 @@
-﻿using com.github.fredjk_gh.ObservatoryArchivist.UI;
-using LiteDB;
+﻿using com.github.fredjk_gh.ObservatoryArchivist.DB;
+using com.github.fredjk_gh.ObservatoryArchivist.UI;
+using com.github.fredjk_gh.PluginCommon.AutoUpdates;
+using com.github.fredjk_gh.PluginCommon.PluginInterop;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Marshalers;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
 using Observatory.Framework;
+using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using static com.github.fredjk_gh.PluginCommon.PluginInterop.PluginTracker;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist
 {
     public class Archivist : IObservatoryWorker
     {
-        private PluginUI pluginUI;
-        private ArchivistPanel _archivistPanel;
-        private ArchivistSettings settings = ArchivistSettings.DEFAULT;
-        private ArchivistContext _context;
-        private AboutInfo _aboutInfo = new()
+        private static Guid PLUGIN_GUID = new("0bec76f9-772b-4b0b-80fd-4809d23d394e");
+        private static AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
+        private static AboutLink GH_RELEASE_NOTES_LINK = new ("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Archivist");
+        private static AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/archivist");
+        private static AboutInfo ABOUT_INFO = new()
         {
             FullName = "Archivist",
             ShortName = "Archivist",
-            Description = "The Archivist plugin captures exploration related journals and stores them in a database for later re-use.",
+            Description = "The Archivist plugin captures exploration related journals and stores them in a database for later re-use."
+                    + Environment.NewLine + Environment.NewLine
+                    + "It also provides a cache of system positions (and other info) for improved distance calculations and recall.",
             AuthorName = "fredjk-gh",
             Links = new()
             {
-                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
-                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Archivist"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/archivist"),
+                GH_LINK,
+                GH_RELEASE_NOTES_LINK,
+                DOC_LINK,
             }
         };
+        
+        private PluginUI pluginUI;
+        private ArchivistPanel _archivistPanel;
+        private ArchivistSettings settings = new();
+        private ArchivistContext _context;
 
-        public AboutInfo AboutInfo => _aboutInfo;
+        public static Guid Guid => PLUGIN_GUID;
+        public AboutInfo AboutInfo => ABOUT_INFO;
         public string Version => typeof(Archivist).Assembly.GetName().Version.ToString();
         public PluginUI PluginUI => pluginUI;
 
@@ -50,7 +61,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 PluginWorker = this,
                 Settings = settings,
                 ErrorLogger = observatoryCore.GetPluginErrorLogger(this),
-                Manager = new(observatoryCore.PluginStorageFolder, observatoryCore.GetPluginErrorLogger(this)),
+                Archive = new(observatoryCore.PluginStorageFolder, observatoryCore.GetPluginErrorLogger(this)),
+                Cache = new(observatoryCore.PluginStorageFolder, observatoryCore.GetPluginErrorLogger(this)),
             };
             _context.DeserializeState();
 
@@ -68,6 +80,25 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             }
         }
 
+        public PluginUpdateInfo CheckForPluginUpdate()
+        {
+            AutoUpdateHelper.Init(_context.Core);
+            return AutoUpdateHelper.CheckForPluginUpdate(
+                this, GH_RELEASE_NOTES_LINK.Url, _context.Settings.EnableAutoUpdates, _context.Settings.EnableBetaUpdates);
+        }
+
+        public void ObservatoryReady()
+        {
+            _context.Core.ExecuteOnUIThread(() =>
+            {
+                _context.UI.Draw();
+                _context.DisplaySummary();
+            });
+
+            var readyMsg = GenericPluginReadyMessage.New();
+            _context.Core.SendPluginMessage(this, readyMsg.ToPluginMessage());
+        }
+
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
         {
             // * -> ReadAll
@@ -76,18 +107,26 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 _context.Data.ResetForReadAll();
 
                 // Re-connect in Direct mode for performance.
-                _context.Manager.Connect(ConnectionMode.Direct);
-                _context.Manager.ClearVisitedSystems();
-                _context.Manager.BatchModeProcessing = true;
-                _context.UI.SetMessage("Read All started");
+                _context.Archive.Connect(ConnectionMode.Direct);
+                _context.Archive.ClearVisitedSystems();
+                _context.Cache.Connect(ConnectionMode.Direct);
+                // Don't ever clear the cache (or only do so manually). That would lose data we can't recover via re-reading all.
+
+                _context.BatchModeProcessing = true;
+                _context.LastSystemId64DataShared = 0;
+                _context.UI.SetMessage( "Read All started");
             }
             // ReadAll -> *
             else if ((args.PreviousState & LogMonitorState.Batch) != 0 && (args.NewState & LogMonitorState.Batch) == 0)
             {
                 _context.FlushIfDirty(/* force= */ true);
-                _context.Manager.BatchModeProcessing = false;
-                _context.Manager.FlushDeferredVisitedSystems();
-                _context.Manager.Connect(ConnectionMode.Shared);
+                _context.BatchModeProcessing = false;
+
+                _context.Cache.FinishReadAll();
+                _context.Cache.Connect(ConnectionMode.Shared);
+
+                _context.Archive.FlushDeferredVisitedSystems();
+                _context.Archive.Connect(ConnectionMode.Shared);
 
                 // ReadAll -> Cancelled
                 if ((args.NewState & LogMonitorState.BatchCancelled) != 0)
@@ -105,18 +144,14 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                         _context.UI.Draw();
                         _context.DisplaySummary("Read All completed");
                     });
+                    MaybeShareSystemDataWithAugmentation(_context.Data.ForCommander().CurrentSystem);
                 }
                 _context.SerializeState();
             }
-        }
-
-        public void ObservatoryReady()
-        {
-            _context.Core.ExecuteOnUIThread(() =>
+            else if (args.PreviousState.HasFlag(LogMonitorState.PreRead) && !args.NewState.HasFlag(LogMonitorState.PreRead))
             {
-                _context.UI.Draw();
-                _context.DisplaySummary();
-            });
+                MaybeShareSystemDataWithAugmentation(_context.Data.ForCommander().CurrentSystem);
+            }
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -160,9 +195,14 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                     break;
                 case FSDJump fsdJump:
                     ProcessNewLocation(fsdJump.StarSystem, fsdJump.SystemAddress, fsdJump.TimestampDateTime, fsdJump.Json);
+                    CacheSystemLocation(fsdJump.SystemAddress, fsdJump.StarSystem, fsdJump.StarPos);
                     break;
                 case Location location:
                     ProcessNewLocation(location.StarSystem, location.SystemAddress, location.TimestampDateTime, location.Json);
+                    CacheSystemLocation(location.SystemAddress, location.StarSystem, location.StarPos);
+                    break;
+                case NavRouteFile navRoute:
+                    CacheRoute(navRoute);
                     break;
                 case DiscoveryScan discoveryScan:
                 case FSSDiscoveryScan fssDiscoveryScan:
@@ -186,8 +226,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                     {
                         _context.Core.ExecuteOnUIThread(() =>
                         {
-                            _context.UI.PopulateLatestRecord();
-                            _context.UI.SetMessage($"Captured journal event of type: {journal.Event}.{Environment.NewLine}{_context.Data.ForCommander().CurrentSystem.SystemJournalEntries.Count} entries captured so far...");
+                            _context.UI.PopulateLatestEntry();
+                            if (!_context.Core.IsLogMonitorBatchReading)
+                                _context.UI.SetMessage($"Captured journal event of type: {journal.Event}.{Environment.NewLine}{_context.Data.ForCommander().CurrentSystem.SystemJournalEntries.Count} entries captured so far...");
                         });
                     }
                     break;
@@ -211,29 +252,34 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         private void ProcessNewLocation(string newSystemName, ulong newSystemAddress, DateTime timestamp, string json)
         {
-            if (((_context.Core.CurrentLogMonitorState & LogMonitorState.PreRead) == 0)
+            if (!_context.Core.CurrentLogMonitorState.HasFlag(LogMonitorState.PreRead)
                 && _context.Data.ForCommander()?.CurrentSystem != null
                 && newSystemName != _context.Data.ForCommander()?.CurrentSystem.SystemName)
             {
                 _context.FlushIfDirty(/* force= */ true);
             }
 
-            if (_context.Data.ForCommander()?.CurrentSystem == null
-                || newSystemName != _context.Data.ForCommander()?.CurrentSystem.SystemName)
-            {
-                // Initialize the current system during pre-read in case we find/do more stuff or haven't flushed it yet.
-                // Duplicate entries should be filtered out by AddSystemJournalJason.
-                _context.Data.ForCommander().CurrentSystem = _context.Manager.LoadOrInitVisitedSystemInfo(
-                    _context.Data.ForCommander().FileHeaderInfo, newSystemName, newSystemAddress, timestamp);
-                _context.Data.MaybeAddToRecentSystems(newSystemName);
-                _context.SerializeState();
-            }
+            // We may get multiple events for the same system (ie. FSDJump, then Location after game restart).
+            bool isDifferentSystem = _context.Data.ForCommander()?.CurrentSystem == null
+                || newSystemName != _context.Data.ForCommander()?.CurrentSystem.SystemName;
 
-            // Don't add extraneous jumps.
+            if (!isDifferentSystem) return;
+
+            // Initialize the current system during pre-read in case we find/do more stuff or haven't flushed it yet.
+            // Duplicate entries should be filtered out by AddSystemJournalJason.
+            _context.Data.ForCommander().CurrentSystem = _context.Archive.LoadOrInitVisitedSystemInfo(
+                _context.Data.ForCommander().FileHeaderInfo, newSystemName, newSystemAddress, timestamp);
+            _context.Data.MaybeAddToRecentSystems(newSystemName);
+            _context.SerializeState();
+
+            // Don't add extraneous location events -- so only add the very first location change triggering event.
             if (_context.Data.ForCommander()?.CurrentSystem.SystemJournalEntries.Count == 0)
                 _context.Data.ForCommander().CurrentSystem.AddSystemJournalJson(json, timestamp);
             else
-                MaybeShareSystemData();
+            {
+                // If we had existing data for this new system, share it.
+                MaybeShareSystemDataWithAugmentation(_context.Data.ForCommander().CurrentSystem);
+            }
 
             if (!_context.IsReadAll)
             {
@@ -246,33 +292,151 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             }
         }
 
-        private void MaybeShareSystemData()
+        private void MaybeShareSystemDataWithAugmentation(CurrentSystemInfo sysInfo)
         {
-            // Send existing system data via inter-plugin message bus, in case anyone can use it.
-            if (!_context.Core.IsLogMonitorBatchReading && settings.ShareSystemData)
+            if (sysInfo == null) return;
+
+            if (!MaybeShareSystemData(sysInfo))
             {
-                // Send:
-                // - Commander
-                // - SystemName
-                // - VisitCount
-                // - SystemJournalEntries
-                // ??? Premable?
-                //(string Commander, string SystemName, int VisitCount, List<string> SystemJournalEntries) msgValue =
-                //(
-                //    _context.Data.ForCommander().CurrentSystem.Commander,
-                //    _context.Data.ForCommander().CurrentSystem.SystemName,
-                //    _context.Data.ForCommander().CurrentSystem.VisitCount,
-                //    _context.Data.ForCommander().CurrentSystem.SystemJournalEntries
-                //);
-
-                //Tuple<string, object> msg = new("archivist_known_system_data", msgValue);
-
-                //_context.Core.SendPluginMessage(this, msg);
-                _context.Core.ExecuteOnUIThread(() =>
-                {
-                    _context.UI.SetMessage($"Found {_context.Data.ForCommander().CurrentSystem.SystemJournalEntries.Count} records from a previous visit; In the future this may be shared via inter-plugin message.");
-                });
+                // see if we have data from Spansh...
+                VisitedSystem augmented = _context.Archive.GetExactMatchAugmentedSystem(sysInfo.SystemId64);
+                if (augmented == null) return;
+                CurrentSystemInfo sysinfo = new(augmented);
+                MaybeShareSystemData(sysinfo, /*isGeneratedFromSpansh=*/ true);
             }
         }
+
+        private bool MaybeShareSystemData(CurrentSystemInfo systemInfo, bool isGeneratedFromSpansh = false)
+        {
+            // Send existing system data via inter-plugin message bus, in case anyone can use it.
+            if (_context.IsReadAll
+                || !settings.ShareSystemData
+                || systemInfo == null
+                || _context.LastSystemId64DataShared == systemInfo.SystemId64) return false;
+
+            List<JournalBase> preamble = ArchivistData.ToJournalObj(_context.Core, systemInfo.PreambleJournalEntries);
+            List<JournalBase> systemJournals = ArchivistData.ToJournalObj(_context.Core, systemInfo.SystemJournalEntries);
+
+            if (!ArchivistData.IsSystemScanComplete(preamble, systemJournals))
+            {
+                _context.UI.SetMessage($"Stored data for this system is incomplete (generated? {isGeneratedFromSpansh}); data was not shared.");
+                return false;
+            }
+
+            ArchivistScansMessage msg = ArchivistScansMessage.New(
+                systemInfo.SystemName,
+                systemInfo.SystemId64,
+                preamble,
+                systemJournals,
+                isGeneratedFromSpansh,
+                systemInfo.Commander,
+                systemInfo.VisitCount);
+
+            _context.LastSystemId64DataShared = systemInfo.SystemId64;
+            _context.Core.SendPluginMessage(this, msg.ToPluginMessage());
+            _context.Core.ExecuteOnUIThread(() =>
+            {
+                _context.UI.SetMessage($"Shared {systemInfo.SystemJournalEntries.Count} events from {(isGeneratedFromSpansh ? "Spansh": "a previous visit")}.");
+            });
+            return true;
+        }
+
+        private void CacheSystemLocation(ulong id64, string systemName, StarPosition position)
+        {
+            SystemInfo info = new(id64, systemName, position);
+
+            _context.Cache.UpsertSystem(info);
+        }
+
+        private void CacheRoute(NavRouteFile route)
+        {
+            List<SystemInfo> systems = new();
+
+            foreach (var r in route.Route)
+            {
+                SystemInfo i = new(r.SystemAddress, r.StarSystem, r.StarPos);
+                systems.Add(i);
+            }
+
+            _context.Cache.UpsertBatch(systems);
+        }
+
+        public void HandlePluginMessage(MessageSender sender, PluginMessage messageArgs)
+        {
+            PluginMessageWrapper w = new(sender, messageArgs);
+
+            if (w.Type == "LegacyPluginMessage")
+            {
+                LegacyPluginMessageWrapper legacy = new(sender.ShortName, sender.Version, messageArgs.MessagePayload["message"]);
+
+                LegacyPluginMessageWrapper unMarshaledLegacy;
+                if (!PluginMessageUnmarshaler.TryUnmarshal(legacy, out unMarshaledLegacy)) return;
+
+                switch (unMarshaledLegacy)
+                {
+                    case LegacyGenericPluginReadyMessage readyMsg:
+                        HandleLegacyReadyMessage(readyMsg);
+                        break;
+                }
+            }
+            else
+            {
+                PluginMessageWrapper unMarshaled;
+                if (!PluginMessageUnmarshaler.TryUnmarshal(w, out unMarshaled)) return;
+
+                switch (unMarshaled)
+                {
+                    case GenericPluginReadyMessage readyMsg:
+                        HandleReadyMessage(readyMsg);
+                        break;
+                }
+            }
+        }
+
+        private void HandleReadyMessage(GenericPluginReadyMessage readyMsg)
+        {
+            var pluginType = PluginTracker.PluginTypeByGuid.GetValueOrDefault(readyMsg.Sender.Guid, PluginType.Unknown);
+            switch (pluginType)
+            {
+                case PluginType.mattg_Evaluator:
+
+                    break;
+            }
+        }
+
+        private void HandleLegacyReadyMessage(LegacyGenericPluginReadyMessage readyMsg)
+        {
+            switch (readyMsg.SourceOrTargetName)
+            {
+                case "Evaluator":
+                    break;
+            }
+        }
+
+        // Potential messages to support:
+        // 
+        // Misc:
+        // -> Ready {sender}
+        //
+        // Main Archive:
+        // <- ArchivistScansRequest { id64, forReplay } // for current cmdr only?
+        //   -- if forReplay is true, response is sent via replay.
+        // -> DONE: ArchivistScansMessage { id64, list<string> journals, visitCount, Cmdr }
+        //
+        // Position cache:
+        // <- ArchivistSystemCoordsRequest { id64 }
+        // -> ArchivistSystemCoordsMessage { id64, x, y, z }
+        // <- ReportSystemCoords { id64, x, y, z, SysName } // For data requested outside the game (ie. spansh routes, etc.)
+        //
+        // Notification cache:
+        // -- Like aggregator, listen to notifications and cache them.
+        // -- Like system journals, if previously visited, send.
+        // 
+        // Station cache?
+        //
+        // Bookmarks/notes:
+        // <- SetSystemBookmark {id64, bool visited, text? }
+        // <- ClearSystemBookmark {id64 }
+        // -> SystemBookmark { id64, ?? }
     }
 }

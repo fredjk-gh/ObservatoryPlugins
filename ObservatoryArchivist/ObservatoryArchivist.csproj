@@ -6,22 +6,22 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
 		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+		<CopyLocalLockFileAssemblies>True</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<VersionPrefix>1.0.4.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
+		<VersionPrefix>1.4.0.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
 		<VersionSuffix>beta</VersionSuffix>
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
 
 	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)DB\dll\LiteDB.dll&quot; &quot;$(ProjectDir)$(OutDir)&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)DB\dll\LiteDB.dll&quot; &quot;$(TargetDir)&quot; /y" />
 	</Target>
 	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\&quot; /y" />
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(ProjectDir)$(OutDir)LiteDB.dll&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\deps\&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetDir)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\$(ProjectName)\&quot; /y /s /exclude:$(ProjectDir)..\xcopyExclude" />
 	</Target>
 	
 	<ItemGroup>

@@ -1,4 +1,5 @@
 ﻿using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,5 +78,57 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 }
             }
         }
+
+        public static bool IsSystemScanComplete(List<JournalBase> preamble, List<JournalBase> systemJournals)
+        {
+            // Santy check the System Journal Entries:
+            // - Do we have have either a NavBeacon or discovery scan with body count? If not, bail.
+            // - Do we have a scan for the correct # all of the bodies? If not, bail.
+            int numBodies = -1;
+            HashSet<int> uniqueBodies = new();
+            foreach (JournalBase j in systemJournals)
+            {
+                switch (j)
+                {
+                    // The number of bodies returned here appears to be sometimes incorrect! See Subra and Soyota
+                    //case NavBeaconScan beaconScan:
+                    //    numBodies = beaconScan.NumBodies;
+                    //    break;
+                    case FSSDiscoveryScan honk:
+                        numBodies = honk.BodyCount;
+                        break;
+                    case Scan scan:
+                        if (!string.IsNullOrEmpty(scan.PlanetClass) || !string.IsNullOrEmpty(scan.StarType))
+                        {
+                            uniqueBodies.Add(scan.BodyID);
+                        }
+                        break;
+                }
+            }
+
+            if (numBodies <= 0) return false;
+            if (uniqueBodies.Count < numBodies) return false;
+
+            // Ok, seems complete enough...
+            return true;
+        }
+
+        public static List<JournalBase> ToJournalObj(IObservatoryCore core, List<string> journalEntries)
+        {
+            List<JournalBase> journalObj = new();
+
+            foreach (string journalEntry in journalEntries)
+            {
+                var args = core.DeserializeEvent(journalEntry);
+                var entry = args.journalEvent as JournalBase;
+                if (entry != null)
+                {
+                    journalObj.Add(entry);
+                }
+            }
+
+            return journalObj;
+        }
+
     }
 }

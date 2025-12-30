@@ -45,8 +45,12 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             btnOpenInViewer = new ThemeableIconButton();
             flowLayoutPanel1 = new FlowLayoutPanel();
             btnOpenInSearch = new ThemeableIconButton();
+            lblId64Details = new Label();
+            txtId64Details = new TextBox();
+            btnMessagesClear = new ThemeableImageButton();
             tabSearch = new TabPage();
             tableLayoutPanel3 = new TableLayoutPanel();
+            btnFindMessagesClear = new ThemeableImageButton();
             cboCommanderFilter = new ComboBox();
             lblCommanderFilterTitle = new Label();
             lblFindSystem = new Label();
@@ -65,6 +69,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             cboFindSystem = new ComboBox();
             flowLayoutPanel3 = new FlowLayoutPanel();
             btnResendAll = new ThemeableIconButton();
+            btnSendViaMsg = new ThemeableImageButton();
             btnCopy = new ThemeableIconButton();
             btnView = new ThemeableIconButton();
             ttipArchivistUI = new ToolTip(components);
@@ -104,10 +109,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             // tableLayoutPanel2
             // 
-            tableLayoutPanel2.ColumnCount = 3;
+            tableLayoutPanel2.ColumnCount = 4;
             tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150F));
             tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150F));
             tableLayoutPanel2.Controls.Add(lblSystemName, 0, 0);
             tableLayoutPanel2.Controls.Add(txtSystemName, 1, 0);
             tableLayoutPanel2.Controls.Add(lblMessages, 0, 2);
@@ -117,7 +123,10 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             tableLayoutPanel2.Controls.Add(lblRecordCommanderTitle, 0, 1);
             tableLayoutPanel2.Controls.Add(lblRecordCommanderValue, 1, 1);
             tableLayoutPanel2.Controls.Add(btnOpenInViewer, 1, 3);
-            tableLayoutPanel2.Controls.Add(flowLayoutPanel1, 2, 0);
+            tableLayoutPanel2.Controls.Add(flowLayoutPanel1, 3, 0);
+            tableLayoutPanel2.Controls.Add(lblId64Details, 2, 3);
+            tableLayoutPanel2.Controls.Add(txtId64Details, 2, 4);
+            tableLayoutPanel2.Controls.Add(btnMessagesClear, 3, 2);
             tableLayoutPanel2.Dock = DockStyle.Fill;
             tableLayoutPanel2.Location = new Point(3, 3);
             tableLayoutPanel2.Name = "tableLayoutPanel2";
@@ -144,12 +153,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // txtSystemName
             // 
             txtSystemName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel2.SetColumnSpan(txtSystemName, 2);
             txtSystemName.Location = new Point(153, 6);
             txtSystemName.Margin = new Padding(3, 6, 3, 3);
             txtSystemName.Name = "txtSystemName";
             txtSystemName.PlaceholderText = "(unknown)";
             txtSystemName.ReadOnly = true;
-            txtSystemName.Size = new Size(595, 23);
+            txtSystemName.Size = new Size(645, 23);
             txtSystemName.TabIndex = 1;
             // 
             // lblMessages
@@ -164,12 +174,14 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             // txtMessages
             // 
+            tableLayoutPanel2.SetColumnSpan(txtMessages, 2);
             txtMessages.Dock = DockStyle.Fill;
             txtMessages.Location = new Point(153, 67);
             txtMessages.Multiline = true;
             txtMessages.Name = "txtMessages";
             txtMessages.ReadOnly = true;
-            txtMessages.Size = new Size(595, 63);
+            txtMessages.ScrollBars = ScrollBars.Vertical;
+            txtMessages.Size = new Size(645, 63);
             txtMessages.TabIndex = 3;
             // 
             // lblLastRecord
@@ -185,14 +197,14 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             // txtLastEntry
             // 
-            tableLayoutPanel2.SetColumnSpan(txtLastEntry, 3);
+            tableLayoutPanel2.SetColumnSpan(txtLastEntry, 2);
             txtLastEntry.Dock = DockStyle.Fill;
             txtLastEntry.Location = new Point(3, 168);
             txtLastEntry.Multiline = true;
             txtLastEntry.Name = "txtLastEntry";
             txtLastEntry.ReadOnly = true;
             txtLastEntry.ScrollBars = ScrollBars.Vertical;
-            txtLastEntry.Size = new Size(945, 340);
+            txtLastEntry.Size = new Size(595, 340);
             txtLastEntry.TabIndex = 5;
             // 
             // lblRecordCommanderTitle
@@ -233,10 +245,10 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             flowLayoutPanel1.Controls.Add(btnOpenInSearch);
             flowLayoutPanel1.Dock = DockStyle.Fill;
-            flowLayoutPanel1.Location = new Point(751, 0);
+            flowLayoutPanel1.Location = new Point(801, 0);
             flowLayoutPanel1.Margin = new Padding(0);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(200, 32);
+            flowLayoutPanel1.Size = new Size(150, 32);
             flowLayoutPanel1.TabIndex = 11;
             // 
             // btnOpenInSearch
@@ -254,6 +266,46 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             btnOpenInSearch.UseVisualStyleBackColor = false;
             btnOpenInSearch.Click += btnOpenInSearch_Click;
             // 
+            // lblId64Details
+            // 
+            lblId64Details.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            lblId64Details.AutoSize = true;
+            lblId64Details.Location = new Point(604, 147);
+            lblId64Details.Margin = new Padding(3);
+            lblId64Details.Name = "lblId64Details";
+            lblId64Details.Size = new Size(112, 15);
+            lblId64Details.TabIndex = 12;
+            lblId64Details.Text = "System ID64 Details:";
+            // 
+            // txtId64Details
+            // 
+            tableLayoutPanel2.SetColumnSpan(txtId64Details, 2);
+            txtId64Details.Dock = DockStyle.Fill;
+            txtId64Details.Location = new Point(604, 168);
+            txtId64Details.Multiline = true;
+            txtId64Details.Name = "txtId64Details";
+            txtId64Details.ReadOnly = true;
+            txtId64Details.ScrollBars = ScrollBars.Vertical;
+            txtId64Details.Size = new Size(344, 340);
+            txtId64Details.TabIndex = 13;
+            // 
+            // btnMessagesClear
+            // 
+            btnMessagesClear.BackColor = Color.Transparent;
+            btnMessagesClear.FlatAppearance.BorderSize = 0;
+            btnMessagesClear.FlatAppearance.MouseOverBackColor = Color.FromArgb(215, 215, 215);
+            btnMessagesClear.FlatStyle = FlatStyle.Flat;
+            btnMessagesClear.ImageSize = null;
+            btnMessagesClear.Location = new Point(804, 67);
+            btnMessagesClear.Name = "btnMessagesClear";
+            btnMessagesClear.OriginalImage = null;
+            btnMessagesClear.Padding = new Padding(1);
+            btnMessagesClear.Size = new Size(26, 26);
+            btnMessagesClear.TabIndex = 14;
+            ttipArchivistUI.SetToolTip(btnMessagesClear, "Open in Search tab");
+            btnMessagesClear.UseVisualStyleBackColor = false;
+            btnMessagesClear.Click += btnMessagesClear_Click;
+            // 
             // tabSearch
             // 
             tabSearch.Controls.Add(tableLayoutPanel3);
@@ -267,11 +319,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             // tableLayoutPanel3
             // 
-            tableLayoutPanel3.ColumnCount = 4;
+            tableLayoutPanel3.ColumnCount = 5;
             tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150F));
             tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
-            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 350F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 50F));
+            tableLayoutPanel3.Controls.Add(btnFindMessagesClear, 4, 0);
             tableLayoutPanel3.Controls.Add(cboCommanderFilter, 1, 2);
             tableLayoutPanel3.Controls.Add(lblCommanderFilterTitle, 0, 2);
             tableLayoutPanel3.Controls.Add(lblFindSystem, 0, 0);
@@ -295,6 +349,23 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 33F));
             tableLayoutPanel3.Size = new Size(951, 511);
             tableLayoutPanel3.TabIndex = 0;
+            // 
+            // btnFindMessagesClear
+            // 
+            btnFindMessagesClear.BackColor = Color.Transparent;
+            btnFindMessagesClear.FlatAppearance.BorderSize = 0;
+            btnFindMessagesClear.FlatAppearance.MouseOverBackColor = Color.FromArgb(215, 215, 215);
+            btnFindMessagesClear.FlatStyle = FlatStyle.Flat;
+            btnFindMessagesClear.ImageSize = null;
+            btnFindMessagesClear.Location = new Point(904, 3);
+            btnFindMessagesClear.Name = "btnFindMessagesClear";
+            btnFindMessagesClear.OriginalImage = null;
+            btnFindMessagesClear.Padding = new Padding(1);
+            btnFindMessagesClear.Size = new Size(26, 26);
+            btnFindMessagesClear.TabIndex = 25;
+            ttipArchivistUI.SetToolTip(btnFindMessagesClear, "Open in Search tab");
+            btnFindMessagesClear.UseVisualStyleBackColor = false;
+            btnFindMessagesClear.Click += btnFindMessagesClear_Click;
             // 
             // cboCommanderFilter
             // 
@@ -334,13 +405,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // txtFindMessages
             // 
             txtFindMessages.Dock = DockStyle.Fill;
-            txtFindMessages.Location = new Point(654, 3);
+            txtFindMessages.Location = new Point(554, 3);
             txtFindMessages.Multiline = true;
             txtFindMessages.Name = "txtFindMessages";
             txtFindMessages.ReadOnly = true;
             tableLayoutPanel3.SetRowSpan(txtFindMessages, 2);
             txtFindMessages.ScrollBars = ScrollBars.Vertical;
-            txtFindMessages.Size = new Size(294, 60);
+            txtFindMessages.Size = new Size(344, 60);
             txtFindMessages.TabIndex = 22;
             txtFindMessages.Text = "Nothing found";
             ttipArchivistUI.SetToolTip(txtFindMessages, "Activity messages.");
@@ -380,7 +451,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             lbJournals.Location = new Point(3, 102);
             lbJournals.Name = "lbJournals";
             lbJournals.SelectionMode = SelectionMode.MultiExtended;
-            lbJournals.Size = new Size(645, 373);
+            lbJournals.Size = new Size(545, 373);
             lbJournals.TabIndex = 9;
             lbJournals.KeyDown += lbJournals_KeyDown;
             lbJournals.MouseDown += lbJournals_MouseDown;
@@ -410,7 +481,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             lblRecentSystems.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             lblRecentSystems.AutoSize = true;
-            lblRecentSystems.Location = new Point(654, 66);
+            lblRecentSystems.Location = new Point(554, 66);
             lblRecentSystems.Name = "lblRecentSystems";
             lblRecentSystems.Size = new Size(137, 33);
             lblRecentSystems.TabIndex = 23;
@@ -419,12 +490,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             // lbRecentSystems
             // 
+            tableLayoutPanel3.SetColumnSpan(lbRecentSystems, 2);
             lbRecentSystems.Dock = DockStyle.Fill;
             lbRecentSystems.FormattingEnabled = true;
             lbRecentSystems.ItemHeight = 15;
-            lbRecentSystems.Location = new Point(654, 102);
+            lbRecentSystems.Location = new Point(554, 102);
             lbRecentSystems.Name = "lbRecentSystems";
-            lbRecentSystems.Size = new Size(294, 373);
+            lbRecentSystems.Size = new Size(394, 373);
             lbRecentSystems.TabIndex = 13;
             ttipArchivistUI.SetToolTip(lbRecentSystems, "Double-click an item to search for the system.");
             lbRecentSystems.DoubleClick += lbRecentSystems_DoubleClick;
@@ -436,7 +508,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             flowLayoutPanel2.Location = new Point(451, 0);
             flowLayoutPanel2.Margin = new Padding(0);
             flowLayoutPanel2.Name = "flowLayoutPanel2";
-            flowLayoutPanel2.Size = new Size(200, 33);
+            flowLayoutPanel2.Size = new Size(100, 33);
             flowLayoutPanel2.TabIndex = 2;
             // 
             // btnSearchDB
@@ -484,6 +556,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // flowLayoutPanel3
             // 
             flowLayoutPanel3.Controls.Add(btnResendAll);
+            flowLayoutPanel3.Controls.Add(btnSendViaMsg);
             flowLayoutPanel3.Controls.Add(btnCopy);
             flowLayoutPanel3.Controls.Add(btnView);
             flowLayoutPanel3.Dock = DockStyle.Fill;
@@ -501,18 +574,32 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             btnResendAll.Name = "btnResendAll";
             btnResendAll.Size = new Size(27, 27);
             btnResendAll.TabIndex = 10;
-            ttipArchivistUI.SetToolTip(btnResendAll, "Replay all system journals (ignores filters and selection).");
+            ttipArchivistUI.SetToolTip(btnResendAll, "Replay ALL system journals via Core (WARNING: may cause notification spam).");
             btnResendAll.UseVisualStyleBackColor = true;
             btnResendAll.Click += btnResendAll_Click;
+            // 
+            // btnSendViaMsg
+            // 
+            btnSendViaMsg.FlatAppearance.BorderSize = 0;
+            btnSendViaMsg.FlatStyle = FlatStyle.Flat;
+            btnSendViaMsg.ImageSize = null;
+            btnSendViaMsg.Location = new Point(36, 3);
+            btnSendViaMsg.Name = "btnSendViaMsg";
+            btnSendViaMsg.OriginalImage = null;
+            btnSendViaMsg.Size = new Size(27, 27);
+            btnSendViaMsg.TabIndex = 11;
+            ttipArchivistUI.SetToolTip(btnSendViaMsg, "Send ALL system journals via plugin message.");
+            btnSendViaMsg.UseVisualStyleBackColor = true;
+            btnSendViaMsg.Click += btnSendViaMsg_Click;
             // 
             // btnCopy
             // 
             btnCopy.FlatAppearance.BorderSize = 0;
             btnCopy.FlatStyle = FlatStyle.Flat;
-            btnCopy.Location = new Point(36, 3);
+            btnCopy.Location = new Point(69, 3);
             btnCopy.Name = "btnCopy";
             btnCopy.Size = new Size(27, 27);
-            btnCopy.TabIndex = 11;
+            btnCopy.TabIndex = 12;
             ttipArchivistUI.SetToolTip(btnCopy, "Copy selection (or all, if no selection)");
             btnCopy.UseVisualStyleBackColor = true;
             btnCopy.Click += btnCopy_Click;
@@ -521,10 +608,10 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             btnView.FlatAppearance.BorderSize = 0;
             btnView.FlatStyle = FlatStyle.Flat;
-            btnView.Location = new Point(69, 3);
+            btnView.Location = new Point(102, 3);
             btnView.Name = "btnView";
             btnView.Size = new Size(27, 27);
-            btnView.TabIndex = 12;
+            btnView.TabIndex = 13;
             ttipArchivistUI.SetToolTip(btnView, "View selected journal");
             btnView.UseVisualStyleBackColor = true;
             btnView.Click += btnView_Click;
@@ -595,5 +682,10 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         private FlowLayoutPanel flowLayoutPanel3;
         private ThemeableIconButton btnCopy;
         private ThemeableIconButton btnView;
+        private Label lblId64Details;
+        private TextBox txtId64Details;
+        private ThemeableImageButton btnSendViaMsg;
+        private ThemeableImageButton btnMessagesClear;
+        private ThemeableImageButton btnFindMessagesClear;
     }
 }
