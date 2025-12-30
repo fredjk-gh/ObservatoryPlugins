@@ -62,7 +62,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             // build a dictionary of plugins to grid rows.
             foreach (var p in _context.KnownPlugins)
             {
-                var rowUi = new PluginRowUI(p);
+                var rowUi = new PluginRowUI(p.Key);
                 _rows.Add(rowUi);
                 _pluginUI.Add(rowUi.PluginName, rowUi);
             }
@@ -90,41 +90,44 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
         public void UpdatePluginState(string pluginName, string installedVersion, string status, PluginVersion latest, PluginAction action)
         {
-            var controls = _pluginUI[pluginName];
-            if (controls.PendingRestart) return; // Do nothing, we've already downloaded this one.
-
-            controls.InstalledVersion = installedVersion;
-            controls.StableVersion = latest.Production?.Version ?? "";
-            controls.BetaVersion = latest.Beta?.Version ?? "";
-            controls.Status = status;
-            controls.PluginAction = action;
-
-            var row = dgvPlugins.Rows.Cast<DataGridViewRow>().Where(r => r.DataBoundItem == controls).FirstOrDefault();
-            if (row == null)
+            _context.Core.ExecuteOnUIThread(() =>
             {
-                return; // This is unexpected.
-            }
-            DataGridViewButtonCell buttonCell = (DataGridViewButtonCell)row.Cells[COL_ACTION];
+                var controls = _pluginUI[pluginName];
+                if (controls.PendingRestart) return; // Do nothing, we've already downloaded this one.
 
-            switch (action)
-            {
-                case PluginAction.InstallStable:
-                    buttonCell.Value = "Install Stable";
-                    break;
-                case PluginAction.InstallBeta:
-                    buttonCell.Value = "Install Beta";
-                    break;
-                case PluginAction.UpdateStable:
-                    buttonCell.Value = "Update Stable";
-                    break;
-                case PluginAction.UpdateBeta:
-                    buttonCell.Value = "Update Beta";
-                    break;
-                default:
-                    buttonCell.Value = "";
-                    break;
-            }
-            dgvPlugins.AutoResizeColumns();
+                controls.InstalledVersion = installedVersion;
+                controls.StableVersion = latest.Production?.Version ?? "";
+                controls.BetaVersion = latest.Beta?.Version ?? "";
+                controls.Status = status;
+                controls.PluginAction = action;
+
+                var row = dgvPlugins.Rows.Cast<DataGridViewRow>().Where(r => r.DataBoundItem == controls).FirstOrDefault();
+                if (row == null)
+                {
+                    return; // This is unexpected.
+                }
+                DataGridViewButtonCell buttonCell = (DataGridViewButtonCell)row.Cells[COL_ACTION];
+
+                switch (action)
+                {
+                    case PluginAction.InstallStable:
+                        buttonCell.Value = "Install Stable";
+                        break;
+                    case PluginAction.InstallBeta:
+                        buttonCell.Value = "Install Beta";
+                        break;
+                    case PluginAction.UpdateStable:
+                        buttonCell.Value = "Update Stable";
+                        break;
+                    case PluginAction.UpdateBeta:
+                        buttonCell.Value = "Update Beta";
+                        break;
+                    default:
+                        buttonCell.Value = "";
+                        break;
+                }
+                dgvPlugins.AutoResizeColumns();
+            });
         }
 
         public void ShowMessages(string messages)

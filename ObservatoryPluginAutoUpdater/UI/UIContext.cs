@@ -1,31 +1,29 @@
-﻿using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
+﻿using com.github.fredjk_gh.PluginCommon.PluginInterop;
+using Observatory.Framework.Interfaces;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
+using static com.github.fredjk_gh.PluginCommon.PluginInterop.PluginTracker;
 
 namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 {
     internal class UIContext
     {
+        private const string SELF_PLUGIN_KEY = "ObservatoryPluginAutoUpdater";
         private List<string> _messages = new();
         private string _latestVersionCacheFilename;
         private DateTime? _latestVersionsFetchedDateTime = null;
         private bool hasCheckedForUpdates = false;
 
-        public readonly HashSet<string> KnownPlugins = new()
+        public readonly Dictionary<string, PluginType> KnownPlugins = new()
         {
-            "ObservatoryAggregator",
-            "ObservatoryArchivist",
-            "ObservatoryFleetCommander",
-            "ObservatoryHelm",
-            "ObservatoryPluginAutoUpdater",
-            "ObservatoryProspectorBasic",
-            "ObservatoryStatScanner",
+            { "ObservatoryAggregator", PluginType.fredjk_Aggregator },
+            { "ObservatoryArchivist", PluginType.fredjk_Archivist },
+            { "ObservatoryFleetCommander", PluginType.fredjk_Commander },
+            { "ObservatoryHelm", PluginType.fredjk_Helm },
+            { SELF_PLUGIN_KEY, PluginType.fredjk_AutoUpdater },
+            { "ObservatoryProspectorBasic", PluginType.fredjk_Prospector },
+            { "ObservatoryStatScanner", PluginType.fredjk_StatScanner },
         };
         public const string WIKI_URL = "https://github.com/fredjk-gh/ObservatoryPlugins/wiki";
         public const string CURRENT_RELEASES_URL = "https://raw.githubusercontent.com/fredjk-gh/ObservatoryPlugins/main/CurrentReleases.json";
@@ -38,6 +36,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             Core = core;
             Worker = worker;
             HttpClient = new HttpClientWrapper(Core, worker);
+            PluginTracker = new PluginTracker(PluginType.fredjk_AutoUpdater);
 
             _latestVersionCacheFilename = $"{Core.PluginStorageFolder}{LATEST_VERSION_CACHE_FILENAME}";
 
@@ -65,6 +64,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
         public IHttpClientWrapper HttpClient { get; init; }
         public Dictionary<string, PluginVersion> LocalVersions { get; init; }
         public Dictionary<string, PluginVersion> LatestVersions { get; set; }
+        public PluginTracker PluginTracker { get; init; }
 
         // Not initialized by constructor.
         public PluginUpdaterUI UI { get; set; }
@@ -111,6 +111,71 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
             ClearMessages();
 
+            // Definitions and Assumptions:
+            // * "legacy" plugins are pre-1.4 versions of each plugin which have no self-updating support NOR send ready messages.
+            //     Assumption 1: These plugins were installed pre ObsCore 1.4 and thus are dlls in the plugins/dir.
+            // * "modern" plugins have version 1.4 or higher and can self-update and send ready messages.
+            //     Assumption 2: These plugins were installed post ObsCore 1.4 release and are loaded directly from .eop.
+            //
+            // Unfortunate corner case that violates :
+            // * Legacy plugins (ie. stat scanner) installed/updated post 1.4 (so run as .eop) but can't update themselves
+            //   nor make their presence known via Ready message.
+            //
+            HashSet<string> legacyInstalls = KnownPlugins.Keys.ToHashSet();
+            HashSet<string> modernInstalls = new();
+            Dictionary<string, PluginVersion> mergedLocalVersions = new();
+
+            foreach (var p in KnownPlugins)
+            {
+                if (!LocalVersions.ContainsKey(p.Key)) // We couldn't find a dll to grab a version for this plugin
+                {
+                    // Either this plugin is not installed at all, or...
+                    legacyInstalls.Remove(p.Key);
+                    // ... it's installed and sending Ready messages which we can track.
+                    if (PluginTracker.IsActive(p.Value))
+                    {
+                        modernInstalls.Add(p.Key);
+                        var mv = PluginTracker.GetActiveVersion(KnownPlugins[p.Key]);
+                        PluginVersion lv = new()
+                        {
+                            PluginName = p.Key,
+                            Production = new() { Version = mv.ToString() },
+                            Beta = new() { Version = mv.ToString() },
+                        };
+                        mergedLocalVersions.Add(p.Key, lv);
+                    }
+                    else if (p.Key == SELF_PLUGIN_KEY) // won't be in the plugin tracker; add our local version as well.
+                    {
+                        PluginVersion lv = new()
+                        {
+                            PluginName = p.Key,
+                            Production = new() { Version = Worker.Version },
+                            Beta = new() { Version = Worker.Version },
+                        };
+                        mergedLocalVersions.Add(p.Key, lv);
+                    }
+                }
+                else
+                {
+                    mergedLocalVersions.Add(p.Key, LocalVersions[p.Key]);
+                }
+            }
+
+            // What is left in legacyInstalls has things that have a local version (legacy install) or aren't installed.
+            if (legacyInstalls.Count == 0)
+            {
+                AddMessage("NOTICE: The AutoUpdater is no longer managing any plugins -- they all appear to be self-updating now. Please remove ObservatoryPluginAutoUpdator from your installation.");
+
+                UI.ShowMessages(string.Join(Environment.NewLine, GetMessages()));
+                UI.Refresh();
+            }
+            else
+            {
+                AddMessage($"NOTICE: This plugin is deprecated and will become unsupported soon.{Environment.NewLine}"
+                    + $"Moving forward, all plugins with version 1.4 and higher have will built-in auto-updater logic integrated into the Core plugin list.{Environment.NewLine}"
+                    + $"Please check if any plugins are not automatically updating as this plugin may not be able to update them.{Environment.NewLine}");
+            }
+
             if (string.IsNullOrEmpty(PluginFolderPath) || !GetPluginFolder().Exists)
             {
                 string extendedDetail = $"The expected plugins folder '{PluginFolderPath}' does not exist. This is most unexpected.";
@@ -145,13 +210,13 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             int updateCount = 0;
             int failedCount = 0;
             int skippedCount = 0;
-            foreach (var p in KnownPlugins)
+            foreach (var p in KnownPlugins.Keys)
             {
                 if (!LatestVersions.ContainsKey(p))
                 {
                     if (LatestVersions.Count > 0)
                     {
-                        string localVersion = LocalVersions.ContainsKey(p) ? LocalVersions[p].Production.Version : "";
+                        string localVersion = mergedLocalVersions.ContainsKey(p) ? LocalVersions[p].Production.Version : "";
                         AddMessage($"Known plugin {p} was not found in latest versions file!");
                         UI.UpdatePluginState(p, localVersion, "Latest version unavailable", null, PluginAction.None);
                     }
@@ -164,7 +229,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 }
                 var latest = LatestVersions[p];
 
-                if (!LocalVersions.ContainsKey(p))
+                if (!mergedLocalVersions.ContainsKey(p))
                 {
                     var action = PluginAction.None; // There may be no available version.
                     var status = "Not installed";
@@ -185,7 +250,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                     skippedCount++;
                     continue;
                 }
-                var local = LocalVersions[p];
+                var local = mergedLocalVersions[p];
                 var selectedVersion = PluginVersion.SelectVersion(local, latest, Settings.UseBeta, Core.Version);
                 if (selectedVersion != null)
                 {
@@ -196,21 +261,37 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                         skippedCount++;
                         continue;
                     }
-                    if (DownloadLatestPlugin(HttpClient, downloadUrl, latest))
+                    if (p != SELF_PLUGIN_KEY)
                     {
-                        UI.UpdatePluginState(p, local.Production.Version, "Updated (pending restart)", latest, PluginAction.None);
-                        updateCount++;
+                        if (DownloadLatestPlugin(HttpClient, downloadUrl, latest))
+                        {
+                            UI.UpdatePluginState(p, local.Production.Version, "Updated (pending restart)", latest, PluginAction.None);
+                            updateCount++;
+                        }
+                        else
+                        {
+                            UI.UpdatePluginState(p, local.Production.Version, "Update pending (download failed!)", latest, selectedVersion.Action);
+                            failedCount++;
+                        }
                     }
                     else
                     {
-                        UI.UpdatePluginState(p, local.Production.Version, "Update pending (download failed!)", latest, selectedVersion.Action);
-                        failedCount++;
+                        UI.UpdatePluginState(p, local.Production.Version, "Update skipped: self-updating", latest, PluginAction.None);
+                        skippedCount++;
                     }
                 }
                 else
                 {
                     skippedCount++;
-                    UI.UpdatePluginState(p, local.Production.Version, "Up to date", latest, PluginAction.None);
+                    VersionDetail SELF_UPDATING_MIN_VER = new() { Version = "1.4.0.0" };
+                    if (VersionDetail.Compare(local.Production.VersionParsed, SELF_UPDATING_MIN_VER.VersionParsed) >= 0)
+                    {
+                        UI.UpdatePluginState(p, local.Production.Version, "Self-updating", latest, PluginAction.None);
+                    }
+                    else
+                    {
+                        UI.UpdatePluginState(p, local.Production.Version, "Up to date", latest, PluginAction.None);
+                    }
                 }
             }
 
@@ -270,7 +351,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             foreach (var plugin in dirInfo.GetFiles("*.dll"))
             {
                 var pluginName = plugin.Name.Replace(".dll", "");
-                if (!KnownPlugins.Contains(pluginName)) continue;
+                if (!KnownPlugins.ContainsKey(pluginName)) continue;
 
                 var fv = FileVersionInfo.GetVersionInfo(plugin.FullName);
                 PluginVersion ver = new PluginVersion();
