@@ -9,48 +9,50 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     class StatScannerSettings
     {
-        internal readonly static StatScannerSettings DEFAULT = new()
-        {
-            MaxNearRecordThreshold = 0,
-            MinNearRecordThreshold = 0,
-            MaxPersonalBestsPerBody = 3,
-            HighCardinalityTieSuppression = 10000,
-            ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING,
-            FirstDiscoveriesOnly = false,
-            EnablePersonalBests = true,
-            EnableGridOutputAfterReadAll = false,
-            NotifyPossibleNewGalacticRecords = true,
-            NotifyMatchedGalacticRecords = true,
-            NotifyVisitedGalacticRecords = true,
-            NotifyNearGalacticRecords = false,
-            NotifyNewPersonalBests = true,
-            NotifyNewCodexEntries = false,
-            NotifyTallies = false,
-            NotifySilentFallback = true,
-            EnableEarthMassesRecord = true,
-            EnablePlanetaryRadiusRecord = true,
-            EnableSurfaceGravityRecord = true,
-            EnableSurfacePressureRecord = true,
-            EnableSurfaceTemperatureRecord = true,
-            EnableOrbitalEccentricityRecord = true,
-            EnableOrbitalPeriodRecord = true,
-            EnableRotationalPeriodRecord = true,
-            EnableSolarMassesRecord = true,
-            EnableSolarRadiusRecord = true,
-            EnableRingOuterRadiusRecord = true,
-            EnableRingWidthRecord = true,
-            EnableRingMassRecord = true,
-            EnableRingDensityRecord = true,
-            EnableOdysseySurfaceBioRecord = true,
-            EnableElwSimilarityRecords = true,
-            EnableSystemBodyCountRecords = true,
-            EnableRegionCodexCountRecords = false,
-            EnableVisitedRegionRecords = true,
-            EnableUndiscoveredSystemCountRecord = true,
-        };
-
         public const string DEFAULT_PROCGEN_HANDLING = "Ignore ProcGen records";
-        
+
+        public StatScannerSettings()
+        {
+            // Defaults go here.
+            MaxNearRecordThreshold = 0;
+            MinNearRecordThreshold = 0;
+            MaxPersonalBestsPerBody = 3;
+            HighCardinalityTieSuppression = 10000;
+            ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING;
+            FirstDiscoveriesOnly = false;
+            EnablePersonalBests = true;
+            EnableGridOutputAfterReadAll = false;
+            NotifyPossibleNewGalacticRecords = true;
+            NotifyMatchedGalacticRecords = true;
+            NotifyVisitedGalacticRecords = true;
+            NotifyNearGalacticRecords = false;
+            NotifyNewPersonalBests = true;
+            NotifyNewCodexEntries = false;
+            NotifyTallies = false;
+            NotifySilentFallback = true;
+            EnableEarthMassesRecord = true;
+            EnablePlanetaryRadiusRecord = true;
+            EnableSurfaceGravityRecord = true;
+            EnableSurfacePressureRecord = true;
+            EnableSurfaceTemperatureRecord = true;
+            EnableOrbitalEccentricityRecord = true;
+            EnableOrbitalPeriodRecord = true;
+            EnableRotationalPeriodRecord = true;
+            EnableSolarMassesRecord = true;
+            EnableSolarRadiusRecord = true;
+            EnableRingOuterRadiusRecord = true;
+            EnableRingWidthRecord = true;
+            EnableRingMassRecord = true;
+            EnableRingDensityRecord = true;
+            EnableOdysseySurfaceBioRecord = true;
+            EnableElwSimilarityRecords = true;
+            EnableSystemBodyCountRecords = true;
+            EnableRegionCodexCountRecords = false;
+            EnableVisitedRegionRecords = true;
+            EnableUndiscoveredSystemCountRecord = true;
+            EnableAutoUpdates = true;
+        }
+
         public enum ProcGenHandlingMode
         {
             ProcGenIgnore,
@@ -218,6 +220,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         [SettingDisplayName("Open Wiki (settings help and more)")]
         [System.Text.Json.Serialization.JsonIgnore]
         public Action OpenStatScannerWiki { get; internal set; }
+
+        
+        [SettingNewGroup("Updates")]
+        [SettingDisplayName("Enable automatic updates")]
+        public bool EnableAutoUpdates { get; set; }
+
+        [SettingDisplayName("Enable Beta versions (warning: things may break)")]
+        public bool EnableBetaUpdates { get; set; }
 
         // Internal
         [SettingIgnore]

@@ -1,27 +1,26 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records;
+using com.github.fredjk_gh.ObservatoryStatScanner.StateManagement;
+using com.github.fredjk_gh.PluginCommon.AutoUpdates;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
+using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
-using com.github.fredjk_gh.ObservatoryStatScanner.Records;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using com.github.fredjk_gh.ObservatoryStatScanner.StateManagement;
-using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     public class StatScanner : IObservatoryWorker
     {
-        private StatScannerSettings settings = StatScannerSettings.DEFAULT;
-
+        private static Guid PLUGIN_GUID = new("398750b9-ffab-4d28-959b-3fc5648853eb");
         private const string STATE_CACHE_FILENAME = "stateCache.json";
-
-        private PluginUI pluginUI;
-        ObservableCollection<object> gridCollection = new();
-        private bool HasHeaderRows = false;
-        private StatScannerState _state = null;
-        private List<Result> _batchResults = new List<Result>();
-        private static AboutInfo _aboutInfo = new()
+        private static AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
+        private static AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner");
+        private static AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/statscanner");
+        private static AboutLink EDASTRO_RECORDS_LINK = new("edastro.com Records", "https://edastro.com/records/");
+        private static AboutInfo ABOUT_INFO = new()
         {
             FullName = "Stat Scanner",
             ShortName = "Stat Scanner",
@@ -29,16 +28,23 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             AuthorName = "fredjk-gh",
             Links = new()
             {
-                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
-                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/statscanner"),
-                new AboutLink("edastro.com Records", "https://edastro.com/records/")
+                GH_LINK,
+                GH_RELEASE_NOTES_LINK,
+                DOC_LINK,
+                EDASTRO_RECORDS_LINK,
             }
         };
 
-        public static Guid Guid => new("398750b9-ffab-4d28-959b-3fc5648853eb");
+        private StatScannerSettings settings = new();
+        private PluginUI pluginUI;
+        ObservableCollection<object> gridCollection = new();
+        private bool HasHeaderRows = false;
+        private StatScannerState _state = null;
+        private List<Result> _batchResults = new List<Result>();
 
-        public AboutInfo AboutInfo => _aboutInfo;
+
+        public static Guid Guid => PLUGIN_GUID;
+        public AboutInfo AboutInfo => ABOUT_INFO;
         public string Version => typeof(StatScanner).Assembly.GetName().Version.ToString();
         public PluginUI PluginUI => pluginUI;
 
@@ -85,11 +91,19 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             }
         }
 
+        public PluginUpdateInfo CheckForPluginUpdate()
+        {
+            AutoUpdateHelper.Init(_state.Core);
+            return AutoUpdateHelper.CheckForPluginUpdate(
+                this, GH_RELEASE_NOTES_LINK.Url, settings.EnableAutoUpdates, settings.EnableBetaUpdates);
+        }
+
         public void ObservatoryReady()
         {
             ShowPersonalBestSummary();
 
-            // TODO: Send ready message.
+            var readyMsg = GenericPluginReadyMessage.New();
+            _state.Core.SendPluginMessage(this, readyMsg.ToPluginMessage());
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -228,8 +242,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             settings.ForceUpdateGalacticRecords = ForceRefreshGalacticRecords;
             settings.OpenStatScannerWiki = OpenWikiUrl;
 
-            if (settings.HighCardinalityTieSuppression == 0) settings.HighCardinalityTieSuppression = StatScannerSettings.DEFAULT.HighCardinalityTieSuppression;
-            if (settings.ProcGenHandling == null) settings.ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING;
+            // Maybe don't need this anymore?
+            StatScannerSettings defaults = new();
+            if (settings.HighCardinalityTieSuppression == 0) settings.HighCardinalityTieSuppression = defaults.HighCardinalityTieSuppression;
+            if (settings.ProcGenHandling == null) settings.ProcGenHandling = defaults.ProcGenHandling;
         }
 
         private void MaybeAddHeaderRows()
