@@ -1,4 +1,5 @@
-﻿using com.github.fredjk_gh.PluginCommon.PluginInterop;
+﻿using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.PluginInterop;
 using Observatory.Framework.Interfaces;
 using System.Diagnostics;
 using System.Text;
@@ -10,8 +11,8 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
     internal class UIContext
     {
         private const string SELF_PLUGIN_KEY = "ObservatoryPluginAutoUpdater";
-        private List<string> _messages = new();
-        private string _latestVersionCacheFilename;
+        private readonly List<string> _messages = [];
+        private readonly string _latestVersionCacheFilename;
         private DateTime? _latestVersionsFetchedDateTime = null;
         private bool hasCheckedForUpdates = false;
 
@@ -28,7 +29,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
         public const string WIKI_URL = "https://github.com/fredjk-gh/ObservatoryPlugins/wiki";
         public const string CURRENT_RELEASES_URL = "https://raw.githubusercontent.com/fredjk-gh/ObservatoryPlugins/main/CurrentReleases.json";
         public const string LATEST_VERSION_CACHE_FILENAME = "latest_version_cache.json";
-        public string PluginFolderPath = $"{AppDomain.CurrentDomain.BaseDirectory}plugins"; // Duplicated from Core. Maybe Core should expose this?
+        public string PluginFolderPath;
 
         public UIContext(IObservatoryCore core, FredJKsPluginAutoUpdater worker)
         {
@@ -37,7 +38,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             Worker = worker;
             HttpClient = new HttpClientWrapper(Core, worker);
             PluginTracker = new PluginTracker(PluginType.fredjk_AutoUpdater);
-
+            PluginFolderPath = Core.PluginStorageFolder;
             _latestVersionCacheFilename = $"{Core.PluginStorageFolder}{LATEST_VERSION_CACHE_FILENAME}";
 
             LocalVersions = GetLocalVersions();
@@ -95,11 +96,6 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             _messages.Clear();
         }
 
-        public void OpenUrl(string url)
-        {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-        }
-
         internal DirectoryInfo GetPluginFolder()
         {
             return new DirectoryInfo(PluginFolderPath);
@@ -121,13 +117,13 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             // * Legacy plugins (ie. stat scanner) installed/updated post 1.4 (so run as .eop) but can't update themselves
             //   nor make their presence known via Ready message.
             //
-            HashSet<string> legacyInstalls = KnownPlugins.Keys.ToHashSet();
-            HashSet<string> modernInstalls = new();
-            Dictionary<string, PluginVersion> mergedLocalVersions = new();
+            HashSet<string> legacyInstalls = [.. KnownPlugins.Keys];
+            HashSet<string> modernInstalls = [];
+            Dictionary<string, PluginVersion> mergedLocalVersions = [];
 
             foreach (var p in KnownPlugins)
             {
-                if (!LocalVersions.ContainsKey(p.Key)) // We couldn't find a dll to grab a version for this plugin
+                if (!LocalVersions.TryGetValue(p.Key, out PluginVersion ver)) // We couldn't find a dll to grab a version for this plugin
                 {
                     // Either this plugin is not installed at all, or...
                     legacyInstalls.Remove(p.Key);
@@ -157,7 +153,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 }
                 else
                 {
-                    mergedLocalVersions.Add(p.Key, LocalVersions[p.Key]);
+                    mergedLocalVersions.Add(p.Key, ver);
                 }
             }
 
@@ -181,20 +177,23 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 string extendedDetail = $"The expected plugins folder '{PluginFolderPath}' does not exist. This is most unexpected.";
                 AddMessage($"Configuration problem: Plugin folder does not exist or not found!");
                 AddMessage(extendedDetail);
-                Core.GetPluginErrorLogger(Worker)(new ArgumentNullException("PluginFolder", extendedDetail), "> Loading plugin");
+                Core.GetPluginErrorLogger(Worker)(new NullReferenceException(extendedDetail), "> Loading plugin");
                 return false;
             }
 
             // Grab the file listing the latest versions from Github.
-            if (!_latestVersionsFetchedDateTime.HasValue || _latestVersionsFetchedDateTime.Value.AddHours(2) < DateTime.Now)
+            var skipCacheAgeCheck = false;
+#if DEBUG
+            skipCacheAgeCheck = true;
+#endif
+            if (skipCacheAgeCheck || !_latestVersionsFetchedDateTime.HasValue || _latestVersionsFetchedDateTime.Value.AddHours(2) < DateTime.Now)
             {
                 try
                 {
                     LatestVersions = HttpClient.GetLatestVersions(UIContext.CURRENT_RELEASES_URL);
 
                     // Cache results.
-                    string jsonString = JsonSerializer.Serialize(LatestVersions,
-                        new JsonSerializerOptions() { AllowTrailingCommas = true, WriteIndented = true });
+                    string jsonString = JsonSerializer.Serialize(LatestVersions, JsonHelper.PRETTY_PRINT_OPTIONS);
                     File.WriteAllText(_latestVersionCacheFilename, jsonString);
                     _latestVersionsFetchedDateTime = DateTime.Now;
                 }
@@ -202,9 +201,15 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 {
                     AddMessage("Unable to download latest version information from GitHub. Nothing to do.");
                     Core.GetPluginErrorLogger(Worker)(
-                        new ArgumentNullException("LatestVersions", "Unable to download latest version information from GitHub."), " > Fetching LatestVersions");
+                        new InvalidDataException("Unable to download latest version information from GitHub.", ex), " > Fetching LatestVersions");
                     return false;
                 }
+            }
+
+            if (LatestVersions.Count == 0)
+            {
+                AddMessage($"Latest versions file is empty. Failed fetch? Aborting check.");
+                return false;
             }
 
             int updateCount = 0;
@@ -214,16 +219,10 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             {
                 if (!LatestVersions.ContainsKey(p))
                 {
-                    if (LatestVersions.Count > 0)
-                    {
-                        string localVersion = mergedLocalVersions.ContainsKey(p) ? LocalVersions[p].Production.Version : "";
-                        AddMessage($"Known plugin {p} was not found in latest versions file!");
-                        UI.UpdatePluginState(p, localVersion, "Latest version unavailable", null, PluginAction.None);
-                    }
-                    else
-                    {
-                        AddMessage($"Latest versions file is empty. Failed fetch?");
-                    }
+                    string localVersion = mergedLocalVersions.ContainsKey(p) ? LocalVersions[p].Production.Version : "";
+                    AddMessage($"Known plugin {p} was not found in latest versions file!");
+                    UI.UpdatePluginState(p, localVersion, "Latest version unavailable", null, PluginAction.None);
+
                     skippedCount++;
                     continue;
                 }
@@ -344,43 +343,40 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
             if (!dirInfo.Exists)
             {
-                return new();
+                return [];
             }
 
-            Dictionary<string, PluginVersion> versions = new();
+            Dictionary<string, PluginVersion> versions = [];
             foreach (var plugin in dirInfo.GetFiles("*.dll"))
             {
                 var pluginName = plugin.Name.Replace(".dll", "");
                 if (!KnownPlugins.ContainsKey(pluginName)) continue;
 
                 var fv = FileVersionInfo.GetVersionInfo(plugin.FullName);
-                PluginVersion ver = new PluginVersion();
-                ver.PluginName = pluginName;
-                ver.Production = new() { Version = fv.FileVersion ?? "" };
-                // Don't know if this is production or beta version; set both.
-                ver.Beta = new() { Version = fv.FileVersion ?? "" };
+                PluginVersion ver = new()
+                {
+                    PluginName = pluginName,
+                    Production = new() { Version = fv.FileVersion ?? "" },
+                    // Don't know if this is production or beta version; set both.
+                    Beta = new() { Version = fv.FileVersion ?? "" }
+                };
                 versions.Add(pluginName, ver);
             }
             return versions;
         }
-
+        
 
         private Dictionary<string, PluginVersion> LoadCachedLatestVersions()
         {
-            Dictionary<string, PluginVersion> versions = new();
+            Dictionary<string, PluginVersion> versions = [];
 
             if (!File.Exists(_latestVersionCacheFilename)) return versions;
 
             try
             {
                 string jsonString = File.ReadAllText(_latestVersionCacheFilename);
-                var options = new JsonSerializerOptions()
-                {
-                    AllowTrailingCommas = true,
-                };
-                versions = JsonSerializer.Deserialize<Dictionary<string, PluginVersion>>(jsonString, options)!;
-
-                FileInfo fileInfo = new FileInfo(_latestVersionCacheFilename);
+                versions = JsonSerializer.Deserialize<Dictionary<string, PluginVersion>>(jsonString, JsonHelper.PRETTY_PRINT_OPTIONS)!;
+                FileInfo fileInfo = new(_latestVersionCacheFilename);
                 _latestVersionsFetchedDateTime = fileInfo.LastWriteTime;
             }
             catch (Exception ex)

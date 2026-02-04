@@ -1,25 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
+﻿namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 {
     internal class PluginUpdaterPanel : Panel
     {
-        private UIContext _context;
+        private readonly UIContext _uic;
         public PluginUpdaterPanel(UIContext context)
         {
-            _context = context;
+            _uic = context;
 
             DoubleBuffered = true;
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             AutoScroll = true;
 
-            this.Controls.Add(_context.UI);
+            this.Controls.Add(_uic.UI);
 
-            _context.UI.Dock = DockStyle.Fill;
+            _uic.UI.Dock = DockStyle.Fill;
         }
     }
 }

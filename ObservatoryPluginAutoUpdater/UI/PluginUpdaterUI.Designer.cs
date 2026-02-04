@@ -107,7 +107,7 @@
             llblGitHubWiki.TabIndex = 0;
             llblGitHubWiki.TabStop = true;
             llblGitHubWiki.Text = "Open GitHub Wiki";
-            llblGitHubWiki.LinkClicked += llblGitHubWiki_LinkClicked;
+            llblGitHubWiki.LinkClicked += LlblGitHubWiki_LinkClicked;
             // 
             // lblMessages
             // 

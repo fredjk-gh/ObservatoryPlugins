@@ -1,10 +1,5 @@
 ﻿using com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 [assembly: InternalsVisibleTo("ObservatoryPlugins.Tests")]
 namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
@@ -17,7 +12,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
 
         public static VersionPair SelectVersion(PluginVersion local, PluginVersion latest, bool allowBeta, string coreVersionStr)
         {
-            List<VersionPair> availableVersions = new();
+            List<VersionPair> availableVersions = [];
             if (allowBeta && latest.Beta != null && latest.Beta?.Version != VersionDetail.NO_VERSION)
             {
                 availableVersions.Add(new()
@@ -64,7 +59,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
     internal class VersionDetail
     {
         internal const string NO_VERSION = "0.0.0.0";
-        internal static readonly int[] NO_VERSION_PARSED = new int[] { 0, 0, 0, 0 };
+        internal static readonly int[] NO_VERSION_PARSED = [0, 0, 0, 0];
         private string _version = NO_VERSION;
         private string _downloadUrl = "";
 

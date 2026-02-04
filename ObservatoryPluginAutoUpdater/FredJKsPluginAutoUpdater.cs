@@ -3,12 +3,9 @@ using com.github.fredjk_gh.PluginCommon.AutoUpdates;
 using com.github.fredjk_gh.PluginCommon.PluginInterop;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Marshalers;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
-using Microsoft.VisualBasic;
 using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
-using System;
-using System.Diagnostics;
 using static com.github.fredjk_gh.PluginCommon.PluginInterop.PluginTracker;
 
 
@@ -16,22 +13,22 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
 {
     public class FredJKsPluginAutoUpdater : IObservatoryWorker
     {
-        private static Guid PLUGIN_GUID = new("a4a03c40-561f-4de9-878a-8ffd0285c17d");
-        private static AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
-        private static AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater");
-        private static AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/fredjk-autoupdater");
-        private static AboutInfo _aboutInfo = new()
+        private static readonly Guid PLUGIN_GUID = new("a4a03c40-561f-4de9-878a-8ffd0285c17d");
+        private static readonly AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
+        private static readonly AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater");
+        private static readonly AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/fredjk-autoupdater");
+        private static readonly AboutInfo _aboutInfo = new()
         {
             FullName = "FredJK AutoUpdater",
             ShortName = "AutoUpdater",
             Description = "This plugin helps you install other plugins authored by fredjk-gh and keep them up-to-date after installation.",
             AuthorName = "fredjk-gh",
-            Links = new()
-            {
+            Links =
+            [
                 GH_LINK,
                 GH_RELEASE_NOTES_LINK,
                 DOC_LINK,
-            }
+            ]
         };
 
         private AutoUpdaterSettings _settings = new();
@@ -96,13 +93,12 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater
 
             if (w.Type != "LegacyPluginMessage")
             {
-                PluginMessageWrapper unMarshaled;
-                if (!PluginMessageUnmarshaler.TryUnmarshal(w, out unMarshaled)) return;
+                if (!PluginMessageUnmarshaler.TryUnmarshal(w, out PluginMessageWrapper unMarshaled)) return;
 
                 switch (unMarshaled)
                 {
                     case GenericPluginReadyMessage readyMsg:
-                        var pluginType = PluginTracker.PluginTypeByGuid.GetValueOrDefault(readyMsg.Sender.Guid, PluginType.Unknown);
+                        var pluginType = PluginConstants.PluginTypeByGuid.GetValueOrDefault(readyMsg.Sender.Guid, PluginType.Unknown);
                         _context.PluginTracker.MarkActive(pluginType, new(readyMsg.Sender.Version));
                         break;
                 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using com.github.fredjk_gh.PluginCommon.Utilities;
+using System;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -33,8 +34,8 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
         private const string COL_ACTION = "Action";
 
         private readonly UIContext _context;
-        private readonly Dictionary<string, PluginRowUI> _pluginUI = new();
-        private readonly BindingList<PluginRowUI> _rows = new();
+        private readonly Dictionary<string, PluginRowUI> _pluginUI = [];
+        private readonly BindingList<PluginRowUI> _rows = [];
 
         public PluginUpdaterUI(UIContext context)
         {
@@ -43,13 +44,13 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             _context = context;
             _context.Settings.PropertyChanged += Settings_PropertyChanged;
 
-            // From: https://stackoverflow.com/questions/3339300/net-tablelayoutpanel-clearing-controls-is-very-slow
+            // Source: https://stackoverflow.com/questions/3339300/net-tablelayoutpanel-clearing-controls-is-very-slow
             typeof(TableLayoutPanel)
                 .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
                 .SetValue(tblLayout, true, null);
 
             chkAllowBeta.Checked = _context.Settings.UseBeta;
-            chkAllowBeta.CheckedChanged += chkAllowBeta_CheckedChanged;
+            chkAllowBeta.CheckedChanged += ChkAllowBeta_CheckedChanged;
 
             dgvPlugins.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
             dgvPlugins.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
@@ -71,14 +72,10 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
 
             foreach (DataGridViewColumn c in dgvPlugins.Columns)
             {
-                if (ColumnHeaderText.ContainsKey(c.Name))
-                {
-                    c.HeaderText = ColumnHeaderText[c.Name];
-                }
+                if (ColumnHeaderText.TryGetValue(c.Name, out string headerText))
+                    c.HeaderText = headerText;
                 else
-                {
                     c.Visible = false;
-                }
             }
             int colIndex = dgvPlugins.Columns.Add(new DataGridViewButtonColumn()
             {
@@ -108,24 +105,14 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
                 }
                 DataGridViewButtonCell buttonCell = (DataGridViewButtonCell)row.Cells[COL_ACTION];
 
-                switch (action)
+                buttonCell.Value = action switch
                 {
-                    case PluginAction.InstallStable:
-                        buttonCell.Value = "Install Stable";
-                        break;
-                    case PluginAction.InstallBeta:
-                        buttonCell.Value = "Install Beta";
-                        break;
-                    case PluginAction.UpdateStable:
-                        buttonCell.Value = "Update Stable";
-                        break;
-                    case PluginAction.UpdateBeta:
-                        buttonCell.Value = "Update Beta";
-                        break;
-                    default:
-                        buttonCell.Value = "";
-                        break;
-                }
+                    PluginAction.InstallStable => "Install Stable",
+                    PluginAction.InstallBeta => "Install Beta",
+                    PluginAction.UpdateStable => "Update Stable",
+                    PluginAction.UpdateBeta => "Update Beta",
+                    _ => "",
+                };
                 dgvPlugins.AutoResizeColumns();
             });
         }
@@ -168,7 +155,7 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             });
         }
 
-        private void chkAllowBeta_CheckedChanged(object sender, EventArgs e)
+        private void ChkAllowBeta_CheckedChanged(object sender, EventArgs e)
         {
             _context.Settings.UseBeta = chkAllowBeta.Checked;
             _context.Core.SaveSettings(_context.Worker);
@@ -201,20 +188,16 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
 
             DataGridViewRow row = dgvPlugins.Rows[e.RowIndex];
-            DataGridViewButtonCell buttonCell = row.Cells[e.ColumnIndex] as DataGridViewButtonCell;
-
-            if (buttonCell == null) return; // Not a button cell.
-            PluginRowUI data = row.DataBoundItem as PluginRowUI;
-            if (data == null || data.PluginAction == PluginAction.None) return;
+            if (row.Cells[e.ColumnIndex] is not DataGridViewButtonCell buttonCell) return; // Not a button cell.
+            if (row.DataBoundItem is not PluginRowUI data || data.PluginAction == PluginAction.None) return;
 
             string pluginName = data.PluginName;
-            if (!_context.LatestVersions.ContainsKey(pluginName))
+            if (!_context.LatestVersions.TryGetValue(pluginName, out PluginVersion latest))
             {
                 _context.AddMessage("No applicable version found to download!");
                 return; // No info!
             }
 
-            PluginVersion latest = _context.LatestVersions[pluginName];
             VersionDetail selectedVersion = null;
 
             switch (data.PluginAction)
@@ -248,9 +231,9 @@ namespace com.github.fredjk_gh.ObservatoryPluginAutoUpdater.UI
             ShowMessages(_context.GetMessages());
         }
 
-        private void llblGitHubWiki_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void LlblGitHubWiki_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            _context.OpenUrl(UIContext.WIKI_URL);
+            Misc.OpenUrl(UIContext.WIKI_URL);
         }
     }
 }
