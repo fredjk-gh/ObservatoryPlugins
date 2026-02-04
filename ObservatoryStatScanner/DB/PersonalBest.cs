@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner.DB
 {
     public class PersonalBest
     {
         public long _id { get; set; }
-        public Records.RecordTable Table { get; set; }
+        public RecordTable Table { get; set; }
         public string Variable { get;  set; }
         public string EDAstroObjectName { get;  set; }
         public string JournalObjectName { get;  set; }

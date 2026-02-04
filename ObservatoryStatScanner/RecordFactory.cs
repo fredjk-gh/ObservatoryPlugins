@@ -1,6 +1,9 @@
-﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records;
-using com.github.fredjk_gh.ObservatoryStatScanner.Records.Body;
-using System.Diagnostics;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Body;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records.Data;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records.Region;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records.System;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
@@ -140,9 +143,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 case Constants.V_VISITED_REGIONS_COUNT:
                     typeToCreate = typeof(RegionsVisitedTally);
                     break;
-                case Constants.V_CODEX_CATEGORY_BIO_GEO:
-                case Constants.V_CODEX_CATEGORY_XENO:
-                case Constants.V_CODEX_CATEGORY_ASTRO:
+                case FDevIDs.V_CODEX_CATEGORY_BIO_GEO:
+                case FDevIDs.V_CODEX_CATEGORY_XENO:
+                case FDevIDs.V_CODEX_CATEGORY_ASTRO:
                     typeToCreate = typeof(RegionCodexCount);
                     break;
             }
@@ -151,7 +154,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             {
                 if (!recordData.IsValid) return null;
 
-                object[] args = new object[] { settings, recordKind, recordData };
+                object[] args = [settings, recordKind, recordData];
                 return (IRecord)Activator.CreateInstance(typeToCreate, args);
             }
             return null;

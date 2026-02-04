@@ -1,21 +1,17 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.System
 {
     internal class UndiscoveredSystemTally : SystemRecord
     {
-        private readonly HashSet<string> _visitedSystems = new();
+        private readonly HashSet<string> _visitedSystems = [];
 
         public UndiscoveredSystemTally(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, "Undiscovered")
         {
-            _disallowedStates = new() { LogMonitorState.PreRead };
+            _disallowedStates = [LogMonitorState.PreRead];
         }
 
         public override bool Enabled => Settings.EnableUndiscoveredSystemCountRecord;
@@ -27,17 +23,17 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            if (!Enabled) return new();
+            if (!Enabled) return [];
 
             TrackIsSystemUndiscovered(scan, currentSystem);
             if (scan.DistanceFromArrivalLS == 0 && scan.PlanetClass != Constants.SCAN_BARYCENTRE
                 && IsUndiscoveredSystem.GetValueOrDefault(currentSystem) && !_visitedSystems.Contains(currentSystem))
             {
                 _visitedSystems.Add(currentSystem);
-                var newValue = (Data.HasMax ? Data.MaxValue + 1 : 1);
+                var newValue = Data.HasMax ? Data.MaxValue + 1 : 1;
                 return CheckMax(NotificationClass.Tally, newValue, scan.TimestampDateTime, currentSystem);
             }
-            return new();
+            return [];
         }
 
         public override void Reset()

@@ -1,14 +1,11 @@
-﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Data;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
-    internal class Constants
+    internal partial class Constants
     {
         public const string STATSCANNER_WIKI_URL = "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner";
 
@@ -22,7 +19,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string GOOD_BACKUP_EXT = ".good";
 
         // CSV Files are quoted CSV format with columns:
-        public static readonly string[] ExpectedFields = new string[] {
+        public static readonly string[] ExpectedFields =
+            [
                 "Type",
                 "Variable",
                 "Max Count",
@@ -35,7 +33,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 "Standard Deviation",
                 "Count",
                 "Table"
-            };
+            ];
 
         // Field indexes
         public const int CSV_Type = 0;
@@ -55,15 +53,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         // that here for more stable comparisons (particularly when applying
         // "near record" thresholds).
         public const int EDASTRO_PRECISION = 12;
-
-        // Conversion constants (divisor or factor).
-        public const float CONV_MperS2_TO_G_DIVISOR = 9.81f;
-        public const float CONV_M_TO_SOLAR_RAD_DIVISOR = 695500000.0f;
-        public const float CONV_M_TO_KM_DIVISOR = 1000.0f;
-        public const float CONV_M_TO_LS_DIVISOR = 299792458.0f;
-        public const float CONV_S_TO_DAYS_DIVISOR = 86400.0f;
-        public const float CONV_S_TO_HOURS_DIVISOR = 3600.0f;
-        public const float CONV_PA_TO_ATM_DIVISOR = 101325.0f;
 
         // Variable names from the edastro CSV.
         public const string V_SOLAR_MASSES = "solarMasses";
@@ -94,9 +83,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string V_SYS_UNDISCOVERED_COUNT = "sysUndiscoveredCount";
 
         public const string V_VISITED_REGIONS_COUNT = "regionsVisitedCount";
-        public const string V_CODEX_CATEGORY_BIO_GEO = "regionCodexBiologicalGeological";
-        public const string V_CODEX_CATEGORY_XENO = "regionCodexXenological";
-        public const string V_CODEX_CATEGORY_ASTRO = "regionCodexAstronomicalBodies";
 
         // Some of the object class names from the list below. These are used
         // in multiple places so are pulled into constants to avoid duplication/drift.
@@ -195,61 +181,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         };
 
         public const string REGION_DEFAULT = "Inner Orion Spur";
-        public static readonly Dictionary<string, string> RegionNamesByJournalId = new()
-        {
-            { "$Codex_RegionName_1;", "Galactic Centre" },
-            { "$Codex_RegionName_2;", "Empyrean Straits" },
-            { "$Codex_RegionName_3;", "Ryker's Hope" },
-            { "$Codex_RegionName_4;", "Odin's Hold" },
-            { "$Codex_RegionName_5;", "Norma Arm" },
-            { "$Codex_RegionName_6;", "Arcadian Stream" },
-            { "$Codex_RegionName_7;", "Izanami" },
-            { "$Codex_RegionName_8;", "Inner Orion-Perseus Conflux" },
-            { "$Codex_RegionName_9;", "Inner Scutum-Centaurus Arm" },
-            { "$Codex_RegionName_10;", "Norma Expanse" },
-            { "$Codex_RegionName_11;", "Trojan Belt" },
-            { "$Codex_RegionName_12;", "The Veils" },
-            { "$Codex_RegionName_13;", "Newton's Vault" },
-            { "$Codex_RegionName_14;", "The Conduit" },
-            { "$Codex_RegionName_15;", "Outer Orion-Perseus Conflux" },
-            { "$Codex_RegionName_16;", "Orion-Cygnus Arm" },
-            { "$Codex_RegionName_17;", "Temple" },
-            { "$Codex_RegionName_18;", REGION_DEFAULT },
-            { "$Codex_RegionName_19;", "Hawking's Gap" },
-            { "$Codex_RegionName_20;", "Dryman's Point" },
-            { "$Codex_RegionName_21;", "Sagittarius-Carina Arm" },
-            { "$Codex_RegionName_22;", "Mare Somnia" },
-            { "$Codex_RegionName_23;", "Acheron" },
-            { "$Codex_RegionName_24;", "Formorian Frontier" },
-            { "$Codex_RegionName_25;", "Hieronymus Delta" },
-            { "$Codex_RegionName_26;", "Outer Scutum-Centaurus Arm" },
-            { "$Codex_RegionName_27;", "Outer Arm" },
-            { "$Codex_RegionName_28;", "Aquila's Halo" },
-            { "$Codex_RegionName_29;", "Errant Marches" },
-            { "$Codex_RegionName_30;", "Perseus Arm" },
-            { "$Codex_RegionName_31;", "Formidine Rift" },
-            { "$Codex_RegionName_32;", "Vulcan Gate" },
-            { "$Codex_RegionName_33;", "Elysian Shore" },
-            { "$Codex_RegionName_34;", "Sanguineous Rim" },
-            { "$Codex_RegionName_35;", "Outer Orion Spur" },
-            { "$Codex_RegionName_36;", "Achilles's Altar" },
-            { "$Codex_RegionName_37;", "Xibalba" },
-            { "$Codex_RegionName_38;", "Lyra's Song" },
-            { "$Codex_RegionName_39;", "Tenebrae" },
-            { "$Codex_RegionName_40;", "The Abyss" },
-            { "$Codex_RegionName_41;", "Kepler's Crest" },
-            { "$Codex_RegionName_42;", "The Void" },
-        };
-
-        public static readonly Dictionary<string, string> CodexCategoriesByJournalId = new()
-        {
-            { "$Codex_Category_Biology;", V_CODEX_CATEGORY_BIO_GEO },
-            { "$Codex_Category_Civilisations;", V_CODEX_CATEGORY_XENO },
-            { "$Codex_Category_StellarBodies;", V_CODEX_CATEGORY_ASTRO },
-        };
-
-        public const string PROCGEN_NAME_RE_STRING = @"\s+[A-Z][A-Z]-[A-Z]\s+[a-z]\d+(-\d+)?";
-        public static readonly Regex PROCGEN_NAME_RE = new(PROCGEN_NAME_RE_STRING);
 
         // Pseudo EDAstro/Journal Object type names for aggregate personal bests.
         public const string OBJECT_TYPE_REGION = "Galactic Region";
@@ -289,11 +220,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             };
 
             // Generate Codex Category per region records:
-            foreach (var regionName in RegionNamesByJournalId.Values)
+            foreach (var r in FDevIDs.RegionById.Values)
             {
-                foreach (var codexCategory in CodexCategoriesByJournalId.Values)
+                foreach (var codexCategory in FDevIDs.CodexCategoriesByJournalId.Values)
                 {
-                    records.Add(new(RecordTable.Codex, regionName, codexCategory));
+                    records.Add(new(RecordTable.Codex, r.Name, codexCategory));
                 }
             }
 
@@ -329,11 +260,5 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string UI_FIRST_VISIT = "First visit";
         public const string UI_ALREADY_DISCOVERED = "Discovered";
         public const string UI_DISCOVERY_STATE_ANY = "Any";
-
-        public const int HEADER_COALESCING_ID = Int32.MinValue;
-        public const int SUMMARY_COALESCING_ID = -11;
-        public const int STATS_COALESCING_ID = -10;
-        public const int REGION_COALESCING_ID = -2;
-        public const int SYSTEM_COALESCING_ID = -1;
     }
 }

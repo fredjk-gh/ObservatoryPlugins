@@ -1,18 +1,12 @@
 ﻿using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
 {
     internal class CommanderCache
     {
+        private readonly Dictionary<int, Scan> _scans = [];
         private string _currentSystem = "";
-        private Dictionary<int, Scan> _scans = new();
 
         public string FID { get; set; }
         public string Name { get; set; }

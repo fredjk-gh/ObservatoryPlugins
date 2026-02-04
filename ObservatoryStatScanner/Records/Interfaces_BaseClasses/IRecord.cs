@@ -1,7 +1,7 @@
 ﻿using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses
 {
     public enum RecordTable
     {

@@ -1,18 +1,11 @@
-﻿using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using Observatory.Framework.Files.Journal;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
 {
-    internal class RingMassRecord : BodyRecord
+    internal class RingMassRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+        : BodyRecord(settings, recordKind, data, "Ring Mass")
     {
-        public RingMassRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Ring Mass")
-        { }
-
         public override bool Enabled => Settings.EnableRingMassRecord;
 
         public override string ValueFormat { get => "{0:n0}"; }
@@ -20,7 +13,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            List<Result> results = new();
+            List<Result> results = [];
 
             if (!Enabled || scan.Rings?.Count == 0)
                 return results;

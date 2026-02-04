@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+﻿namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses
 {
     public class IRecordData
     {
@@ -14,7 +7,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         public virtual string Variable { get; protected set; }
         public virtual string EDAstroObjectName { get; protected set; }
         public virtual string JournalObjectName { get; protected set; }
-        public bool IsValid { get => (Table != RecordTable.Unknown && JournalObjectName != null); }
+        public bool IsValid { get => Table != RecordTable.Unknown && JournalObjectName != null; }
 
         public virtual bool IsMutable { get => false; }
 
@@ -54,7 +47,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public void SetOrUpdateMax(string maxHolder, double maxValue, DateTime recordDateTime, int maxCount = 1, string extraData = "")
         {
-            if (!IsMutable || (HasMax && maxValue < MaxValue)) return;
+            if (!IsMutable || HasMax && maxValue < MaxValue) return;
             if (maxValue == MaxValue)  // It's a tie, increment the counter.
             {
                 MaxCount += maxCount;
@@ -71,7 +64,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public void SetOrUpdateMin(string minHolder, double minValue, DateTime recordDateTime, int minCount = 1, string extraData = "")
         {
-            if (!IsMutable || (HasMin && minValue > MinValue)) return;
+            if (!IsMutable || HasMin && minValue > MinValue) return;
             if (minValue == MinValue)  // It's a tie, increment the counter.
             {
                 MinCount += minCount;
@@ -88,8 +81,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public static RecordTable RecordTableFromString(string str)
         {
-            RecordTable table;
-            if (Enum.TryParse(str, true, out table)) return table;
+            if (Enum.TryParse(str, true, out RecordTable table)) return table;
 
             // Debug.WriteLine("Unknown table value found in galactic records csv file: " + str);
             return RecordTable.Unknown;

@@ -1,18 +1,11 @@
-﻿using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using Observatory.Framework.Files.Journal;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.System
 {
-    internal class SystemBodyCountRecord : SystemRecord
+    internal class SystemBodyCountRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+        : SystemRecord(settings, recordKind, data, "Bodies")
     {
-        public SystemBodyCountRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Bodies")
-        { }
-
         public override bool Enabled => Settings.EnableSystemBodyCountRecords;
 
         public override string ValueFormat { get => "{0}"; }
@@ -20,18 +13,18 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
-            if (!Enabled) return new();
+            if (!Enabled) return [];
 
             return CheckMax(NotificationClass.PersonalBest, allBodiesFound.Count, allBodiesFound.TimestampDateTime, allBodiesFound.SystemName);
         }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            if (!Enabled) return new();
+            if (!Enabled) return [];
 
             TrackIsSystemUndiscovered(scan, currentSystem);
 
-            return new();
+            return [];
         }
     }
 }

@@ -1,20 +1,13 @@
-﻿using Observatory.Framework.Files.Journal;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.System
 {
-    internal class SystemOdysseyBiosRecord : SystemRecord, IRecord
+    internal class SystemOdysseyBiosRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+        : SystemRecord(settings, recordKind, data, "Odyssey Bios"), IRecord
     {
-        private readonly Dictionary<string, int> BodyBioSignals = new();
-
-        public SystemOdysseyBiosRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Odyssey Bios")
-        { }
+        private readonly Dictionary<string, int> BodyBioSignals = [];
 
         public override bool Enabled => Settings.EnableOdysseySurfaceBioRecord;
 
@@ -24,7 +17,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
-            if (!Enabled) return new();
+            if (!Enabled) return [];
 
             int systemBioCount = 0;
             foreach (var bodyName in BodyBioSignals.Keys)
@@ -41,9 +34,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
         {
-            if (!Enabled || !isOdyssey) return new();
+            if (!Enabled || !isOdyssey) return [];
 
-            List<Signal> bodiesWithBioSignals = bodySignals.Signals.Where(s => s.Type == Constants.FSS_BODY_SIGNAL_BIOLOGICAL).ToList();
+            List<Signal> bodiesWithBioSignals = [.. bodySignals.Signals.Where(s => s.Type == Constants.FSS_BODY_SIGNAL_BIOLOGICAL)];
             if (bodiesWithBioSignals.Count == 1)
             {
                 Signal bioSignal = bodiesWithBioSignals.First();
@@ -51,12 +44,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     BodyBioSignals[bodySignals.BodyName] = bioSignal.Count;
             }
 
-            return new();
+            return [];
         }
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            if (!Enabled) return new();
+            if (!Enabled) return [];
 
             TrackIsSystemUndiscovered(scan, currentSystem);
 
@@ -69,7 +62,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                 BodyBioSignals.Remove(scan.BodyName);
             }
 
-            return new();
+            return [];
         }
     }
 }

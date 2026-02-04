@@ -1,10 +1,6 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
 {
@@ -12,12 +8,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
     {
         // This is reset on every app restart -- so this value can drift after a while if you somehow re-scan bodies you've
         // seen before. Note that this also suppresses the duplicate you get if you FSS and DSS in the same session.
-        private HashSet<string> _alreadySeen = new();
+        private readonly HashSet<string> _alreadySeen = [];
 
         public BodyTypeTally(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
             : base(settings, recordKind, data, "Scanned")
         {
-            _disallowedStates = new() { LogMonitorState.PreRead };
+            _disallowedStates = [LogMonitorState.PreRead];
         }
 
         public override bool Enabled => Settings.EnablePersonalBests;
@@ -28,14 +24,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            if (_alreadySeen.Contains(scan.BodyName)) return new();
+            if (_alreadySeen.Contains(scan.BodyName)) return [];
             _alreadySeen.Add(scan.BodyName);
 
             var newValue = (Data.HasMax ? Data.MaxValue + 1 : 1);
 
             CheckMax(newValue, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
 
-            return new(); // Don't emit these to the grid -- cuz they're too verbose. Summary only.
+            return []; // Don't emit these to the grid -- cuz they're too verbose. Summary only.
         }
 
         public override void Reset()

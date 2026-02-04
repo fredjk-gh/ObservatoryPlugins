@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace com.github.fredjk_gh.ObservatoryStatScanner
+﻿namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     enum NotificationClass
     {
@@ -18,18 +12,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         Tally,
     }
 
-    internal class Result
+    internal class Result(NotificationClass notificationClass, StatScannerGrid item, int coalescingId)
     {
-        public Result(NotificationClass notificationClass, StatScannerGrid item, int coalescingId)
-        {
-            NotificationClass = notificationClass;
-            ResultItem = item;
-            CoalescingID = coalescingId;
-        }
-
-        public NotificationClass NotificationClass { get; }
-        public int CoalescingID { get; }
-        public StatScannerGrid ResultItem { get; }
+        public NotificationClass NotificationClass { get; } = notificationClass;
+        public int CoalescingID { get; } = coalescingId;
+        public StatScannerGrid ResultItem { get; } = item;
 
     }
 }

@@ -1,15 +1,17 @@
 ﻿using Observatory.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     class StatScannerSettings
     {
         public const string DEFAULT_PROCGEN_HANDLING = "Ignore ProcGen records";
+
+        private static readonly Dictionary<string, object> PG_HANDLING_VALUES = new()
+            {
+                {DEFAULT_PROCGEN_HANDLING, ProcGenHandlingMode.ProcGenIgnore},
+                {"Use both ProcGen + Galactic records", ProcGenHandlingMode.ProcGenPlusGalactic},
+                {"Only show ProcGen records (+ visited Galactic records)", ProcGenHandlingMode.ProcGenOnly}
+            };
 
         public StatScannerSettings()
         {
@@ -67,12 +69,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         [SettingBackingValue("ProcGenHandling")]
         public Dictionary<string, object> ProcGenHandlingOptions
         {
-            get => new()
-            {
-                {DEFAULT_PROCGEN_HANDLING, ProcGenHandlingMode.ProcGenIgnore},
-                {"Use both ProcGen + Galactic records", ProcGenHandlingMode.ProcGenPlusGalactic},
-                {"Only show ProcGen records (+ visited Galactic records)", ProcGenHandlingMode.ProcGenOnly}
-            };
+            get => PG_HANDLING_VALUES;
         }
 
         [SettingIgnore]

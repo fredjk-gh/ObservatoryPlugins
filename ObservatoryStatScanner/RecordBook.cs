@@ -1,11 +1,5 @@
 ﻿using com.github.fredjk_gh.ObservatoryStatScanner.DB;
-using com.github.fredjk_gh.ObservatoryStatScanner.Records;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
@@ -14,20 +8,20 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         // Root key: RecordTable (one of: stars, planets, rings, systems)
         // Leaf key: Journal-based object name (eg. "M_RedSuperGiant" or "Ammonia world" or "eRingClass_Metalic")
         // Values: List of IRecords which apply to the object type.
-        private Dictionary<Records.RecordTable, Dictionary<string, List<Records.IRecord>>> RecordsByTable = new();
+        private readonly Dictionary<RecordTable, Dictionary<string, List<IRecord>>> RecordsByTable = [];
 
-        private PersonalBestManager manager;
+        private readonly PersonalBestManager _manager;
 
         public RecordBook(PersonalBestManager manager)
         {
-            this.manager = manager;
+            _manager = manager;
 
-            RecordsByTable.Add(RecordTable.Stars, new());
-            RecordsByTable.Add(RecordTable.Planets, new());
-            RecordsByTable.Add(RecordTable.Rings, new());
-            RecordsByTable.Add(RecordTable.Systems, new());
-            RecordsByTable.Add(RecordTable.Regions, new());
-            RecordsByTable.Add(RecordTable.Codex, new());
+            RecordsByTable.Add(RecordTable.Stars, []);
+            RecordsByTable.Add(RecordTable.Planets, []);
+            RecordsByTable.Add(RecordTable.Rings, []);
+            RecordsByTable.Add(RecordTable.Systems, []);
+            RecordsByTable.Add(RecordTable.Regions, []);
+            RecordsByTable.Add(RecordTable.Codex, []);
         }
 
         public void AddRecord(IRecord record)
@@ -35,7 +29,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             var recordsForTable = RecordsByTable[record.Table];
 
             if (!recordsForTable.ContainsKey(record.JournalObjectName))
-                recordsForTable.Add(record.JournalObjectName, new());
+                recordsForTable.Add(record.JournalObjectName, []);
 
             var recordsForJournalObject = recordsForTable[record.JournalObjectName];
 
@@ -43,20 +37,20 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
             if (record.RecordKind == RecordKind.Personal)
             {
-                record.MaybeInitForPersonalBest(manager);
+                record.MaybeInitForPersonalBest(_manager);
             }
         }
 
         public List<IRecord> GetRecords(RecordTable table, string journalObjectName)
         {
-            if (RecordsByTable[table].ContainsKey(journalObjectName))
-                return RecordsByTable[table][journalObjectName];
-            return new();
+            if (RecordsByTable[table].TryGetValue(journalObjectName, out List<IRecord> records))
+                return records;
+            return [];
         }
 
         public List<IRecord> GetPersonalBests()
         {
-            List<IRecord> personalBests = new();
+            List<IRecord> personalBests = [];
             foreach (var rt in RecordsByTable.Keys)
             {
                 foreach (var objName in RecordsByTable[rt].Keys)
@@ -72,7 +66,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         public List<IRecord> GetPersonalBests(RecordTable rt)
         {
-            List<IRecord> personalBests = new();
+            List<IRecord> personalBests = [];
             foreach (var objName in RecordsByTable[rt].Keys)
             {
                 foreach (var r in RecordsByTable[rt][objName])
@@ -95,7 +89,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     }
                 }
             }
-            manager.Clear();
+            _manager.Clear();
         }
 
         public int Count
@@ -110,7 +104,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         public int CountByKind(RecordKind kind)
         {
-            return RecordsByTable.Values.Sum(leafDict => leafDict.Values.Sum(list => list.Where(r => r.RecordKind == kind).Count()));
+            return RecordsByTable.Values
+                .Sum<Dictionary<string, List<IRecord>>>(leafDict => leafDict.Values.Sum<List<IRecord>>(list => list.Count<IRecord>(r => r.RecordKind == kind)));
         }
     }
 }

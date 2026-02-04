@@ -1,14 +1,7 @@
-﻿using Observatory.Framework.Files.Journal;
+﻿using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Principal;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
 {
@@ -18,18 +11,18 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
         public static readonly BodyData EARTH = new()
         {
             Name = "Earth",
-            GravityG = 9.797759f / Constants.CONV_MperS2_TO_G_DIVISOR,
+            GravityG = Conversions.Mpers2ToG(9.797759f),
             SurfaceTempK = 288.0f,
-            PressureAtm = 101231.656250f / Constants.CONV_PA_TO_ATM_DIVISOR,
+            PressureAtm = Conversions.PaToAtm(101231.656250f),
             AtmosphereComposition = new()
             {
                 { "Nitrogen", 77.886406f },
                 { "Oxygen", 20.892998f },
                 { "Argon", 0.931637f },
             },
-            OrbitalPeriodDays = 31558150.649071f / Constants.CONV_S_TO_DAYS_DIVISOR,
-            RotationalPeriodDays = 86164.106590f / Constants.CONV_S_TO_DAYS_DIVISOR,
-            AxialTiltDegrees = 0.401426f * 180.0f / (float)Math.PI,
+            OrbitalPeriodDays = Conversions.SecondsToDays(31558150.649071f),
+            RotationalPeriodDays = Conversions.SecondsToDays(86164.106590f),
+            AxialTiltDegrees = Conversions.RadToDegrees(0.401426f),
             Eccentricity = 0.016700f,
             TidalLock = false,
             IsTerraformed = false,
@@ -43,18 +36,18 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
         public static readonly BodyData MARS = new()
         {
             Name = "Mars",
-            GravityG = 3.697488f / Constants.CONV_MperS2_TO_G_DIVISOR,
+            GravityG = Conversions.Mpers2ToG(3.697488f),
             SurfaceTempK = 260.811890f,
-            PressureAtm = 233391.062500f / Constants.CONV_PA_TO_ATM_DIVISOR,
+            PressureAtm = Conversions.PaToAtm(233391.062500f),
             AtmosphereComposition = new()
             {
                 { "Nitrogen", 91.169930f },
                 { "Oxygen", 8.682851f },
                 { "Water", 0.095125f },
             },
-            OrbitalPeriodDays = 59354294.538498f / Constants.CONV_S_TO_DAYS_DIVISOR,
-            RotationalPeriodDays = 88642.690263f / Constants.CONV_S_TO_DAYS_DIVISOR,
-            AxialTiltDegrees = 0.439648f * 180.0f / (float)Math.PI,
+            OrbitalPeriodDays = Conversions.SecondsToDays(59354294.538498f),
+            RotationalPeriodDays = Conversions.SecondsToDays(88642.690263f),
+            AxialTiltDegrees = Conversions.RadToDegrees(0.439648f),
             Eccentricity = 0.093400f,
             TidalLock = false,
             IsTerraformed = true,
@@ -71,16 +64,16 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
         public BodyData(Scan elwScan, Dictionary<int, Scan> allScans)
         {
             Name = elwScan.BodyName;
-            GravityG = elwScan.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
+            GravityG = Conversions.Mpers2ToG(elwScan.SurfaceGravity);
             SurfaceTempK = elwScan.SurfaceTemperature;
-            PressureAtm = elwScan.SurfacePressure / Constants.CONV_PA_TO_ATM_DIVISOR;
+            PressureAtm = Conversions.PaToAtm(elwScan.SurfacePressure);
             AtmosphereComposition = elwScan.AtmosphereComposition.ToDictionary(s => s.Name, s => s.Percent);
-            OrbitalPeriodDays = elwScan.OrbitalPeriod / Constants.CONV_S_TO_DAYS_DIVISOR;
-            RotationalPeriodDays = elwScan.RotationPeriod / Constants.CONV_S_TO_DAYS_DIVISOR;
-            AxialTiltDegrees = elwScan.AxialTilt * 180.0f / (float)Math.PI;
+            OrbitalPeriodDays = Conversions.SecondsToDays(elwScan.OrbitalPeriod);
+            RotationalPeriodDays = Conversions.SecondsToDays(elwScan.RotationPeriod);
+            AxialTiltDegrees = Conversions.RadToDegrees(elwScan.AxialTilt);
             Eccentricity = elwScan.Eccentricity;
             TidalLock = elwScan.TidalLock;
-            IsTerraformed = "terraformed".Equals(elwScan.TerraformState, StringComparison.OrdinalIgnoreCase);
+            IsTerraformed = JournalConstants.IsTerraformed(elwScan.TerraformState);
             IsMoon = elwScan.Parent.Any(p => p.ParentType == ParentType.Planet);
             IsBinary = elwScan.Parent[0].ParentType == ParentType.Null;
             StarCount = allScans.Values.Count(s => !string.IsNullOrWhiteSpace(s.StarType));
@@ -129,7 +122,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
             score += WeightedScore(other.PressureAtm, PressureAtm, 1, 2);
             foreach (var material in other.AtmosphereComposition)
             {
-                if (AtmosphereComposition.ContainsKey(material.Key) && AtmosphereComposition[material.Key] > 0)
+                if (AtmosphereComposition.TryGetValue(material.Key, out float materialPct) && materialPct > 0)
                 {
                     if (material.Key == "Oxygen") // Different weights for Oxygen.
                         score += WeightedScore(other.PressureAtm * material.Value, PressureAtm * AtmosphereComposition[material.Key], 3, 5);
@@ -155,7 +148,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
             // We may have 0 stars, moons or gas giants; offset by 1 to avoid dividing by 0.
             // TODO: Consider star type, # of *parent* stars, apparent brightness.
             score += WeightedScore(other.StarCount + 1, StarCount + 1, 2, 2); // Equal weight for different star count in either direction (for now).
-            score += WeightedScore(other.MoonCount + 1, MoonCount + 1, 2, 4); // no moon => no tide; More moons, not so bad? No moon mitigated if binary?
+            // TODO: not counting moon because the CC currently doesn't
+            //score += WeightedScore(other.MoonCount + 1, MoonCount + 1, 2, 4); // no moon => no tide; More moons, not so bad? No moon mitigated if binary?
             //score += WeightedScore(other.GGCount + 1, GGCount + 1, 5, 6); // Less GGs => slightly higher chance for asteroids?
             return score;
         }

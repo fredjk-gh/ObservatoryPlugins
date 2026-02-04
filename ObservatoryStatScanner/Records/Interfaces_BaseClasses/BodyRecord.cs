@@ -1,35 +1,25 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses
 {
-    internal abstract class BodyRecord : IRecord
+    internal abstract class BodyRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData csvData, string displayName)
+        : IRecord
     {
-        protected StatScannerSettings Settings;
-        protected IRecordData Data;
-        protected List<LogMonitorState> _disallowedStates = new();
-
-        protected BodyRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData csvData, string displayName)
-        {
-            Settings = settings;
-            RecordKind = recordKind;
-            Data = csvData;
-            DisplayName = displayName;
-        }
+        protected StatScannerSettings Settings = settings;
+        protected IRecordData Data = csvData;
+        protected List<LogMonitorState> _disallowedStates = [];
 
         public abstract bool Enabled { get; }
 
         public RecordTable Table { get => Data.Table; }
-        public RecordKind RecordKind { get; }
+        public RecordKind RecordKind { get; } = recordKind;
         public List<LogMonitorState> DisallowedLogMonitorStates => _disallowedStates;
 
         public string VariableName { get => Data.Variable; }
-        public string DisplayName { get; }
+        public string DisplayName { get; } = displayName;
         public string JournalObjectName { get => Data.JournalObjectName; }
         public string EDAstroObjectName { get => Data.EDAstroObjectName; }
         public virtual string ValueFormat { get => "{0:0.0000##}"; }
@@ -37,33 +27,33 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public bool HasMax => Data.HasMax;
         public long MaxCount { get => Data.MaxCount; }
-        public double MaxValue { get => (Settings.DevMode ? Data.MaxValue * Settings.DevModeMaxScaleFactor : Data.MaxValue); }
+        public double MaxValue { get => Settings.DevMode ? Data.MaxValue * Settings.DevModeMaxScaleFactor : Data.MaxValue; }
         public string MaxHolder { get => Data.MaxHolder; }
         public DateTime MaxRecordDateTime => Data.MaxRecordDateTime;
         public virtual Function MaxFunction { get => Function.Maximum; }
 
         public bool HasMin => Data.HasMin;
         public long MinCount { get => Data.MinCount; }
-        public double MinValue { get => (Settings.DevMode ? Data.MinValue * Settings.DevModeMinScaleFactor : Data.MinValue); }
+        public double MinValue { get => Settings.DevMode ? Data.MinValue * Settings.DevModeMinScaleFactor : Data.MinValue; }
         public string MinHolder { get => Data.MinHolder; }
         public DateTime MinRecordDateTime => Data.MinRecordDateTime;
         public virtual Function MinFunction { get => Function.Minimum; }
  
         public virtual List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            return new();
+            return [];
         }
         public virtual List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
         {
-            return new();
+            return [];
         }
         public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
-            return new();
+            return [];
         }
         public virtual List<Result> CheckCodexEntry(CodexEntry codexEntry)
         {
-            return new();
+            return [];
         }
         
         public void MaybeInitForPersonalBest(DB.PersonalBestManager manager)
@@ -90,14 +80,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             ObjectClass = EDAstroObjectName,
                             Variable = DisplayName,
                             Function = MaxFunction.ToString(),
-                            RecordValue = String.Format(ValueFormat, MaxValue),
+                            RecordValue = string.Format(ValueFormat, MaxValue),
                             Units = Units,
-                            RecordHolder = (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder),
+                            RecordHolder = MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder,
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
                             DiscoveryStatus = Settings.FirstDiscoveriesOnly ? Constants.UI_FIRST_DISCOVERY : Constants.UI_DISCOVERY_STATE_ANY,
                             RecordKind = RecordKind.ToString(),
                         },
-                        Constants.SUMMARY_COALESCING_ID));
+                        CoalescingIDs.SUMMARY_COALESCING_ID));
             }
             if (HasMin)
             {
@@ -109,21 +99,21 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             ObjectClass = EDAstroObjectName,
                             Variable = DisplayName,
                             Function = MinFunction.ToString(),
-                            RecordValue = String.Format(ValueFormat, MinValue),
+                            RecordValue = string.Format(ValueFormat, MinValue),
                             Units = Units,
-                            RecordHolder = (MinCount > 1 ? $"{MinHolder} (and {MinCount} more)" : MinHolder),
+                            RecordHolder = MinCount > 1 ? $"{MinHolder} (and {MinCount} more)" : MinHolder,
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
                             DiscoveryStatus = Settings.FirstDiscoveriesOnly ? Constants.UI_FIRST_DISCOVERY : Constants.UI_DISCOVERY_STATE_ANY,
                             RecordKind = RecordKind.ToString(),
                         },
-                        Constants.SUMMARY_COALESCING_ID));
+                        CoalescingIDs.SUMMARY_COALESCING_ID));
             }
             return results;
         }
 
         protected List<Result> CheckMax(double observedValue, DateTime timestamp, string bodyName, int bodyId, bool isUndiscovered)
         {
-            List<Result> results = new();
+            List<Result> results = [];
 
             if (RecordKind == RecordKind.Personal)
             {
@@ -140,10 +130,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             }
 
             var observedValueRounded = Math.Round(observedValue, Constants.EDASTRO_PRECISION);
-            double thresholdFactor = 1.0 - (Settings.MaxNearRecordThreshold / 100.0);
-            var outcome = (observedValueRounded > MaxValue ? Outcome.PotentialNew :
-                (observedValueRounded == MaxValue && MaxCount < Settings.HighCardinalityTieSuppression ? Outcome.Tie :
-                    (observedValueRounded >= Math.Round(MaxValue * thresholdFactor, Constants.EDASTRO_PRECISION) && observedValueRounded < MaxValue ? Outcome.NearRecord : Outcome.None)));
+            double thresholdFactor = 1.0 - Settings.MaxNearRecordThreshold / 100.0;
+            var outcome = observedValueRounded > MaxValue ? Outcome.PotentialNew :
+                observedValueRounded == MaxValue && MaxCount < Settings.HighCardinalityTieSuppression ? Outcome.Tie :
+                    observedValueRounded >= Math.Round(MaxValue * thresholdFactor, Constants.EDASTRO_PRECISION) && observedValueRounded < MaxValue ? Outcome.NearRecord : Outcome.None;
 
             if (outcome != Outcome.None)
             {
@@ -155,7 +145,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         protected List<Result> CheckMin(double observedValue, DateTime timestamp, string bodyName, int bodyId, bool isUndiscovered)
         {
-            List<Result> results = new();
+            List<Result> results = [];
 
             if (RecordKind == RecordKind.Personal)
             {
@@ -172,11 +162,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             }
 
             var observedValueRounded = Math.Round(observedValue, Constants.EDASTRO_PRECISION);
-            var thresholdFactor = 1.0 + (Settings.MinNearRecordThreshold / 100.0);
+            var thresholdFactor = 1.0 + Settings.MinNearRecordThreshold / 100.0;
 
-            var outcome = (observedValueRounded < MinValue ? Outcome.PotentialNew :
-                (observedValueRounded == MinValue && MinCount < Settings.HighCardinalityTieSuppression ? Outcome.Tie :
-                    (observedValueRounded <= Math.Round(MinValue * thresholdFactor, Constants.EDASTRO_PRECISION) && observedValueRounded > MinValue ? Outcome.NearRecord : Outcome.None)));
+            var outcome = observedValueRounded < MinValue ? Outcome.PotentialNew :
+                observedValueRounded == MinValue && MinCount < Settings.HighCardinalityTieSuppression ? Outcome.Tie :
+                    observedValueRounded <= Math.Round(MinValue * thresholdFactor, Constants.EDASTRO_PRECISION) && observedValueRounded > MinValue ? Outcome.NearRecord : Outcome.None;
 
             if (outcome != Outcome.None)
             {
@@ -198,19 +188,19 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             switch (function)
             {
                 case Function.Minimum:
-                    recordValueStr = (HasMin ? String.Format(ValueFormat, MinValue) : "-");
+                    recordValueStr = HasMin ? string.Format(ValueFormat, MinValue) : "-";
                     recordTieCount = MinCount;
-                    recordTieCountStr = (HasMin ? $"{MinCount}" : "");
-                    recordHolder = (HasMin ? MinHolder : "");
+                    recordTieCountStr = HasMin ? $"{MinCount}" : "";
+                    recordHolder = HasMin ? MinHolder : "";
                     threshold = Settings.MinNearRecordThreshold;
                     break;
                 case Function.Sum:
                 case Function.Count:
                 case Function.Maximum:
-                    recordValueStr = (HasMax ? String.Format(ValueFormat, MaxValue) : "-");
+                    recordValueStr = HasMax ? string.Format(ValueFormat, MaxValue) : "-";
                     recordTieCount = MaxCount;
-                    recordTieCountStr = (HasMax ? $"{MaxCount}" : "");
-                    recordHolder = (HasMax ? MaxHolder : "");
+                    recordTieCountStr = HasMax ? $"{MaxCount}" : "";
+                    recordHolder = HasMax ? MaxHolder : "";
                     threshold = Settings.MaxNearRecordThreshold;
                     break;
                 default:
@@ -248,9 +238,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             // This is not a galactic record holder, and we're showing procgen only records (except for visited galactic record holders).
             // OR: FDs only is enabled, and this is not first discovered and not a record holder.
             var procGenHandling = (StatScannerSettings.ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
-            if ((RecordKind == RecordKind.Galactic && procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly && bodyName != recordHolder)
-                    || (RecordKind == RecordKind.GalacticProcGen && procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenIgnore)
-                    || (Settings.FirstDiscoveriesOnly && !isUndiscovered && bodyName != recordHolder))
+            if (RecordKind == RecordKind.Galactic && procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly && bodyName != recordHolder
+                    || RecordKind == RecordKind.GalacticProcGen && procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenIgnore
+                    || Settings.FirstDiscoveriesOnly && !isUndiscovered && bodyName != recordHolder)
                 return null;
 
             StatScannerGrid gridRow = new()
@@ -260,12 +250,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                 ObjectClass = EDAstroObjectName,
                 Variable = DisplayName,
                 Function = function.ToString(),
-                ObservedValue = String.Format(ValueFormat, observedValue),
+                ObservedValue = string.Format(ValueFormat, observedValue),
                 RecordValue = recordValueStr,
                 Units = Units,
-                RecordHolder = (recordTieCount > 1 ? $"{recordHolder} (and {recordTieCount - 1} more)" : recordHolder),
+                RecordHolder = recordTieCount > 1 ? $"{recordHolder} (and {recordTieCount - 1} more)" : recordHolder,
                 Details = details,
-                DiscoveryStatus = (isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED),
+                DiscoveryStatus = isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED,
                 RecordKind = RecordKind.ToString(),
             };
             return new(notificationClass, gridRow, bodyId);
@@ -274,8 +264,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         private bool IncludeBodyForPersonalRecord(string bodyName, bool isUndiscovered)
         {
             var procGenHandling = (StatScannerSettings.ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
-            if ((procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly && !Constants.PROCGEN_NAME_RE.IsMatch(bodyName))
-                    || (Settings.FirstDiscoveriesOnly && !isUndiscovered))
+            if (procGenHandling == StatScannerSettings.ProcGenHandlingMode.ProcGenOnly && !JournalConstants.ProcGenNameRegex().IsMatch(bodyName)
+                    || Settings.FirstDiscoveriesOnly && !isUndiscovered)
                 return false;
             return true;
         }
@@ -284,7 +274,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         {
             if (!string.IsNullOrEmpty(scan.PlanetClass) && scan.PlanetClass == Constants.SCAN_EARTHLIKE)
             {
-                return !Constants.PROCGEN_NAME_RE.IsMatch(scan.BodyName) || !string.IsNullOrEmpty(scan.TerraformState);
+                return !JournalConstants.ProcGenNameRegex().IsMatch(scan.BodyName) || !string.IsNullOrEmpty(scan.TerraformState);
             }
             return false;
         }

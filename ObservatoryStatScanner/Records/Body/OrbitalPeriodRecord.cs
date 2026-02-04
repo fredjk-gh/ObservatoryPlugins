@@ -1,18 +1,13 @@
-﻿using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using com.github.fredjk_gh.PluginCommon.Data;
+using Observatory.Framework.Files.Journal;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
 {
-    internal class OrbitalPeriodRecord : BodyRecord
+    internal class OrbitalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+        : BodyRecord(settings, recordKind, data, "Orbital Period")
     {
-        public OrbitalPeriodRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Orbital Period")
-        { }
-
         public override bool Enabled => Settings.EnableOrbitalPeriodRecord;
 
         public override string ValueFormat { get => "{0:n}"; }
@@ -22,11 +17,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
         {
             if (!Enabled
                 || scan.OrbitalPeriod <= 0.0  // Triton has a negative orbital period.
-                || (string.IsNullOrEmpty(scan.StarType) && (string.IsNullOrEmpty(scan.PlanetClass) || IsNonProcGenOrTerraformedELW(scan))))
-                return new();
+                || string.IsNullOrEmpty(scan.StarType) && (string.IsNullOrEmpty(scan.PlanetClass) || IsNonProcGenOrTerraformedELW(scan)))
+                return [];
 
             // convert seconds -> days
-            var periodDays = scan.OrbitalPeriod / Constants.CONV_S_TO_DAYS_DIVISOR;
+            var periodDays = Conversions.SecondsToDays(scan.OrbitalPeriod);
             var results = CheckMax(periodDays, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan));
             results.AddRange(CheckMin(periodDays, scan.TimestampDateTime, scan.BodyName, scan.BodyID, IsUndiscovered(scan)));
 

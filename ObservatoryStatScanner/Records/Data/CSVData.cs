@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Data
 {
     public class CSVData : IRecordData
     {
@@ -17,9 +12,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             Table = RecordTableFromString(csvFields[Constants.CSV_Table]);
             EDAstroObjectName = csvFields[Constants.CSV_Type];
             JournalObjectName = null;
-            if (Constants.JournalTypeMap.ContainsKey(EDAstroObjectName))
+            if (Constants.JournalTypeMap.TryGetValue(EDAstroObjectName, out string journalObjName))
             {
-                JournalObjectName = Constants.JournalTypeMap[EDAstroObjectName];
+                JournalObjectName = journalObjName;
             }
 
             if (IsValid)

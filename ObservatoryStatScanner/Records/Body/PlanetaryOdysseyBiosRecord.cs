@@ -1,19 +1,12 @@
-﻿using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using Observatory.Framework.Files.Journal;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
 {
-    internal class PlanetaryOdysseyBiosRecord : BodyRecord
+    internal class PlanetaryOdysseyBiosRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+        : BodyRecord(settings, recordKind, data, "Odyssey Bio count")
     {
-        private readonly Dictionary<string, int> BodyBioSignals = new();
-
-        public PlanetaryOdysseyBiosRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Odyssey Bio count")
-        { }
+        private readonly Dictionary<string, int> BodyBioSignals = [];
 
         public override bool Enabled => Settings.EnableOdysseySurfaceBioRecord;
 
@@ -22,16 +15,15 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            if (!Enabled || !BodyBioSignals.ContainsKey(scan.BodyName))
-                return new();
-            int bioCount = BodyBioSignals[scan.BodyName];
+            if (!Enabled || !BodyBioSignals.TryGetValue(scan.BodyName, out int bioCount))
+                return [];
             if (!scan.Landable
                 || scan.AtmosphereType?.Length == 0
                 || scan.Atmosphere == "None"
                 || bioCount == 0)
             {
                 if (BodyBioSignals.ContainsKey(scan.BodyName)) BodyBioSignals.Remove(scan.BodyName);
-                return new();
+                return [];
             }
 
             BodyBioSignals.Remove(scan.BodyName);
@@ -40,23 +32,23 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
         {
-            if (!Enabled || !isOdyssey) return new();
+            if (!Enabled || !isOdyssey) return [];
 
             var bioSignals = bodySignals.Signals.Where(s => s.Type == Constants.FSS_BODY_SIGNAL_BIOLOGICAL).ToList();
-            if (bioSignals.Count() == 1)
+            if (bioSignals.Count == 1)
             {
                 var bioSignal = bioSignals.First();
                 if (bioSignal.Count > 0)
                     BodyBioSignals[bodySignals.BodyName] = bioSignal.Count;
             }
 
-            return new();
+            return [];
         }
         public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
             BodyBioSignals.Clear();
 
-            return new();
+            return [];
         }
     }
 }

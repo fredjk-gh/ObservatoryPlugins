@@ -1,18 +1,13 @@
-﻿using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using Observatory.Framework.Files.Journal;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
 {
-    internal class RingWidthRecord : BodyRecord
+    internal class RingWidthRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
+        : BodyRecord(settings, recordKind, data, "Ring Width")
     {
-        public RingWidthRecord(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
-            : base(settings, recordKind, data, "Ring Width")
-        { }
-        
         public override bool Enabled => Settings.EnableRingWidthRecord;
 
         public override string ValueFormat { get => "{0:n0}"; }
@@ -20,15 +15,15 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            List<Result> results = new();
+            List<Result> results = [];
 
             if (!Enabled || scan.Rings?.Count == 0)
                 return results;
 
             // Check all rings of the specified type for this record:
-            foreach (var ring in scan.Rings.Where(r => r.RingClass == JournalObjectName && r.Name.Contains("Ring")))
+            foreach (var ring in scan.Rings.Where(r => r.RingClass == JournalObjectName && JournalConstants.IsRing(r.Name)))
             {
-                var width = (ring.OuterRad - ring.InnerRad) / Constants.CONV_M_TO_KM_DIVISOR;
+                var width = Conversions.MetersToKm(ring.OuterRad - ring.InnerRad);
                 results.AddRange(CheckMax(width, scan.TimestampDateTime, ring.Name, scan.BodyID, IsUndiscovered(scan)));
             }
             return results;

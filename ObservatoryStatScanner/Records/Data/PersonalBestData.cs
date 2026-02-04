@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Security.AccessControl;
-using System.Text;
-using System.Threading.Tasks;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Data
 {
     public class PersonalBestData : IRecordData
     {
         private readonly DB.PersonalBest dbRow = new();
-        private DB.PersonalBestManager manager;
+        private DB.PersonalBestManager _manager;
 
         // For creating non EDAstro-based records.
         public PersonalBestData(RecordTable table, string objectName, string variable, string journalObjectName = null)
@@ -28,9 +22,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             dbRow.Table = RecordTableFromString(copyFrom[Constants.CSV_Table]);
             dbRow.EDAstroObjectName = copyFrom[Constants.CSV_Type];
             dbRow.JournalObjectName = null;
-            if (Constants.JournalTypeMap.ContainsKey(dbRow.EDAstroObjectName))
+            if (Constants.JournalTypeMap.TryGetValue(dbRow.EDAstroObjectName, out string journalObjName))
             {
-                dbRow.JournalObjectName = Constants.JournalTypeMap[dbRow.EDAstroObjectName];
+                dbRow.JournalObjectName = journalObjName;
             }
             dbRow.Variable = copyFrom[Constants.CSV_Variable];
         }
@@ -56,16 +50,16 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public override void Init(DB.PersonalBestManager manager)
         {
-            this.manager = manager;
+            this._manager = manager;
 
             manager.Load(dbRow);
         }
 
         internal override void Save()
         {
-            if (!IsMutable || manager == null) return;
+            if (!IsMutable || _manager == null) return;
 
-            manager.Upsert(dbRow);
+            _manager.Upsert(dbRow);
         }
 
         public override void ResetMutable()

@@ -1,37 +1,30 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
-using Observatory.Framework.Files.ParameterTypes;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses
 {
-    internal class SystemRecord : IRecord
+    internal class SystemRecord(
+        StatScannerSettings settings,
+        RecordKind recordKind,
+        IRecordData data,
+        string displayName) : IRecord
     {
-        protected readonly StatScannerSettings Settings;
-        protected readonly IRecordData Data;
-        protected readonly Dictionary<string, bool> IsUndiscoveredSystem = new();
-        protected List<LogMonitorState> _disallowedStates = new();
-
-        public SystemRecord(
-            StatScannerSettings settings,
-            RecordKind recordKind,
-            IRecordData data,
-            string displayName)
-        {
-            Settings = settings;
-            RecordKind = recordKind;
-            Data = data;
-            DisplayName = displayName;
-        }
+        protected readonly StatScannerSettings Settings = settings;
+        protected readonly IRecordData Data = data;
+        protected readonly Dictionary<string, bool> IsUndiscoveredSystem = [];
+        protected List<LogMonitorState> _disallowedStates = [];
 
         public virtual bool Enabled => false;
 
         public RecordTable Table => Data.Table;
-        public RecordKind RecordKind { get; }
+        public RecordKind RecordKind { get; } = recordKind;
         public List<LogMonitorState> DisallowedLogMonitorStates => _disallowedStates;
 
         public string VariableName => Data.Variable;
 
-        public string DisplayName { get; }
+        public string DisplayName { get; } = displayName;
 
         public string EDAstroObjectName => Data.EDAstroObjectName;
         public string JournalObjectName => Data.JournalObjectName;
@@ -54,22 +47,22 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
-            return new();
+            return [];
         }
 
         public virtual List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
         {
-            return new();
+            return [];
         }
 
         public virtual List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            return new();
+            return [];
         }
 
         public virtual List<Result> CheckCodexEntry(CodexEntry codexEntry)
         {
-            return new();
+            return [];
         }
 
         public List<Result> Summary()
@@ -88,12 +81,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             Function = MaxFunction.ToString(),
                             RecordValue = string.Format(ValueFormat, MaxValue),
                             Units = Units,
-                            RecordHolder = (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder),
+                            RecordHolder = MaxCount > 1 ? $"{MaxHolder} (and {MaxCount} more)" : MaxHolder,
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
                             DiscoveryStatus = Settings.FirstDiscoveriesOnly ? Constants.UI_FIRST_DISCOVERY : Constants.UI_DISCOVERY_STATE_ANY,
                             RecordKind = RecordKind.ToString(),
                         },
-                        Constants.SUMMARY_COALESCING_ID));
+                        CoalescingIDs.SUMMARY_COALESCING_ID));
             }
             return results;
         }
@@ -113,21 +106,23 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
             // Check if arrival star is undiscovered.
             if (scan.DistanceFromArrivalLS == 0 && scan.PlanetClass != Constants.SCAN_BARYCENTRE)
             {
-                IsUndiscoveredSystem[currentSystem] = (scan.ScanType != Constants.SCAN_TYPE_NAV_BEACON && !scan.WasDiscovered);
+                IsUndiscoveredSystem[currentSystem] = scan.ScanType != Constants.SCAN_TYPE_NAV_BEACON && !scan.WasDiscovered;
             }
         }
 
         protected List<Result> CheckMax(NotificationClass notificationClass, double observedValue, DateTime timestamp, string systemName)
         {
-            List<Result> results = new();
+            List<Result> results = [];
 
             var isUndiscovered = IsUndiscoveredSystem.GetValueOrDefault(systemName);
-            if ((Settings.FirstDiscoveriesOnly && !isUndiscovered) || observedValue == 0) return new();
+            if (Settings.FirstDiscoveriesOnly && !isUndiscovered || observedValue == 0) return [];
 
             var procGenHandlingMode = (StatScannerSettings.ProcGenHandlingMode)Settings.ProcGenHandlingOptions[Settings.ProcGenHandling];
             if ((!HasMax || observedValue >= MaxValue)
-                && (procGenHandlingMode != StatScannerSettings.ProcGenHandlingMode.ProcGenOnly || Constants.PROCGEN_NAME_RE.IsMatch(systemName)))
+                && (procGenHandlingMode != StatScannerSettings.ProcGenHandlingMode.ProcGenOnly || JournalConstants.ProcGenNameRegex().IsMatch(systemName)))
             {
+                // Consider holding tied values in a list in ExtraData so we can suppress re-triggers when revisiting a record system
+                // This chould be done in any record.
                 StatScannerGrid gridRow = new()
                 {
                     Timestamp = timestamp.ToString(),
@@ -135,15 +130,15 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     ObjectClass = EDAstroObjectName,
                     Variable = DisplayName,
                     Function = MaxFunction.ToString(),
-                    ObservedValue = String.Format(ValueFormat, observedValue),
-                    RecordValue = (HasMax ? String.Format(ValueFormat, MaxValue) : "-"),
+                    ObservedValue = string.Format(ValueFormat, observedValue),
+                    RecordValue = HasMax ? string.Format(ValueFormat, MaxValue) : "-",
                     Units = Units,
-                    RecordHolder = (HasMax ? (MaxCount > 1 ? $"{MaxHolder} (and {MaxCount - 1} more)" : MaxHolder) : ""),
+                    RecordHolder = HasMax ? MaxCount > 1 ? $"{MaxHolder} (and {MaxCount - 1} more)" : MaxHolder : "",
                     Details = Constants.UI_NEW_PERSONAL_BEST,
-                    DiscoveryStatus = (isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED),
+                    DiscoveryStatus = isUndiscovered ? Constants.UI_FIRST_DISCOVERY : Constants.UI_ALREADY_DISCOVERED,
                     RecordKind = RecordKind.ToString(),
                 };
-                results.Add(new Result(notificationClass, gridRow, Constants.SYSTEM_COALESCING_ID));
+                results.Add(new Result(notificationClass, gridRow, CoalescingIDs.SYSTEM_COALESCING_ID));
 
                 // Update the record *AFTER* generating the GridRow to ensure we have access to the previous value.
                 // When there's a tie, this increments the count only.

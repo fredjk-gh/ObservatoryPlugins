@@ -1,6 +1,9 @@
-﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records;
+﻿using Accessibility;
+using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
 using com.github.fredjk_gh.ObservatoryStatScanner.StateManagement;
 using com.github.fredjk_gh.PluginCommon.AutoUpdates;
+using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
 using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
@@ -8,39 +11,38 @@ using Observatory.Framework.Interfaces;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
     public class StatScanner : IObservatoryWorker
     {
-        private static Guid PLUGIN_GUID = new("398750b9-ffab-4d28-959b-3fc5648853eb");
+        private readonly static Guid PLUGIN_GUID = new("398750b9-ffab-4d28-959b-3fc5648853eb");
         private const string STATE_CACHE_FILENAME = "stateCache.json";
-        private static AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
-        private static AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner");
-        private static AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/statscanner");
-        private static AboutLink EDASTRO_RECORDS_LINK = new("edastro.com Records", "https://edastro.com/records/");
-        private static AboutInfo ABOUT_INFO = new()
+        private readonly static AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
+        private readonly static AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner");
+        private readonly static AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/statscanner");
+        private readonly static AboutLink EDASTRO_RECORDS_LINK = new("edastro.com Records", "https://edastro.com/records/");
+        private readonly static AboutInfo ABOUT_INFO = new()
         {
             FullName = "Stat Scanner",
             ShortName = "Stat Scanner",
             Description = "Stat Scanner is your own personal record book of personal bests but can also compares your discoveries against one of two sets of galactic records provided by edastro.com.",
             AuthorName = "fredjk-gh",
-            Links = new()
-            {
+            Links =
+            [
                 GH_LINK,
                 GH_RELEASE_NOTES_LINK,
                 DOC_LINK,
                 EDASTRO_RECORDS_LINK,
-            }
+            ]
         };
 
-        private StatScannerSettings settings = new();
+        private StatScannerSettings _settings = new();
         private PluginUI pluginUI;
-        ObservableCollection<object> gridCollection = new();
         private bool HasHeaderRows = false;
-        private StatScannerState _state = null;
-        private List<Result> _batchResults = new List<Result>();
+        private StatScannerContext _c = null;
+        private readonly List<Result> _batchResults = [];
+        ObservableCollection<object> gridCollection = [];
 
 
         public static Guid Guid => PLUGIN_GUID;
@@ -50,12 +52,55 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         public object Settings
         {
-            get => settings;
+            get => _c?.Settings ?? _settings;
             set
             {
-                settings = (StatScannerSettings)value;
-                if (_state != null) _state.Settings = settings;
+                if (_c is not null)
+                {
+                    // The context setter also fixes settings.
+                    _settings = (_c.Settings = (StatScannerSettings)value);
+                }
+                else
+                    _settings = (StatScannerSettings)value;
             }
+        }
+
+        public void Load(IObservatoryCore observatoryCore)
+        {
+            StateCache cached = DeserializeCachedState(observatoryCore);
+            cached.CheckForNewAssemblyVersion();
+            _c = new(cached, observatoryCore, _settings, this);
+            _settings = _c.Settings;
+
+            gridCollection.Add(new StatScannerGrid());
+            pluginUI = new PluginUI(gridCollection);
+
+            _c.MaybeUpdateGalacticRecords();
+
+            if (_c.Cacheable.KnownCommanders.Count == 0)
+            {
+                _c.Cacheable.SetReadAllRequired("No known commanders.");
+                _c.Core.AddGridItems(this, _c.GetPluginStateMessages());
+            }
+
+            SerializeState(true);
+        }
+
+        public PluginUpdateInfo CheckForPluginUpdate()
+        {
+            if (_c is null) return new();
+            AutoUpdateHelper.Init(_c.Core);
+            return AutoUpdateHelper.CheckForPluginUpdate(
+                this, GH_RELEASE_NOTES_LINK.Url, _c.Settings.EnableAutoUpdates, _c.Settings.EnableBetaUpdates);
+        }
+
+        public void ObservatoryReady()
+        {
+            if (_c is null) return;
+            ShowPersonalBestSummary();
+
+            var readyMsg = GenericPluginReadyMessage.New();
+            _c.Core.SendPluginMessage(this, readyMsg.ToPluginMessage());
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -63,47 +108,33 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             // * -> ReadAll
             if ((args.NewState & LogMonitorState.Batch) != 0)
             {
-                _state.ResetForReadAll();
-                _state.Core.ClearGrid(this, new StatScannerGrid());
+                _c.ResetForReadAll();
+                _c.Core.ClearGrid(this, new StatScannerGrid());
                 _batchResults.Clear();
                 HasHeaderRows = false;
             }
             // ReadAll -> *
             else if ((args.PreviousState & LogMonitorState.Batch) != 0 && (args.NewState & LogMonitorState.Batch) == 0)
             {
-                if (!_state.Settings.EnableGridOutputAfterReadAll) 
+                if (!_c.Settings.EnableGridOutputAfterReadAll)
                     _batchResults.Clear(); // Dump what we have accumulated until now.
 
                 if ((args.NewState & LogMonitorState.BatchCancelled) != 0)
                 {
-                    _state.Cacheable.SetReadAllRequired("Read-all was cancelled; incomplete data.");
+                    _c.Cacheable.SetReadAllRequired("Read-all was cancelled; incomplete data.");
                 }
                 else
                 {
-                    _state.ReadAllComplete();
+                    _c.ReadAllComplete();
                 }
 
                 ShowPersonalBestSummary();
-                AddResultsToGrid_(_batchResults, false);
+                _c.Core.AddGridItems(this, _batchResults);
+                //AddResultsToGrid_(_batchResults, false);
                 _batchResults.Clear();
 
                 SerializeState(true);
             }
-        }
-
-        public PluginUpdateInfo CheckForPluginUpdate()
-        {
-            AutoUpdateHelper.Init(_state.Core);
-            return AutoUpdateHelper.CheckForPluginUpdate(
-                this, GH_RELEASE_NOTES_LINK.Url, settings.EnableAutoUpdates, settings.EnableBetaUpdates);
-        }
-
-        public void ObservatoryReady()
-        {
-            ShowPersonalBestSummary();
-
-            var readyMsg = GenericPluginReadyMessage.New();
-            _state.Core.SendPluginMessage(this, readyMsg.ToPluginMessage());
         }
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -111,61 +142,61 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             switch (journal)
             {
                 case FileHeader fileHeader:
-                    _state.IsOdyssey = fileHeader.Odyssey;
+                    _c.IsOdyssey = fileHeader.Odyssey;
                     break;
                 case LoadGame loadGame:
-                    var previousCommanderName = _state.CommanderName;
-                    _state.LastLoadGame = loadGame;
-                    if (previousCommanderName != _state.CommanderName)
+                    var previousCommanderName = _c.CommanderName;
+                    _c.LastLoadGame = loadGame;
+                    if (previousCommanderName != _c.CommanderName)
                     {
-                        Debug.WriteLine($"Switching commanders: {_state.CommanderName}");
-                        AddResultsToGrid(new()
-                        {
+                        Debug.WriteLine($"[{loadGame.Timestamp}] Switching commanders: {_c.CommanderName}");
+                        AddResultsToGrid(
+                        [
                             new(NotificationClass.None,
                                 new StatScannerGrid
                                 {
                                     ObjectClass = "Plugin message",
                                     Variable = "Commander",
                                     Function = "Changed to",
-                                    BodyOrItem = _state.CommanderName,
+                                    BodyOrItem = _c.CommanderName,
                                 },
-                                Constants.HEADER_COALESCING_ID)
-                        });
+                                CoalescingIDs.HEADER_COALESCING_ID)
+                        ]);
 
                     }
                     break;
                 case Statistics statistics:
                     // TODO: do more with this?
-                    _state.LastStats = statistics;
-                    if (!_state.Core.IsLogMonitorBatchReading)
+                    _c.LastStats = statistics;
+                    if (!_c.Core.IsLogMonitorBatchReading)
                     {
-                        AddResultsToGrid(MaybeAddStats(_state.CommanderName, statistics));
+                        AddResultsToGrid(MaybeAddStats(_c.CommanderName, statistics));
                     }
                     break;
                 case FSDJump fsdJump:
                     // Track this here because it's not present in older Scans.
-                    _state.CurrentSystem = fsdJump.StarSystem;
+                    _c.CurrentSystem = fsdJump.StarSystem;
                     break;
                 case Location location:
-                    _state.CurrentSystem = location.StarSystem;
+                    _c.CurrentSystem = location.StarSystem;
                     break;
                 case DiscoveryScan discoveryScan:
-                    _state.SystemBodyCount = discoveryScan.Bodies;
+                    _c.SystemBodyCount = discoveryScan.Bodies;
                     break;
                 case NavBeaconScan navBeaconScan:
-                    _state.SystemBodyCount = navBeaconScan.NumBodies;
-                    _state.NavBeaconScanned = true;
+                    _c.SystemBodyCount = navBeaconScan.NumBodies;
+                    _c.NavBeaconScanned = true;
                     break;
                 case Scan scan:
                     OnScan(scan);
 
-                    if (_state.NavBeaconScanned && _state.Scans.Count == _state.SystemBodyCount)
+                    if (_c.NavBeaconScanned && _c.Scans.Count == _c.SystemBodyCount)
                     {
                         // Nav beacon was used; generate an AllBodies Found event.
                         OnFssAllBodiesFound(new()
                         {
-                            Count = _state.Scans.Count,
-                            SystemName = _state.CurrentSystem,
+                            Count = _c.Scans.Count,
+                            SystemName = _c.CurrentSystem,
                             Event = "FSSAllBodiesFound",
                             SystemAddress = scan.SystemAddress,
                         });
@@ -184,31 +215,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             }
         }
 
-        public void Load(IObservatoryCore observatoryCore)
-        {
-            MaybeFixUnsetSettings();
-
-            StateCache cached = DeserializeCachedState(observatoryCore);
-            cached.CheckForNewAssemblyVersion();
-            _state = new(cached, observatoryCore, settings, this);
-
-            gridCollection = new();
-            StatScannerGrid uiObject = new();
-            gridCollection.Add(uiObject);
-            pluginUI = new PluginUI(gridCollection);
-
-            MaybeUpdateGalacticRecords();
-
-            if (_state.Cacheable.KnownCommanders.Count == 0)
-            {
-                _state.Cacheable.SetReadAllRequired("No known commanders.");
-                _state.Core.AddGridItems(this, _state.GetPluginStateMessages());
-            }
-
-            SerializeState(true);
-        }
-
-        // Requires core explicitly because _state is not initialized yet when this is first called.
+        // Requires core explicitly because _c is not initialized yet when this is first called.
         private StateCache DeserializeCachedState(IObservatoryCore core)
         {
             string dataCacheFile = $"{core.PluginStorageFolder}{STATE_CACHE_FILENAME}";
@@ -222,43 +229,31 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             }
             catch (Exception ex)
             {
-                _state.Core.GetPluginErrorLogger(this)(ex, "Deserializing state cache");
+                _c.Core.GetPluginErrorLogger(this)(ex, "Deserializing state cache");
             }
             return stateCache;
         }
 
         public void SerializeState(bool forceWrite = false)
         {
-            if (((_state.Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0 && !forceWrite) || !_state.Cacheable.IsDirty) return;
+            if (((_c.Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0 && !forceWrite) || !_c.Cacheable.IsDirty) return;
 
-                string dataCacheFile = $"{_state.Core.PluginStorageFolder}{STATE_CACHE_FILENAME}";
-            string jsonString = JsonSerializer.Serialize(_state.Cacheable,
-                new JsonSerializerOptions() { AllowTrailingCommas = true, WriteIndented = true });
+                string dataCacheFile = $"{_c.Core.PluginStorageFolder}{STATE_CACHE_FILENAME}";
+            string jsonString = JsonSerializer.Serialize(_c.Cacheable, JsonHelper.PRETTY_PRINT_OPTIONS);
             File.WriteAllText(dataCacheFile, jsonString);
-        }
-
-        private void MaybeFixUnsetSettings()
-        {
-            settings.ForceUpdateGalacticRecords = ForceRefreshGalacticRecords;
-            settings.OpenStatScannerWiki = OpenWikiUrl;
-
-            // Maybe don't need this anymore?
-            StatScannerSettings defaults = new();
-            if (settings.HighCardinalityTieSuppression == 0) settings.HighCardinalityTieSuppression = defaults.HighCardinalityTieSuppression;
-            if (settings.ProcGenHandling == null) settings.ProcGenHandling = defaults.ProcGenHandling;
         }
 
         private void MaybeAddHeaderRows()
         {
-            if (_state.Core.IsLogMonitorBatchReading || HasHeaderRows) return;
+            if (_c.Core.IsLogMonitorBatchReading || HasHeaderRows) return;
 
-            if (!_state.IsCommanderFidKnown || _state.NeedsReadAll || _state.Cacheable.KnownCommanders.Count == 0)
+            if (!_c.IsCommanderFidKnown || _c.NeedsReadAll || _c.Cacheable.KnownCommanders.Count == 0)
             {
-                _state.Core.AddGridItems(this, _state.GetPluginStateMessages());
+                _c.Core.AddGridItems(this, _c.GetPluginStateMessages());
             }
 
-            var devModeWarning = (settings.DevMode ? "!!DEV mode!!" : "");
-            var handlingMode = (StatScannerSettings.ProcGenHandlingMode)settings.ProcGenHandlingOptions[settings.ProcGenHandling];
+            var devModeWarning = (_c.Settings.DevMode ? "!!DEV mode!!" : "");
+            var handlingMode = (StatScannerSettings.ProcGenHandlingMode)_c.Settings.ProcGenHandlingOptions[_c.Settings.ProcGenHandling];
             var gridItems = new List<Result>
             {
                 new (NotificationClass.None,
@@ -268,19 +263,19 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         Variable = $"{AboutInfo.ShortName} version",
                         ObservedValue = $"v{Version}",
                     },
-                    Constants.HEADER_COALESCING_ID),
+                    CoalescingIDs.HEADER_COALESCING_ID),
                 new (NotificationClass.None,
                     new StatScannerGrid
                     {
                         ObjectClass = "Plugin settings",
                         Variable = "Tracking First Discoveries only?",
-                        ObservedValue = $"{settings.FirstDiscoveriesOnly}",
+                        ObservedValue = $"{_c.Settings.FirstDiscoveriesOnly}",
                     },
-                    Constants.HEADER_COALESCING_ID),
+                    CoalescingIDs.HEADER_COALESCING_ID),
             };
-            foreach (var Cmdr in _state.Cacheable.KnownCommanders)
+            foreach (var Cmdr in _c.Cacheable.KnownCommanders)
             {
-                var recordBook = _state.GetRecordBookForFID(Cmdr.Key);
+                var recordBook = _c.GetRecordBookForFID(Cmdr.Key);
 
                 gridItems.Add(new(
                     NotificationClass.None,
@@ -294,7 +289,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         RecordHolder = Cmdr.Value.Name,
                         RecordValue = devModeWarning,
                     },
-                    Constants.HEADER_COALESCING_ID));
+                    CoalescingIDs.HEADER_COALESCING_ID));
 
                 foreach (RecordKind kind in Enum.GetValues(typeof(RecordKind)))
                 {
@@ -303,7 +298,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     switch (kind)
                     {
                         case RecordKind.Personal:
-                            details = (count == 0 ? (!settings.EnablePersonalBests ? "Disabled via settings" : "Not yet implemented") : "");
+                            details = (count == 0 ? (!_c.Settings.EnablePersonalBests ? "Disabled via settings" : "Not yet implemented") : "");
                             break;
                         case RecordKind.GalacticProcGen:
                             details = (handlingMode == StatScannerSettings.ProcGenHandlingMode.ProcGenIgnore ? "Ignored via settings" : "");
@@ -326,7 +321,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                                 RecordHolder = Cmdr.Value.Name,
                                 Details = details,
                             },
-                            Constants.SUMMARY_COALESCING_ID));
+                            CoalescingIDs.SUMMARY_COALESCING_ID));
                 }
                 gridItems.AddRange(MaybeAddStats(Cmdr.Value.Name, Cmdr.Value.LastStatistics));
 
@@ -351,10 +346,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                             Variable = "Time played",
                             BodyOrItem = cmdrName,
                             Function = Function.Count.ToString(),
-                            ObservedValue = $"{(stats.Exploration.TimePlayed / Constants.CONV_S_TO_HOURS_DIVISOR):N0}",
+                            ObservedValue = $"{(stats.Exploration.TimePlayed / Conversions.CONV_S_TO_HOURS_DIVISOR):N0}",
                             Units = "hr",
                         },
-                        Constants.STATS_COALESCING_ID));
+                        CoalescingIDs.STATS_COALESCING_ID));
             }
             return gridItems;
         }
@@ -363,10 +358,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         {
             MaybeAddHeaderRows();
 
-            if (!_state.IsCommanderFidKnown || _state.NeedsReadAll) return;
+            if (!_c.IsCommanderFidKnown || _c.NeedsReadAll) return;
 
-            List<RecordTable> tableOrder  = new()
-            {
+            List<RecordTable> tableOrder  =
+            [
                 RecordTable.Regions,
                 RecordTable.Systems,
                 RecordTable.Stars,
@@ -374,13 +369,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 RecordTable.Planets,
                 RecordTable.Rings,
                 RecordTable.Codex,
-            };
+            ];
 
             var gridItems = new List<Result>();
 #if DEBUG
-            foreach (var fid in _state.KnownCommanderFids)
+            foreach (var fid in _c.KnownCommanderFids)
             {
-                var recordBook = _state.GetRecordBookForFID(fid);
+                var recordBook = _c.GetRecordBookForFID(fid);
                 foreach (var rt in tableOrder)
                 {
                     foreach (var best in recordBook.GetPersonalBests(rt))
@@ -391,10 +386,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 gridItems.Add(new(
                     NotificationClass.None,
                     new(),
-                    Constants.HEADER_COALESCING_ID));
+                    CoalescingIDs.HEADER_COALESCING_ID));
             }
 #else
-            var recordBook = _state.GetRecordBook();
+            var recordBook = _c.GetRecordBook();
             foreach ( var rt in tableOrder )
             {
                 foreach (var best in recordBook.GetPersonalBests(rt))
@@ -406,99 +401,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             AddResultsToGrid(gridItems);
         }
 
-        private void ForceRefreshGalacticRecords()
-        {
-            if (FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, _state.GalacticRecordsCsv)
-                || FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, _state.GalacticRecordsPGCsv))
-            {
-                _state.ReloadGalacticRecords();
-            }
-        }
-
-        private void MaybeUpdateGalacticRecords()
-        {
-            try
-            {
-                // If galactic records files are missing OR > 7 days, fetch a new one and freshen.
-                if (!File.Exists(_state.GalacticRecordsCsv) || File.GetLastWriteTimeUtc(_state.GalacticRecordsCsv) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
-                {
-                    FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_CSV_URL, _state.GalacticRecordsCsv);
-                }
-                if (!File.Exists(_state.GalacticRecordsPGCsv) || File.GetLastWriteTimeUtc(_state.GalacticRecordsPGCsv) < DateTime.UtcNow.Subtract(TimeSpan.FromDays(7.0)))
-                {
-                    FetchFreshGalacticRecords(Constants.EDASTRO_GALACTIC_RECORDS_PG_CSV_URL, _state.GalacticRecordsPGCsv);
-                }
-            }
-            catch (Exception ex)
-            {
-                _state.ErrorLogger(ex, "Fetching updated records files from edastro.com");
-            }
-        }
-
-        private bool FetchFreshGalacticRecords(string csvUrl, string localCSVFilename)
-        {
-            var request = new HttpRequestMessage
-            {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri(csvUrl),
-            };
-            var requestTask = _state.Core.HttpClient.SendAsync(request);
-            while (!requestTask.IsCompleted)
-            {
-                requestTask.Wait(500);
-            }
-
-            if (requestTask.IsFaulted)
-            {
-                _state.ErrorLogger(requestTask.Exception, $"Error while refreshing {localCSVFilename}; using copy stale records for now...");
-                return false;
-            }
-            else if (requestTask.IsCanceled)
-            {
-                Debug.WriteLine($"Request to update {localCSVFilename} was cancelled; using copy stale records for now...");
-                return false;
-            }
-
-            var response = requestTask.Result;
-            try
-            {
-                response.EnsureSuccessStatusCode();
-            }
-            catch (HttpRequestException ex)
-            {
-                _state.ErrorLogger(ex, $"Error while downloading updated {localCSVFilename}; using stale records (if available)");
-                return false;
-            }
-
-            try
-            {
-                if (File.Exists(localCSVFilename))
-                {
-                    // Preserve old one, just in case.
-                    File.Copy(localCSVFilename, localCSVFilename + Constants.GOOD_BACKUP_EXT, true);
-                }
-                // Write result to file.
-                using (Stream csvFile = File.Create(localCSVFilename))
-                {
-                    response.Content.ReadAsStream().CopyTo(csvFile);
-                }
-            }
-            catch (Exception ex)
-            {
-                _state.ErrorLogger(ex, $"While writing updated {localCSVFilename}");
-                return false;
-            }
-
-            return true;
-        }
-
         private void OnScan(Scan scan)
         {
-            _state.AddScan(scan);
+            _c.AddScan(scan);
             // Determine type of object from scan (stars, planets, rings, systems)
             // Look up records for the specific variant of the object (type + variant).
-            List<Result> results = new();
-            var recordBook = _state.GetRecordBook();
+            List<Result> results = [];
+            var recordBook = _c.GetRecordBook();
 
             if (!String.IsNullOrEmpty(scan.StarType))
             {
@@ -511,7 +420,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             }
             if (scan.Rings != null)
             {
-                HashSet<string> ringClassesAlreadyChecked = new();
+                HashSet<string> ringClassesAlreadyChecked = [];
                 // Process proper rings (NOT belts) by RingClass!
                 foreach (var r in scan.Rings.Where(r => r.Name.Contains("Ring")))
                 {
@@ -529,14 +438,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private List<Result> CheckScanForRecords(Scan scan, List<IRecord> records)
         {
-            var readMode = _state.Core.CurrentLogMonitorState;
-            List<Result> results = new();
+            var readMode = _c.Core.CurrentLogMonitorState;
+            List<Result> results = [];
             foreach (var record in records)
             {
                 try
                 {
                     if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
-                        results.AddRange(record.CheckScan(scan, _state.CurrentSystem));
+                        results.AddRange(record.CheckScan(scan, _c.CurrentSystem));
                 }
                 catch (Exception ex)
                 {
@@ -548,14 +457,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void OnFssBodySignals(FSSBodySignals bodySignals)
         {
-            var readMode = _state.Core.CurrentLogMonitorState;
-            List<Result> results = new();
+            var readMode = _c.Core.CurrentLogMonitorState;
+            List<Result> results = [];
             foreach (var t in Constants.PB_RecordTypesForFssScans)
             {
-                foreach (var record in _state.GetRecordBook().GetRecords(t.Item1, t.Item2))
+                foreach (var record in _c.GetRecordBook().GetRecords(t.Item1, t.Item2))
                 {
                     if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
-                        results.AddRange(record.CheckFSSBodySignals(bodySignals, _state.IsOdyssey));
+                        results.AddRange(record.CheckFSSBodySignals(bodySignals, _c.IsOdyssey));
                 }
             }
             AddResultsToGrid(results, /* notify */ true);
@@ -563,14 +472,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void OnFssAllBodiesFound(FSSAllBodiesFound fssAllBodies)
         {
-            var readMode = _state.Core.CurrentLogMonitorState;
-            List<Result> results = new();
+            var readMode = _c.Core.CurrentLogMonitorState;
+            List<Result> results = [];
             foreach (var t in Constants.PB_RecordTypesForFssScans)
             {
-                foreach (var record in _state.GetRecordBook().GetRecords(t.Item1, t.Item2))
+                foreach (var record in _c.GetRecordBook().GetRecords(t.Item1, t.Item2))
                 {
                     if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
-                        results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, _state.Scans));
+                        results.AddRange(record.CheckFSSAllBodiesFound(fssAllBodies, _c.Scans));
                 }
             }
             AddResultsToGrid(results, /* notify */ true);
@@ -578,20 +487,19 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         private void OnCodexEntry(CodexEntry codexEntry)
         {
-            if (!Constants.RegionNamesByJournalId.ContainsKey(codexEntry.Region)
+            if (!FDevIDs.RegionById.TryGetValue(codexEntry.Region, out PluginCommon.Data.Journals.FDevIDs.Region region)
                 || !codexEntry.IsNewEntry) return;
 
-            var recordBook = _state.GetRecordBook();
-            var readMode = _state.Core.CurrentLogMonitorState;
-            string regionNameByJournalValue = Constants.RegionNamesByJournalId[codexEntry.Region];
-            List<Result> results = new();
+            var recordBook = _c.GetRecordBook();
+            var readMode = _c.Core.CurrentLogMonitorState;
+            List<Result> results = [];
 
             foreach (var record in recordBook.GetRecords(RecordTable.Regions, Constants.OBJECT_TYPE_REGION))
             {
                 if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                     results.AddRange(record.CheckCodexEntry(codexEntry));
             }
-            foreach (var record in recordBook.GetRecords(RecordTable.Regions, regionNameByJournalValue))
+            foreach (var record in recordBook.GetRecords(RecordTable.Regions, region.Name))
             {
                 if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                     results.AddRange(record.CheckCodexEntry(codexEntry));
@@ -599,40 +507,18 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             AddResultsToGrid(results, /* notify */ true);
         }
 
-        // TODO: Extract these to shared library or move into IObservatoryCore?
-        private string GetShortBodyName(string bodyName, string baseName = "")
-        {
-            return string.IsNullOrEmpty(baseName) ?
-                (string.IsNullOrEmpty(_state.CurrentSystem) ? bodyName : bodyName.Replace(_state.CurrentSystem, "").Trim())
-                : bodyName.Replace(baseName, "").Trim();
-        }
-
-        private string GetBodyTitle(string bodyName)
-        {
-            if (bodyName.Length == 0)
-            {
-                return "Primary Star";
-            }
-            return $"Body {bodyName}";
-        }
-
         private void AddResultsToGrid(List<Result> results, bool maybeNotify = false)
         {
             if (results.Count == 0) return;
-            if ((_state.Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0)
+            if ((_c.Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0)
             {
                 _batchResults.AddRange(results);
+                return;
             }
             else
-            {
-                AddResultsToGrid_(results, maybeNotify);
-            }
-        }
+                _c.Core.AddGridItems(this, results.Select(r => r.ResultItem));
 
-        private void AddResultsToGrid_(List<Result> results, bool maybeNotify = false)
-        {
-            _state.Core.AddGridItems(this, results.Select(r => r.ResultItem));
-            if (!maybeNotify || !settings.NotifySilentFallback)
+            if (!maybeNotify || !_c.Settings.NotifySilentFallback)
                 return;
 
             // Squash high-volumes of personal best notifications for a single body into 1 to avoid spamming notifications.
@@ -641,16 +527,16 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             {
                 var resultItems = e.Value;
                 var pbs = e.Value.Where(r => r.ResultItem.Details.Contains("personal best"));
-                if (settings.MaxPersonalBestsPerBody > 0 && pbs.Count() > settings.MaxPersonalBestsPerBody)
+                if (_c.Settings.MaxPersonalBestsPerBody > 0 && pbs.Count() > _c.Settings.MaxPersonalBestsPerBody)
                 {
                     var r = pbs.First();
                     var title = "";
                     if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION)
                         title = r.ResultItem.ObjectClass;
                     else
-                        title = GetBodyTitle(GetShortBodyName(r.ResultItem.BodyOrItem));
+                        title = SharedLogic.GetBodyDisplayName(SharedLogic.GetBodyShortName(r.ResultItem.BodyOrItem, _c.CurrentSystem));
 
-                    _state.Core.SendNotification(new()
+                    _c.Core.SendNotification(new()
                     {
                         Title = title,
                         Detail = $"{pbs.Count()} personal bests: {r.ResultItem.ObjectClass}",
@@ -661,7 +547,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     });
 
                     // Continue processing the non-personal bests.
-                    resultItems = e.Value.Where(r => !r.ResultItem.Details.Contains("personal best")).ToList();
+                    resultItems = [.. e.Value.Where(r => !r.ResultItem.Details.Contains("personal best"))];
                 }
 
                 foreach (var r in resultItems)
@@ -675,9 +561,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION)
                         title = r.ResultItem.ObjectClass;
                     else
-                        title = GetBodyTitle(GetShortBodyName(r.ResultItem.BodyOrItem));
+                        title = SharedLogic.GetBodyDisplayName(SharedLogic.GetBodyShortName(r.ResultItem.BodyOrItem, _c.CurrentSystem));
 
-                    _state.Core.SendNotification(new()
+                    _c.Core.SendNotification(new()
                     {
                         Title = title,
                         Detail = $"{r.ResultItem.Details}: {r.ResultItem.ObjectClass}; {r.ResultItem.Variable}; {r.ResultItem.Function}",
@@ -697,38 +583,28 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             switch(result.NotificationClass)
             {
                 case NotificationClass.PossibleNewGalacticRecord:
-                    if (settings.NotifyPossibleNewGalacticRecords) rendering = NotificationRendering.All;
+                    if (_c.Settings.NotifyPossibleNewGalacticRecords) rendering = NotificationRendering.All;
                     break;
                 case NotificationClass.MatchedGalacticRecord:
-                    if (settings.NotifyMatchedGalacticRecords) rendering = NotificationRendering.All;
+                    if (_c.Settings.NotifyMatchedGalacticRecords) rendering = NotificationRendering.All;
                     break;
                 case NotificationClass.VisitedGalacticRecord:
-                    if (settings.NotifyVisitedGalacticRecords) rendering = NotificationRendering.All;
+                    if (_c.Settings.NotifyVisitedGalacticRecords) rendering = NotificationRendering.All;
                     break;
                 case NotificationClass.NearGalacticRecord:
-                    if (settings.NotifyNearGalacticRecords) rendering = NotificationRendering.All;
+                    if (_c.Settings.NotifyNearGalacticRecords) rendering = NotificationRendering.All;
                     break;
                 case NotificationClass.PersonalBest:
-                    if (settings.NotifyNewPersonalBests) rendering = NotificationRendering.All;
+                    if (_c.Settings.NotifyNewPersonalBests) rendering = NotificationRendering.All;
                     break;
                 case NotificationClass.NewCodex:
-                    if (settings.NotifyNewCodexEntries) rendering = NotificationRendering.All;
+                    if (_c.Settings.NotifyNewCodexEntries) rendering = NotificationRendering.All;
                     break;
                 case NotificationClass.Tally:
-                    if (settings.NotifyTallies) rendering = NotificationRendering.All;
+                    if (_c.Settings.NotifyTallies) rendering = NotificationRendering.All;
                     break;
             }
             return rendering;
-        }
-
-        private void OpenWikiUrl()
-        {
-            OpenUrl(Constants.STATSCANNER_WIKI_URL);
-        }
-
-        private void OpenUrl(string url)
-        {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }
 }

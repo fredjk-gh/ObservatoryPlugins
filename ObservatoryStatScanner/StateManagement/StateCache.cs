@@ -1,5 +1,4 @@
 ﻿using Observatory.Framework.Files.Journal;
-using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
@@ -7,13 +6,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
     internal class StateCache
     {
         internal const string NO_VERSION = "0.0.0.0";
-        internal static readonly int[] NO_VERSION_PARSED = new int[] { 0, 0, 0, 0 };
+        internal static readonly int[] NO_VERSION_PARSED = [0, 0, 0, 0];
+        private readonly string _assemblyVersion = typeof(StatScanner).Assembly.GetName().Version.ToString();
 
-        private Dictionary<string, CommanderCache> _commanderCache = new();
+        private Dictionary<string, CommanderCache> _commanderCache = [];
         private string _lastSeenFid = string.Empty;
         private bool _readAllRequired = true;
         private string _lastUsedVersion = "";
-        private string _assemblyVersion = typeof(StatScanner).Assembly.GetName().Version.ToString();
         private bool _isDirty = false;
 
         [JsonIgnore]
@@ -65,14 +64,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         [JsonIgnore]
         public CommanderCache? CurrentCommander
         {
-            get
-            {
-                if (KnownCommanders.ContainsKey(LastSeenCommanderFID))
-                {
-                    return KnownCommanders[LastSeenCommanderFID];
-                }
-                return null;
-            }
+            get => KnownCommanders.GetValueOrDefault(LastSeenCommanderFID, null);
         }
 
         public void AddCommander(string fid, bool isOdyssey, bool hasReadAll)
@@ -185,6 +177,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
             return (Compare(lastUsedVersionParsed, assemblyVersionParsed) < 0);
         }
 
+        // TODO: Migrate to PluginCommon's PluginVersions.
         // Re-used from PluginVersion (in FredJKsPluginAutoUpdater).
         private static int[] ParseVersion(string version)
         {

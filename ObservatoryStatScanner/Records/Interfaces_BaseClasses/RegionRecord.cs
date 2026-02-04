@@ -1,39 +1,28 @@
-﻿using Observatory.Framework;
+﻿using com.github.fredjk_gh.PluginCommon.Data;
+using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
+namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses
 {
-    internal class RegionRecord : IRecord
+    internal class RegionRecord(
+        StatScannerSettings settings,
+        RecordKind recordKind,
+        IRecordData data,
+        string displayName) : IRecord
     {
-        protected readonly StatScannerSettings Settings;
-        protected readonly IRecordData Data;
-        protected List<LogMonitorState> _disallowedStates = new();
+        protected readonly StatScannerSettings Settings = settings;
+        protected readonly IRecordData Data = data;
+        protected List<LogMonitorState> _disallowedStates = [];
 
-        public RegionRecord(
-            StatScannerSettings settings,
-            RecordKind recordKind,
-            IRecordData data,
-            string displayName)
-        {
-            Settings = settings;
-            RecordKind = recordKind;
-            Data = data;
-            DisplayName = displayName;
-        }
         public virtual bool Enabled => false;
 
         public RecordTable Table => Data.Table;
-        public RecordKind RecordKind { get; }
+        public RecordKind RecordKind { get; } = recordKind;
         public List<LogMonitorState> DisallowedLogMonitorStates => _disallowedStates;
 
         public string VariableName => Data.Variable;
 
-        public string DisplayName { get; }
+        public string DisplayName { get; } = displayName;
 
         public string EDAstroObjectName => Data.EDAstroObjectName;
         public string JournalObjectName => Data.JournalObjectName;
@@ -56,26 +45,26 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         public virtual List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
-            return new();
+            return [];
         }
 
         public virtual List<Result> CheckFSSBodySignals(FSSBodySignals bodySignals, bool isOdyssey)
         {
-            return new();
+            return [];
         }
 
         public virtual List<Result> CheckScan(Scan scan, string currentSystem)
         {
-            return new();
+            return [];
         }
 
         public virtual List<Result> CheckCodexEntry(CodexEntry codexEntry)
         {
-            return new();
+            return [];
         }
         public List<Result> Summary()
         {
-            var results = new List<Result>();
+            List<Result> results = [];
 
             if (HasMax)
             {
@@ -87,14 +76,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                             ObjectClass = EDAstroObjectName,
                             Variable = DisplayName,
                             Function = MaxFunction.ToString(),
-                            RecordValue = String.Format(ValueFormat, MaxValue),
+                            RecordValue = string.Format(ValueFormat, MaxValue),
                             Units = Units,
                             RecordHolder = MaxHolder,
                             Details = Constants.UI_CURRENT_PERSONAL_BEST,
                             DiscoveryStatus = "-",
                             RecordKind = RecordKind.ToString(),
                         },
-                        Constants.SUMMARY_COALESCING_ID));
+                        CoalescingIDs.SUMMARY_COALESCING_ID));
             }
             return results;
         }
@@ -111,7 +100,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
 
         protected List<Result> CheckMax(NotificationClass notificationClass, double observedValue, DateTime timestamp, string objectName, string discoveryStatus = "", string extraData = "")
         {
-            List<Result> results = new();
+            List<Result> results = [];
 
             if (!HasMax || observedValue >= MaxValue)
             {
@@ -122,15 +111,15 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records
                     ObjectClass = EDAstroObjectName,
                     Variable = DisplayName,
                     Function = MaxFunction.ToString(),
-                    ObservedValue = String.Format(ValueFormat, observedValue),
-                    RecordValue = (HasMax ? String.Format(ValueFormat, MaxValue) : "-"),
+                    ObservedValue = string.Format(ValueFormat, observedValue),
+                    RecordValue = HasMax ? string.Format(ValueFormat, MaxValue) : "-",
                     Units = Units,
-                    RecordHolder = (HasMax ? MaxHolder : ""),
+                    RecordHolder = HasMax ? MaxHolder : "",
                     Details = discoveryStatus,
                     DiscoveryStatus = "-",
                     RecordKind = RecordKind.ToString(),
                 };
-                results.Add(new Result(notificationClass, gridRow, Constants.REGION_COALESCING_ID));
+                results.Add(new Result(notificationClass, gridRow, CoalescingIDs.REGION_COALESCING_ID));
 
                 // Update the record *AFTER* generating the GridRow to ensure we have access to the previous value.
                 // When there's a tie, this increments the count only.

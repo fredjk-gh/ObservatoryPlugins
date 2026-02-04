@@ -1,24 +1,13 @@
 ﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Body;
 using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Security.Principal;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses
 {
-    internal class BodySimilarityScoreRecord : BodyRecord
+    internal class BodySimilarityScoreRecord(BodyData refBody, StatScannerSettings settings, RecordKind recordKind, IRecordData csvData)
+        : BodyRecord(settings, recordKind, csvData, $"Similarity Score: {refBody.Name}")
     {
-        private BodyData _refBody;
-
-        public BodySimilarityScoreRecord(BodyData refBody, StatScannerSettings settings, RecordKind recordKind, IRecordData csvData)
-            : base(settings, recordKind, csvData, $"Similarity Score: {refBody.Name}")
-        {
-            _refBody = refBody;
-        }
+        private readonly BodyData _refBody = refBody;
 
         public override bool Enabled => Settings.EnableElwSimilarityRecords;
         public override string ValueFormat { get => "{0:0.##}"; }
@@ -26,11 +15,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseCla
 
         public override List<Result> CheckFSSAllBodiesFound(FSSAllBodiesFound allBodiesFound, Dictionary<int, Scan> scans)
         {
-            List<Scan> elws = scans.Values.Where(s => Constants.SCAN_EARTHLIKE.Equals(s.PlanetClass)).ToList();
+            List<Scan> elws = [.. scans.Values.Where(s => Constants.SCAN_EARTHLIKE.Equals(s.PlanetClass))];
 
-            if (!Enabled || elws.Count == 0) return new();
+            if (!Enabled || elws.Count == 0) return [];
 
-            List<Result> results = new();
+            List<Result> results = [];
 
             foreach (var scan in elws)
             {
