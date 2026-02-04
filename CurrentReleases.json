@@ -8,7 +8,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Aggregator-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Aggregator-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -16,7 +16,7 @@
         "PluginName": "ObservatoryArchivist",
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Archivist-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Archivist-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -29,7 +29,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/FleetCommander-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/FleetCommander-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -37,7 +37,7 @@
         "PluginName": "ObservatoryHelm",
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Helm-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Helm-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.0"
         }
     },
@@ -50,7 +50,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/PluginAutoUpdater-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/PluginAutoUpdater-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -63,7 +63,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/ProspectorBasic-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/ProspectorBasic-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -76,7 +76,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/StatScanner-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/StatScanner-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -89,7 +89,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Aggregator-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Aggregator-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -97,7 +97,7 @@
         "PluginName": "Archivist",
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Archivist-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Archivist-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -110,7 +110,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/FleetCommander-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/FleetCommander-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -118,7 +118,7 @@
         "PluginName": "Helm",
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Helm-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/Helm-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.0"
         }
     },
@@ -131,7 +131,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/PluginAutoUpdater-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/PluginAutoUpdater-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -144,7 +144,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/ProspectorBasic-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/ProspectorBasic-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     },
@@ -157,7 +157,7 @@
         },
         "Beta":{
             "Version": "1.4.0.26035",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/StatScanner-v1.4.0.26035-beta-beta.eop",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26035-beta/StatScanner-v1.4.0.26035-beta.eop",
             "MinRequiredCoreVersion": "1.4.3"
         }
     }
