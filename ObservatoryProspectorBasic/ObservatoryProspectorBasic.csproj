@@ -2,9 +2,10 @@
 
   <PropertyGroup>
 	<TargetFramework>net8.0-windows</TargetFramework>
-	<ImplicitUsings>enable</ImplicitUsings>
-	<SignAssembly>false</SignAssembly>
-	<AssemblyOriginatorKeyFile>ObservatoryKey.snk</AssemblyOriginatorKeyFile>
+	  <ImplicitUsings>enable</ImplicitUsings>
+	  <UseWindowsForms>true</UseWindowsForms>
+	  <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+	  <ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
 	<CopyLocalLockFileAssemblies>True</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 

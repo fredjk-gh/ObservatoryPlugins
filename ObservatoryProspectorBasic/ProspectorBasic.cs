@@ -1,4 +1,6 @@
 ﻿using com.github.fredjk_gh.PluginCommon.AutoUpdates;
+using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
 using Microsoft.VisualBasic;
 using Observatory.Framework;
@@ -6,39 +8,36 @@ using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime;
 using static com.github.fredjk_gh.ObservatoryProspectorBasic.SynthRecipes;
 
 namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
     public class ProspectorBasic : IObservatoryWorker
     {
-        private static Guid PLUGIN_GUID = new("7e43a6bd-3ccc-486a-b027-3b9fb8258bcc");
+        private static readonly Guid PLUGIN_GUID = new("7e43a6bd-3ccc-486a-b027-3b9fb8258bcc");
         private const int ALERT_COALESCING_ID = -2;
+        private const int DEFAULT_COALESCING_ID = 1001;
         private const string LimpetDronesKey = "drones";
         private const string LimpetDronesName = "Limpets";
         private const string TritiumKey = "tritium";
         private const string TritiumName = "Tritium";
-        private static AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
-        private static AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector");
-        private static AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/prospector");
-        private static AboutInfo ABOUT_INFO = new()
+        private static readonly AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
+        private static readonly AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector");
+        private static readonly AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/prospector");
+        private static readonly AboutInfo ABOUT_INFO = new()
         {
             FullName = "Prospector Basic",
             ShortName = "Prospector",
             Description = "Prospector is a miner's must-have tool, assisting you through the entire prospecting and mining workflow.",
             AuthorName = "fredjk-gh",
-            Links = new()
-            {
+            Links =
+            [
                 GH_LINK,
                 GH_RELEASE_NOTES_LINK,
                 DOC_LINK,
-            }
+            ]
         };
 
         // TODO: Use PluginCommon version instead.
@@ -59,8 +58,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         private readonly TrackedStats _stats = new();
         private readonly Guid?[] _prospectorNotifications = new Guid?[2];
         private Guid? _cargoNotification = null;
-        private List<ProspectorGrid> _deferredGridItems = new();
-        ObservableCollection<object> GridCollection = new();
+        private readonly List<ProspectorGrid> _deferredGridItems = [];
+        ObservableCollection<object> GridCollection = [];
 
         public static Guid Guid => PLUGIN_GUID;
         public AboutInfo AboutInfo => ABOUT_INFO;
@@ -100,7 +99,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 case SAASignalsFound saaSignalsFound:
                     OnRingPing(saaSignalsFound);
                     break;
-                case FSSAllBodiesFound allBodies:
+                case FSSAllBodiesFound:
                     if (!_data.AllBodiesFound)
                     {
                         FindSynthMatRichBodies();
@@ -111,9 +110,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     // Reset when we jump to supercruise or another system.
                     Reset("SupercruiseEntry");
                     _data.LocationChanged(scEntry.StarSystem);
-                    if (scEntry is SupercruiseExit)
+                    if (scEntry is SupercruiseExit scExit)
                     {
-                        SupercruiseExit scExit = (SupercruiseExit)scEntry;
                         _data.LocationChanged(scExit.Body);
                     }
                     break;
@@ -180,7 +178,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                         _stats.LimpetsAbandoned += eject.Count;
                     UpdateCargoNotification(false /* newNotification */);
                     break;
-                case LaunchDrone launchDrone:
+                case LaunchDrone:
                     // Ignore if unset (we can't subtract from a value we don't know).
                     Debug.WriteLineIf(enableDebug, "LaunchDrone: Limpets -= 1");
                     _data.CargoRemove(LimpetDronesKey, 1);
@@ -192,31 +190,11 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     Debug.WriteLineIf(_data.CargoMax > 0 && enableDebug, $"Loadout: New cargoMax: {loadout.CargoCapacity}");
                     UpdateCargoNotification(false /* newNotification */);
                     break;
-                //case Cargo cargoEvent:
-                case CargoFile cargoEvent:
-                    _data.CargoCur = cargoEvent.Count;
-                    if (cargoEvent.Inventory != null && !cargoEvent.Inventory.IsEmpty) // Usually on game load or loadout change.
-                    {
-                        Debug.WriteLineIf(_data.CargoCur > 0 && enableDebug, $"Cargo w/Inventory: cargoCur: {_data.CargoCur}");
-                        //Reset("Cargo w/Inventory"); // CargoFile happens constantly, not only on game load now -- this ruins stats.
-                        _data.Cargo.Clear(); // This is a cargo state reset.
-                        foreach (CargoType inventoryItem in cargoEvent.Inventory)
-                        {
-                            string inventoryKey = CargoKey(inventoryItem.Name, inventoryItem.Name_Localised);
-                            _data.CargoAdd(inventoryKey, inventoryItem.Count);
-                        }
-                        UpdateCargoNotification(false /* newNotification */);
-                    }
-                    else if (cargoEvent.Count == 0 && _data.Cargo.Values.Sum() > 0)
-                    {
-                        // On rare occasion we'll find that the game doesn't properly account for all launched limpets and we'll
-                        // end up with limpets "stuck" in our inventory. When the cargoEvent reports 0, we have an opportunity to
-                        // fix. So clear the cargo contents and effectively reset.
-                        Debug.WriteLineIf(enableDebug, $"Cargo event with 0 count but we think we still have {_data.Cargo.Values.Sum()} items... Correction!");
-                        Reset("Cargo");
-                        _data.Cargo.Clear();
-                        UpdateCargoNotification(false /* newNotification */);
-                    }
+                case Cargo cargoEvent:
+                    OnCargoEvent(cargoEvent.Count, cargoEvent.Inventory);
+                    break;
+                case CargoFile cargoFile:
+                    OnCargoEvent(cargoFile.Count, cargoFile.Inventory);
                     break;
                 case MarketSell marketSell:
                     string sellKey = CargoKey(marketSell.Type, marketSell.Type_Localised);
@@ -262,23 +240,21 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     _data.RawMatInventoryUpdate(mats);
                     break;
                 case MaterialCollected matCollected:
-                    if (matCollected.Category.ToLower() != "raw") break;
-                    var discarded = matCollected as MaterialDiscarded;
-                    if (discarded != null)
+                    if (!matCollected.Category.Equals("raw", StringComparison.OrdinalIgnoreCase)) break;
+                    if (matCollected is MaterialDiscarded discarded)
                         // Why would one ever do this!? Also, how?
                         _data.RawMatInventorySubtract(discarded.Name, discarded.Count);
                     else
                         _data.RawMatInventoryAdd(matCollected.Name, matCollected.Count);
                     break;
                 case MaterialTrade matTrade:
-                    if (matTrade.Paid.Category.ToLower() == "raw")
+                    if (matTrade.Paid.Category.Equals("raw", StringComparison.CurrentCultureIgnoreCase))
                         _data.RawMatInventorySubtract(matTrade.Paid.Material, matTrade.Paid.Quantity);
-                    if (matTrade.Received.Category.ToLower() == "raw")
+                    if (matTrade.Received.Category.Equals("raw", StringComparison.CurrentCultureIgnoreCase))
                         _data.RawMatInventorySubtract(matTrade.Received.Material, matTrade.Received.Quantity);
 
                     break;
-                case Undocked undock:
-                    // TODO: Add new mining modules (from T11).
+                case Undocked:
                     int? miningModules = _data.MiningModuleCount();
                     if ((miningModules ?? 0) > 0 && !_data.Cargo.ContainsKey(LimpetDronesKey))
                     {
@@ -307,15 +283,42 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 // - Engineer contributions
                 // - Engineer crafting
                 // - Scientific Research - is this even used?
-                case Shutdown shutdown:
+                case Shutdown:
                     Reset("Shutdown", true);
                     break;
             }
         }
 
+        private void OnCargoEvent(int count, System.Collections.Immutable.ImmutableList<CargoType> inventory)
+        {
+            _data.CargoCur = count;
+            if (inventory != null && !inventory.IsEmpty) // Usually on game load or loadout change.
+            {
+                Debug.WriteLineIf(_data.CargoCur > 0 && enableDebug, $"Cargo w/Inventory: cargoCur: {_data.CargoCur}");
+                //Reset("Cargo w/Inventory"); // CargoFile happens constantly, not only on game load now -- this ruins stats.
+                _data.Cargo.Clear(); // This is a cargo state reset.
+                foreach (CargoType inventoryItem in inventory)
+                {
+                    string inventoryKey = CargoKey(inventoryItem.Name, inventoryItem.Name_Localised);
+                    _data.CargoAdd(inventoryKey, inventoryItem.Count);
+                }
+                UpdateCargoNotification(false /* newNotification */);
+            }
+            else if (count == 0 && _data.Cargo.Values.Sum() > 0)
+            {
+                // On rare occasion we'll find that the game doesn't properly account for all launched limpets and we'll
+                // end up with limpets "stuck" in our inventory. When the cargoFile reports 0, we have an opportunity to
+                // fix. So clear the cargo contents and effectively reset.
+                Debug.WriteLineIf(enableDebug, $"Cargo event with 0 count but we think we still have {_data.Cargo.Values.Sum()} items... Correction!");
+                Reset("Cargo");
+                _data.Cargo.Clear();
+                UpdateCargoNotification(false /* newNotification */);
+            }
+        }
+
         private void FindSynthMatRichBodies()
         {
-            HashSet<string> allAvailableMats = new();
+            HashSet<string> allAvailableMats = [];
             if (_settings.MatsFSDBoost) allAvailableMats.UnionWith(FindAvailableSynthRecipeLevels("FSD Boost", SynthRecipes.FSDBoost));
             if (_settings.MatsAFMURefill) allAvailableMats.UnionWith(FindAvailableSynthRecipeLevels("AFMU Refill", SynthRecipes.AFMURefill));
             if (_settings.MatsSRVRefuel) allAvailableMats.UnionWith(FindAvailableSynthRecipeLevels("SRV Refuel", SynthRecipes.SRVRefuel));
@@ -333,7 +336,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 {
                     Sender = AboutInfo.ShortName,
                     CoalescingId =  e.Key.BodyID,
-                    Title =  _data.GetBodyTitle(e.Key.BodyName),
+                    Title =  SharedLogic.GetBodyDisplayName(e.Key.BodyName),
                     Detail = $"Good source of synth mats",
                     ExtendedDetails = $"Materials: {string.Join(", ", e.Value.Select(bmc => $"{bmc.Material}: {bmc.Percent:n2}%"))}",
                     Rendering = NotificationRendering.PluginNotifier,
@@ -352,8 +355,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         private HashSet<string> FindAvailableSynthRecipeLevels(string recipeName, Dictionary<SynthLevel, HashSet<string>> recipe)
         {
-            List<SynthLevel> synthLevelMatsFound = new();
-            HashSet<string> availableMats = new();
+            List<SynthLevel> synthLevelMatsFound = [];
+            HashSet<string> availableMats = [];
 
             foreach (var r in recipe)
             {
@@ -367,7 +370,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (synthLevelMatsFound.Count > 0)
             {
                 var levelsStr = $"{string.Join(" | ", synthLevelMatsFound.Select(l => SynthRecipes.SynthLevelSymbols[l]))}";
-                List<ProspectorGrid> gridItems = new();
+                List<ProspectorGrid> gridItems = [];
                 AddGridItem(new ProspectorGrid()
                 {
                     Location = _data.SystemName,
@@ -513,7 +516,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             if (scan.Rings == null || scan.Rings.IsEmpty || _data.AlreadyReportedScansSaaSignals.Contains(scan.BodyName) || !_settings.MentionPotentiallyMineableRings || !_settings.MentionableRings.HasValue) return;
 
             _data.AlreadyReportedScansSaaSignals.Add(scan.BodyName);
-            List<RingDetails> ringsOfInterest = new();
+            List<RingDetails> ringsOfInterest = [];
             RingType mentionableRings = _settings.MentionableRings.Value;
             foreach (Ring ring in scan.Rings)
             {
@@ -534,7 +537,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                         string desiredCommodities = string.Join(", ", _settings.DesirableCommonditiesByRingType(rt).Select(c => c.ToString()));
                         var details = new RingDetails()
                         {
-                            ShortName = _data.GetShortBodyName(ring.Name, scan.BodyName),
+                            ShortName = SharedLogic.GetBodyShortName(ring.Name, scan.BodyName),
                             RingType = rt.DisplayString(),
                             Commodities = $"[{desiredCommodities}]",
                             Density = $"Density: {densityMTperkm3:n1} MT/km^3",
@@ -546,7 +549,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             }
             if (ringsOfInterest.Count == 0) return;
 
-            var shortBodyName = _data.GetShortBodyName(scan.BodyName);
+            var shortBodyName = SharedLogic.GetBodyShortName(scan.BodyName, _data.SystemName);
             var detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => t.ToString()));
             var bodyDistance = $"distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
             Debug.WriteLineIf(enableDebug, $"Scan: Interesting rings at body {shortBodyName}: {detailsCommaSeparated}, {bodyDistance}");
@@ -558,9 +561,9 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             });
             Core.SendNotification(new NotificationArgs()
             {
-                Title = _data.GetBodyTitle(shortBodyName),
+                Title = SharedLogic.GetBodyDisplayName(shortBodyName),
                 Detail = string.Join(", ", ringsOfInterest.Select(t => $"{t.RingType} Ring")),
-                ExtendedDetails = $"{detailsCommaSeparated}, {bodyDistance}",
+                ExtendedDetails = $"{detailsCommaSeparated}", // Don't include distance here -- it's not consistent over multiple distances and produces dupe notifs in Archivist.
                 Sender = AboutInfo.ShortName,
                 CoalescingId = scan.BodyID,
             });
@@ -590,12 +593,11 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 if (!_data.CurrentLocationShown) _data.CurrentLocationShown = true;
             }
 
-            Commodities ml;
-            if (Enum.TryParse<Commodities>(prospected.MotherlodeMaterial, true, out ml) && _settings.getFor(ml))
+            if (Enum.TryParse<Commodities>(prospected.MotherlodeMaterial, true, out Commodities ml) && _settings.GetFor(ml))
             {
                 // Found a core of interest!
                 _stats.GoodRocks++;
-                string name = CommodityName(prospected.MotherlodeMaterial, prospected.MotherlodeMaterial_Localised);
+                string name = CargoHelper.CommodityName(prospected.MotherlodeMaterial, prospected.MotherlodeMaterial_Localised);
                 string cumulativeStats = $"{(_stats.GoodRocks * 1000.0) / (_stats.ProspectorsEngaged * 10.0):N1}% good rocks ({_stats.GoodRocks}/{_stats.ProspectorsEngaged})";
                 AddGridItem(new ProspectorGrid
                 {
@@ -613,19 +615,18 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 return;
             }
 
-            Dictionary<string, float> desireableCommodities = new();
+            Dictionary<string, float> desireableCommodities = [];
             float desireableCommoditiesPercentSum = 0.0f;
             foreach (var m in prospected.Materials)
             {
-                Commodities c;
-                if (!Enum.TryParse<Commodities>(m.Name, true, out c))
+                if (!Enum.TryParse<Commodities>(m.Name, true, out Commodities c))
                 {
                     continue;
                 }
 
-                if (_settings.getFor(c))
+                if (_settings.GetFor(c))
                 {
-                    string name = CommodityName(m.Name, m.Name_Localised);
+                    string name = CargoHelper.CommodityName(m.Name, m.Name_Localised);
                     desireableCommodities.Add(name, m.Proportion);
                     desireableCommoditiesPercentSum += m.Proportion;
                 }
@@ -661,7 +662,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     details = $"Asteroid is {desireableCommoditiesPercentSum:N0} percent {commodities}{highMaterialContent}";
                 }
                 AddOrUpdateProspectorNotification(prospectorId, MakeProspectorNotificationArgs(title, details, prospectorId, NotificationRendering.All));
-                Debug.WriteLine(enableDebug, $"\t--Grid Update: {commodities}; {percentageString}, {cumulativeStats}");
+                Debug.WriteLineIf(enableDebug, $"\t--Grid Update: {commodities}; {percentageString}, {cumulativeStats}");
                 return;
             }
             // If we got here, we didn't find anything interesting.
@@ -683,26 +684,25 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         private void OnRingPing(SAASignalsFound saaSignalsFound)
         {
             if (String.IsNullOrEmpty(_data.SystemName)) return;
-            var ringName = _data.GetShortBodyName(saaSignalsFound.BodyName);
+            var ringName = SharedLogic.GetBodyShortName(saaSignalsFound.BodyName, _data.SystemName);
             if (saaSignalsFound.Signals == null || saaSignalsFound.Signals.Count == 0 || _data.AlreadyReportedScansSaaSignals.Contains(ringName)
                     || !ringName.Contains(" Ring", StringComparison.InvariantCultureIgnoreCase))
                 return;
 
             _data.AlreadyReportedScansSaaSignals.Add(ringName);
-            Dictionary<string, int> desireableCommodities = new();
-            List<string> notificationDetail = new();
+            Dictionary<string, int> desireableCommodities = [];
+            List<string> notificationDetail = [];
 
             foreach (var m in saaSignalsFound.Signals)
             {
-                Commodities c;
-                if (!Enum.TryParse<Commodities>(m.Type, true, out c))
+                if (!Enum.TryParse<Commodities>(m.Type, true, out Commodities c))
                 {
                     continue;
                 }
 
-                if (_settings.getFor(c))
+                if (_settings.GetFor(c))
                 {
-                    string name = CommodityName(m.Type, m.Type);
+                    string name = CargoHelper.CommodityName(m.Type, m.Type);
                     desireableCommodities.Add(name, m.Count);
 
                     AddGridItem(new ProspectorGrid
@@ -738,13 +738,14 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             NotificationArgs args = new()
             {
                 Title = title,
-                Detail = $"[{DateTime.UtcNow.ToString("h:mm:ss")}] {detail}",
+                Detail = $"[{DateTime.UtcNow:h:mm:ss}] {detail}",
                 DetailSsml = $"<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"en - US\"><voice name=\"\">{detail}</voice></speak>",
                 Timeout = 300 * 1000, // 5 minutes
                 XPos = 1,
                 YPos = ((index % 2) + 1) * 15,
                 Rendering = rendering,
                 Sender = AboutInfo.ShortName,
+                CoalescingId = DEFAULT_COALESCING_ID,
             };
             return args;
         }
@@ -794,7 +795,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             // Commodity name prefers LocalizedName but uses name as a fallback. However,
             // CargoKey prefers name and fallsback to localised name if not set (rare).
             // Always lower-case it (DisplayNames work best this way). And strip out the $..._name; junk.
-            string displayName = CommodityName(name, localizedName);
+            string displayName = CargoHelper.CommodityName(name, localizedName);
             string candidateKey = name.ToLowerInvariant().Replace("$", "").Replace("_name;", "");
 
             if (candidateKey.Contains("limpet")) return LimpetDronesKey; // skip display name stuff here as it's pre-filled
@@ -809,30 +810,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         private string CargoName(string key)
         {
-            return DisplayNames.ContainsKey(key) ? DisplayNames[key] : key;
-        }
-
-        private string CommodityName(string fallbackName, string localizedName = "")
-        {
-            // Anything cached?
-            if (!string.IsNullOrEmpty(fallbackName) && DisplayNames.ContainsKey(fallbackName)) return DisplayNames[fallbackName];
-            if (!string.IsNullOrEmpty(localizedName) && DisplayNames.ContainsKey(localizedName)) return DisplayNames[localizedName];
-
-            // Start with fallback, use localized if available.
-            string displayName = fallbackName;
-            if (!string.IsNullOrEmpty(localizedName))
-            {
-                displayName = localizedName;
-            }
-
-            // A couple overrides:
-            if (displayName.ToLowerInvariant().Contains("limpet"))
-            {
-                DisplayNames[displayName] = LimpetDronesName;
-                return LimpetDronesName;
-            }
-            if (!string.IsNullOrEmpty(fallbackName) && fallbackName != displayName) DisplayNames[fallbackName] = displayName;
-            return displayName;
+            return DisplayNames.GetValueOrDefault(key, key);
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -855,7 +833,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         public void Load(IObservatoryCore observatoryCore)
         {
-            GridCollection = new();
+            GridCollection = [];
             ProspectorGrid uiObject = new();
 
             GridCollection.Add(uiObject);

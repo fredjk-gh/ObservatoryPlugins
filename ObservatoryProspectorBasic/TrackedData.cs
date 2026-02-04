@@ -1,37 +1,23 @@
-﻿using Microsoft.VisualBasic;
+﻿using com.github.fredjk_gh.PluginCommon.Data;
 using Observatory.Framework.Files.Journal;
-using Observatory.Framework.Files.ParameterTypes;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
     internal class TrackedData
     {
-        public class BodyMaterialContent
+        public class BodyMaterialContent(string bodyName, int bodyID, string mat, float percent)
         {
-            public BodyMaterialContent(string bodyName, int bodyID, string mat, float percent)
-            {
-                BodyName = bodyName;
-                BodyID = bodyID;
-                Material = mat;
-                Percent = percent;
-            }
-
-            public string BodyName { get; }
-            public int BodyID { get; }
-            public string Material { get; }
-            public float Percent { get; }
+            public string BodyName { get; } = bodyName;
+            public int BodyID { get; } = bodyID;
+            public string Material { get; } = mat;
+            public float Percent { get; } = percent;
         }
 
-        private readonly Dictionary<string, int> _rawMatInventory = new();
-        private readonly Dictionary<string, List<BodyMaterialContent>> _matContentByMat = new();
-        private readonly HashSet<string> _alreadyReportedScansSaaSignals = new();
-        private readonly Dictionary<string, int> _cargo = new();
+        private readonly Dictionary<string, int> _rawMatInventory = [];
+        private readonly Dictionary<string, List<BodyMaterialContent>> _matContentByMat = [];
+        private readonly HashSet<string> _alreadyReportedScansSaaSignals = [];
+        private readonly Dictionary<string, int> _cargo = [];
         private Loadout _lastLoadout = null;
 
         public string SystemName { get; private set; }
@@ -113,13 +99,11 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         {
             if (!scan.Landable) return;
 
-            var bodyShortName = GetShortBodyName(scan.BodyName);
+            var bodyShortName = SharedLogic.GetBodyShortName(scan.BodyName, SystemName);
             foreach (var mat in scan.Materials)
             {
                 var matLower = mat.Name.ToLower();
-                if (!_matContentByMat.ContainsKey(matLower))
-                    _matContentByMat[matLower] = new();
-
+                _matContentByMat.TryAdd(matLower, []);
                 _matContentByMat[matLower].Add(new BodyMaterialContent(bodyShortName, scan.BodyID, matLower, mat.Percent));
             }
         }
@@ -134,7 +118,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 int cargoTotal = _cargo.Values.Sum();
                 if (cargoTotal + qty > CargoMax.Value)
                 {
-                    Debug.WriteLine($"CargoMax would be exceeded by adding {qty} items of type {name}: {cargoTotal} + {qty} > {CargoMax.Value}! Adding only {CargoMax.Value - cargoTotal}!");
+                    if (CargoMax.HasValue && CargoMax.Value == 756)
+                        Debug.WriteLine($"CargoMax would be exceeded by adding {qty} items of type {name}: {cargoTotal} + {qty} > {CargoMax.Value}! Adding only {CargoMax.Value - cargoTotal}!");
                     _cargo[name] += (CargoMax.Value - cargoTotal);
                 }
                 else
@@ -152,9 +137,9 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         public int CargoRemove(string name, int qty)
         {
-            if (!_cargo.ContainsKey(name)) return 0;
+            if (!_cargo.TryGetValue(name, out int cCount)) return 0;
 
-            int remainder = (_cargo[name] -= Math.Min(qty, _cargo[name]));
+            int remainder = (_cargo[name] -= Math.Min(qty, cCount));
             if (remainder <= 0)
             {
                 _cargo.Remove(name);
@@ -165,24 +150,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         public int CargoGet(string name)
         {
-            if (!_cargo.ContainsKey(name)) return 0;
-            return _cargo[name];
-        }
-
-        // TODO: Extract these to shared library or move into IObservatoryCore?
-        public string GetShortBodyName(string bodyName, string baseName = "")
-        {
-            return string.IsNullOrEmpty(baseName) ? bodyName.Replace(SystemName, "").Trim() : bodyName.Replace(baseName, "").Trim();
-        }
-
-        // TODO Handle Barycenters?
-        public string GetBodyTitle(string bodyName)
-        {
-            if (bodyName.Length == 0)
-            {
-                return "Primary Star";
-            }
-            return $"Body {bodyName}";
+            if (!_cargo.TryGetValue(name, out int cCount)) return 0;
+            return cCount;
         }
 
         public void LoadoutChanged(Loadout loadout)
@@ -206,8 +175,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             return count;
         }
 
-        private readonly HashSet<string> MINING_MODULES = new()
-        {
+        private readonly HashSet<string> MINING_MODULES =
+        [
             "hpt_mininglaser_turret_small",
             "hpt_mininglaser_turret_medium",
             "hpt_mininglaser_fixed_small_advanced",
@@ -219,8 +188,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             "hpt_mining_abrblstr_turret_small",
             "hpt_mining_seismchrgwarhd_fixed_medium",
             "hpt_mining_seismchrgwarhd_turret_medium",
-            "int_multidronecontrol_mining_size3_class1",
-            "int_multidronecontrol_mining_size3_class3",
+            "hpt_miningtoolv2_fixed_large",
             "int_refinery_size1_class1",
             "int_refinery_size2_class1",
             "int_refinery_size3_class1",
@@ -241,6 +209,26 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             "int_refinery_size2_class5",
             "int_refinery_size3_class5",
             "int_refinery_size4_class5",
+            "int_dronecontrol_collection_size1_class1",
+            "int_dronecontrol_collection_size1_class2",
+            "int_dronecontrol_collection_size1_class3",
+            "int_dronecontrol_collection_size1_class4",
+            "int_dronecontrol_collection_size1_class5",
+            "int_dronecontrol_collection_size3_class1",
+            "int_dronecontrol_collection_size3_class2",
+            "int_dronecontrol_collection_size3_class3",
+            "int_dronecontrol_collection_size3_class4",
+            "int_dronecontrol_collection_size3_class5",
+            "int_dronecontrol_collection_size5_class1",
+            "int_dronecontrol_collection_size5_class2",
+            "int_dronecontrol_collection_size5_class3",
+            "int_dronecontrol_collection_size5_class4",
+            "int_dronecontrol_collection_size5_class5",
+            "int_dronecontrol_collection_size7_class1",
+            "int_dronecontrol_collection_size7_class2",
+            "int_dronecontrol_collection_size7_class3",
+            "int_dronecontrol_collection_size7_class4",
+            "int_dronecontrol_collection_size7_class5",
             "int_dronecontrol_prospector_size1_class1",
             "int_dronecontrol_prospector_size1_class2",
             "int_dronecontrol_prospector_size1_class3",
@@ -261,6 +249,9 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             "int_dronecontrol_prospector_size7_class3",
             "int_dronecontrol_prospector_size7_class4",
             "int_dronecontrol_prospector_size7_class5",
-        };
+            "int_multidronecontrol_mining_size3_class1",
+            "int_multidronecontrol_mining_size3_class3",
+            "int_multidronecontrol_miningv2_size5_class5",
+        ];
     }
 }

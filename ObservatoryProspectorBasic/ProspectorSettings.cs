@@ -21,12 +21,12 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             EnableAutoUpdates = true;
         }
 
-        private Dictionary<Commodities, Boolean> ProspectingFor = new();
-        internal bool getFor(Commodities commodity)
+        private readonly Dictionary<Commodities, Boolean> ProspectingFor = [];
+        internal bool GetFor(Commodities commodity)
         {
             return ProspectingFor.GetValueOrDefault(commodity, false);
         }
-        internal void setFor(Commodities c, bool value)
+        internal void SetFor(Commodities c, bool value)
         {
             ProspectingFor[c] = value;
         }
@@ -36,9 +36,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         {
             get
             {
-                List<RingType> allDesiredRingTypes = ProspectingFor.Where(kvp => kvp.Value)
-                    .Select(kvp => kvp.Key.Details().RingType)
-                    .ToList();
+                List<RingType> allDesiredRingTypes = [.. ProspectingFor.Where(kvp => kvp.Value).Select(kvp => kvp.Key.Details().RingType)];
                 RingType? desiredRingTypes = null;
                 foreach (RingType rt in allDesiredRingTypes)
                 {
@@ -71,9 +69,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
         public List<Commodities> DesirableCommonditiesByRingType(RingType ringType)
         {
-            return ProspectingFor.Where(kvp => kvp.Value && kvp.Key.Details().RingType.HasFlag(ringType))
-                .Select(kvp => kvp.Key)
-                .ToList();
+            return [.. ProspectingFor.Where(kvp => kvp.Value && kvp.Key.Details().RingType.HasFlag(ringType)).Select(kvp => kvp.Key)];
         }
 
         // Minerals:
@@ -81,134 +77,134 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         [SettingDisplayName("Alexandrite")]
         public bool ProspectAlexandrite
         {
-            get { return getFor(Commodities.Alexandrite); }
-            set { setFor(Commodities.Alexandrite, value); }
+            get { return GetFor(Commodities.Alexandrite); }
+            set { SetFor(Commodities.Alexandrite, value); }
         }
         [SettingDisplayName("Bauxite")]
         public bool ProspectBauxite
         {
-            get { return getFor(Commodities.Bauxite); }
-            set { setFor(Commodities.Bauxite, value); }
+            get { return GetFor(Commodities.Bauxite); }
+            set { SetFor(Commodities.Bauxite, value); }
         }
         [SettingDisplayName("Benitoite")]
         public bool ProspectBenitoite
         {
-            get { return getFor(Commodities.Benitoite); }
-            set { setFor(Commodities.Benitoite, value); }
+            get { return GetFor(Commodities.Benitoite); }
+            set { SetFor(Commodities.Benitoite, value); }
         }
         [SettingDisplayName("Bertrandite")]
         public bool ProspectBertrandite
         {
-            get { return getFor(Commodities.Bertrandite); }
-            set { setFor(Commodities.Bertrandite, value); }
+            get { return GetFor(Commodities.Bertrandite); }
+            set { SetFor(Commodities.Bertrandite, value); }
         }
         [SettingDisplayName("Bromellite")]
         public bool ProspectBromellite
         {
-            get { return getFor(Commodities.Bromellite); }
-            set { setFor(Commodities.Bromellite, value); }
+            get { return GetFor(Commodities.Bromellite); }
+            set { SetFor(Commodities.Bromellite, value); }
         }
         [SettingDisplayName("Coltan")]
         public bool ProspectColtan
         {
-            get { return getFor(Commodities.Coltan); }
-            set { setFor(Commodities.Coltan, value); }
+            get { return GetFor(Commodities.Coltan); }
+            set { SetFor(Commodities.Coltan, value); }
         }
         [SettingDisplayName("Gallite")]
         public bool ProspectGallite
         {
-            get { return getFor(Commodities.Gallite); }
-            set { setFor(Commodities.Gallite, value); }
+            get { return GetFor(Commodities.Gallite); }
+            set { SetFor(Commodities.Gallite, value); }
         }
         [SettingDisplayName("Grandidierite")]
         public bool ProspectGrandidierite
         {
-            get { return getFor(Commodities.Grandidierite); }
-            set { setFor(Commodities.Grandidierite, value); }
+            get { return GetFor(Commodities.Grandidierite); }
+            set { SetFor(Commodities.Grandidierite, value); }
         }
         [SettingDisplayName("Indite")]
         public bool ProspectIndite
         {
-            get { return getFor(Commodities.Indite); }
-            set { setFor(Commodities.Indite, value); }
+            get { return GetFor(Commodities.Indite); }
+            set { SetFor(Commodities.Indite, value); }
         }
         [SettingDisplayName("Lepidolite")]
         public bool ProspectLepidolite
         {
-            get { return getFor(Commodities.Lepidolite); }
-            set { setFor(Commodities.Lepidolite, value); }
+            get { return GetFor(Commodities.Lepidolite); }
+            set { SetFor(Commodities.Lepidolite, value); }
         }
         [SettingDisplayName("Lithium Hydroxide")]
         public bool ProspectLithiumHydroxide
         {
-            get { return getFor(Commodities.LithiumHydroxide); }
-            set { setFor(Commodities.LithiumHydroxide, value); }
+            get { return GetFor(Commodities.LithiumHydroxide); }
+            set { SetFor(Commodities.LithiumHydroxide, value); }
         }
         [SettingDisplayName("Low Temperature Diamonds")]
         public bool ProspectLowTemperatureDiamond
         {
-            get { return getFor(Commodities.LowTemperatureDiamond); }
-            set { setFor(Commodities.LowTemperatureDiamond, value); }
+            get { return GetFor(Commodities.LowTemperatureDiamond); }
+            set { SetFor(Commodities.LowTemperatureDiamond, value); }
         }
         [SettingDisplayName("Methane Clathrate")]
         public bool ProspectMethaneClathrate
         {
-            get { return getFor(Commodities.MethaneClathrate); }
-            set { setFor(Commodities.MethaneClathrate, value); }
+            get { return GetFor(Commodities.MethaneClathrate); }
+            set { SetFor(Commodities.MethaneClathrate, value); }
         }
         [SettingDisplayName("Methanol Monohydrate Crystals")]
         public bool ProspectMethanolMonohydrateCrystals
         {
-            get { return getFor(Commodities.MethanolMonohydrateCrystals); }
-            set { setFor(Commodities.MethanolMonohydrateCrystals, value); }
+            get { return GetFor(Commodities.MethanolMonohydrateCrystals); }
+            set { SetFor(Commodities.MethanolMonohydrateCrystals, value); }
         }
         [SettingDisplayName("Monazite")]
         public bool ProspectMonazite
         {
-            get { return getFor(Commodities.Monazite); }
-            set { setFor(Commodities.Monazite, value); }
+            get { return GetFor(Commodities.Monazite); }
+            set { SetFor(Commodities.Monazite, value); }
         }
         [SettingDisplayName("Musgravite")]
         public bool ProspectMusgravite
         {
-            get { return getFor(Commodities.Musgravite); }
-            set { setFor(Commodities.Musgravite, value); }
+            get { return GetFor(Commodities.Musgravite); }
+            set { SetFor(Commodities.Musgravite, value); }
         }
         [SettingDisplayName("Void Opal")]
         public bool ProspectOpal
         {
-            get { return getFor(Commodities.Opal); }
-            set { setFor(Commodities.Opal, value); }
+            get { return GetFor(Commodities.Opal); }
+            set { SetFor(Commodities.Opal, value); }
         }
         [SettingDisplayName("Painite")]
         public bool ProspectPainite
         {
-            get { return getFor(Commodities.Painite); }
-            set { setFor(Commodities.Painite, value); }
+            get { return GetFor(Commodities.Painite); }
+            set { SetFor(Commodities.Painite, value); }
         }
         [SettingDisplayName("Rhodplumsite")]
         public bool ProspectRhodplumsite
         {
-            get { return getFor(Commodities.Rhodplumsite); }
-            set { setFor(Commodities.Rhodplumsite, value); }
+            get { return GetFor(Commodities.Rhodplumsite); }
+            set { SetFor(Commodities.Rhodplumsite, value); }
         }
         [SettingDisplayName("Rutile")]
         public bool ProspectRutile
         {
-            get { return getFor(Commodities.Rutile); }
-            set { setFor(Commodities.Rutile, value); }
+            get { return GetFor(Commodities.Rutile); }
+            set { SetFor(Commodities.Rutile, value); }
         }
         [SettingDisplayName("Serendibite")]
         public bool ProspectSerendibite
         {
-            get { return getFor(Commodities.Serendibite); }
-            set { setFor(Commodities.Serendibite, value); }
+            get { return GetFor(Commodities.Serendibite); }
+            set { SetFor(Commodities.Serendibite, value); }
         }
         [SettingDisplayName("Uraninite")]
         public bool ProspectUraninite
         {
-            get { return getFor(Commodities.Uraninite); }
-            set { setFor(Commodities.Uraninite, value); }
+            get { return GetFor(Commodities.Uraninite); }
+            set { SetFor(Commodities.Uraninite, value); }
         }
 
         // Metals:
@@ -216,50 +212,50 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         [SettingDisplayName("Cobalt")]
         public bool ProspectCobalt
         {
-            get { return getFor(Commodities.Cobalt); }
-            set { setFor(Commodities.Cobalt, value); }
+            get { return GetFor(Commodities.Cobalt); }
+            set { SetFor(Commodities.Cobalt, value); }
         }
         [SettingDisplayName("Gold")]
         public bool ProspectGold
         {
-            get { return getFor(Commodities.Gold); }
-            set { setFor(Commodities.Gold, value); }
+            get { return GetFor(Commodities.Gold); }
+            set { SetFor(Commodities.Gold, value); }
         }
         [SettingDisplayName("Osmium")]
         public bool ProspectOsmium
         {
-            get { return getFor(Commodities.Osmium); }
-            set { setFor(Commodities.Osmium, value); }
+            get { return GetFor(Commodities.Osmium); }
+            set { SetFor(Commodities.Osmium, value); }
         }
         [SettingDisplayName("Palladium")]
         public bool ProspectPalladium
         {
-            get { return getFor(Commodities.Palladium); }
-            set { setFor(Commodities.Palladium, value); }
+            get { return GetFor(Commodities.Palladium); }
+            set { SetFor(Commodities.Palladium, value); }
         }
         [SettingDisplayName("Platinum (Laser)")]
         public bool ProspectPlatinum
         {
-            get { return getFor(Commodities.Platinum); }
-            set { setFor(Commodities.Platinum, value); }
+            get { return GetFor(Commodities.Platinum); }
+            set { SetFor(Commodities.Platinum, value); }
         }
         [SettingDisplayName("Praseodymium")]
         public bool ProspectPraseodymium
         {
-            get { return getFor(Commodities.Praseodymium); }
-            set { setFor(Commodities.Praseodymium, value); }
+            get { return GetFor(Commodities.Praseodymium); }
+            set { SetFor(Commodities.Praseodymium, value); }
         }
         [SettingDisplayName("Samarium")]
         public bool ProspectSamarium
         {
-            get { return getFor(Commodities.Samarium); }
-            set { setFor(Commodities.Samarium, value); }
+            get { return GetFor(Commodities.Samarium); }
+            set { SetFor(Commodities.Samarium, value); }
         }
         [SettingDisplayName("Silver")]
         public bool ProspectSilver
         {
-            get { return getFor(Commodities.Silver); }
-            set { setFor(Commodities.Silver, value); }
+            get { return GetFor(Commodities.Silver); }
+            set { SetFor(Commodities.Silver, value); }
         }
 
         // Chemicals:
@@ -267,36 +263,36 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         [SettingDisplayName("Thorium")]
         public bool ProspectThorium
         {
-            get { return getFor(Commodities.Thorium); }
-            set { setFor(Commodities.Thorium, value); }
+            get { return GetFor(Commodities.Thorium); }
+            set { SetFor(Commodities.Thorium, value); }
         }
         [SettingDisplayName("Hydrogen Peroxide")]
         public bool ProspectHydrogenPeroxide
         {
-            get { return getFor(Commodities.HydrogenPeroxide); }
-            set { setFor(Commodities.HydrogenPeroxide, value); }
+            get { return GetFor(Commodities.HydrogenPeroxide); }
+            set { SetFor(Commodities.HydrogenPeroxide, value); }
         }
         [SettingDisplayName("Liquid Oxygen")]
         public bool ProspectLiquidOxygen
         {
-            get { return getFor(Commodities.LiquidOxygen); }
-            set { setFor(Commodities.LiquidOxygen, value); }
+            get { return GetFor(Commodities.LiquidOxygen); }
+            set { SetFor(Commodities.LiquidOxygen, value); }
         }
         [SettingDisplayName("Tritium")]
         public bool ProspectTritium
         {
-            get { return getFor(Commodities.Tritium); }
-            set { setFor(Commodities.Tritium, value); }
+            get { return GetFor(Commodities.Tritium); }
+            set { SetFor(Commodities.Tritium, value); }
         }
         [SettingDisplayName("Water")]
         public bool ProspectWater
         {
-            get { return getFor(Commodities.Water); }
-            set { setFor(Commodities.Water, value); }
+            get { return GetFor(Commodities.Water); }
+            set { SetFor(Commodities.Water, value); }
         }
 
         // Raw mats
-        [SettingNewGroup("Raw materials for synthesis")]
+        [SettingNewGroup("Raw materials for synthesis (Experimental)")]
         // Surface material prospecting
         [SettingDisplayName("Mats for FSD Boost")]
         public bool MatsFSDBoost { get; set; }
@@ -343,7 +339,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
     }
     public static class Extensions
     {
-        private static Dictionary<Commodities, CommodityDetails> commodityDetails = new()
+        private readonly static Dictionary<Commodities, CommodityDetails> commodityDetails = new()
         {
             // Minerals
             { Commodities.Alexandrite, new CommodityDetails(RingType.MetalRich | RingType.Rocky | RingType.Icy, MiningMethod.Core) },
@@ -392,7 +388,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             return commodityDetails[commodities];
         }
 
-        private static Dictionary<RingType, RingTypeString> ringTypeStrings = new()
+        private static readonly Dictionary<RingType, RingTypeString> ringTypeStrings = new()
         {
             { RingType.Rocky, new RingTypeString("Rocky") },
             { RingType.Metallic, new RingTypeString("Metallic", "Metalic") }, // To match Frontier's spelling
