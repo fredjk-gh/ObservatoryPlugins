@@ -1,75 +1,92 @@
-﻿using Observatory.Framework;
+﻿using System.Diagnostics;
+using com.github.fredjk_gh.ObservatoryHelm.Data;
+using com.github.fredjk_gh.ObservatoryHelm.UI;
+using com.github.fredjk_gh.PluginCommon.AutoUpdates;
+using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Id64;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
+using com.github.fredjk_gh.PluginCommon.Utilities;
+using Observatory.Framework;
 using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
-using Observatory.Framework.Sorters;
-using System.Collections.Immutable;
-using System.Collections.ObjectModel;
 
 namespace com.github.fredjk_gh.ObservatoryHelm
 {
     public class Helm : IObservatoryWorker
     {
-        private static readonly int MAX_FUEL = 99;
+        private static readonly Guid PLUGIN_GUID = new("38425041-6ff2-4b9d-a10c-420839972f79");
 
-        private IObservatoryCore Core;
-        /// <summary>
-        /// Error logger; string param is an arbitrary context hint.
-        /// </summary>
-        private Action<Exception, string> ErrorLogger;
-        private PluginUI pluginUI;
-        ObservableCollection<object> gridCollection = new();
-        private HelmSettings settings = HelmSettings.DEFAULT;
-        private TrackedData data = new();
-        private HashSet<string> incompleteSystemsNotified = new();
-        private bool hasLoadedDestinations = false;
-        private AboutInfo _aboutInfo = new()
+        private static readonly AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
+        private static readonly AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Helm");
+        private static readonly AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/helm");
+        private static readonly AboutInfo ABOUT_INFO = new()
         {
             FullName = "Helm",
             ShortName = "Helm",
-            Description = "Provides additional insights about your flight environment, route and some travel statistics.",
+            Description = @"Provides additional insights about your flight environment, route and some travel statistics.
+
+May use data from Spansh, EDGIS and/or EDAstro.",
             AuthorName = "fredjk-gh",
-            Links = new()
-            {
-                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
-                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Helm"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/helm"),
-            }
+            Links =
+            [
+                GH_LINK,
+                GH_RELEASE_NOTES_LINK,
+                DOC_LINK,
+            ]
         };
 
-        public AboutInfo AboutInfo => _aboutInfo;
+        private PluginUI pluginUI;
+        private HelmSettings _settings = new();
+        private HelmContext _c;
+        private readonly HashSet<string> incompleteSystemsNotified = [];
+        private bool hasLoadedDestinations = false;
+
+        public static Guid Guid => PLUGIN_GUID;
+        public AboutInfo AboutInfo => ABOUT_INFO;
         public string Version => typeof(Helm).Assembly.GetName().Version.ToString();
         public PluginUI PluginUI => pluginUI;
 
         public object Settings
         {
-            get => settings;
-            set {
-                settings = (HelmSettings)value;
-                MaybeFixUnsetSettings();
+            get => _c?.Settings ?? _settings;
+            set
+            {
+                _settings = (HelmSettings)value;
+                if (_c != null) _c.Settings = _settings;
             }
-        }
-
-        private void MaybeFixUnsetSettings()
-        {
-            if (settings.GravityAdvisoryThreshold == 0)
-                settings.GravityAdvisoryThreshold = HelmSettings.DEFAULT.GravityAdvisoryThreshold;
-            if (settings.SuppressionZoneRadiusLy == 0)
-                settings.SuppressionZoneRadiusLy = HelmSettings.DEFAULT.SuppressionZoneRadiusLy;
-            if (settings.MaxNearbyScoopableDistance == 0)
-                settings.MaxNearbyScoopableDistance = HelmSettings.DEFAULT.MaxNearbyScoopableDistance;
         }
 
         public void Load(IObservatoryCore observatoryCore)
         {
-            Core = observatoryCore;
-            ErrorLogger = Core.GetPluginErrorLogger(this);
+            _c = HelmContext.Initialize(observatoryCore, this, _settings);
+            _c.Dispatcher.RegisterHandler<HelmStatusMessage>(HandleHelmStatusMessage);
+            _c.Dispatcher.RegisterHandler<ArchivistJournalsMessage>(HandleArchivistScansMessage);
 
-            gridCollection = new();
-            HelmGrid uiObject = new();
-            gridCollection.Add(uiObject);
-            pluginUI = new PluginUI(gridCollection);
+            _c.Panel = new HelmPanel(_c);
+            pluginUI = new PluginUI(PluginUI.UIType.Panel, _c.Panel);
+        }
+
+        public PluginUpdateInfo CheckForPluginUpdate()
+        {
+            AutoUpdateHelper.Init(_c.Core);
+            return AutoUpdateHelper.CheckForPluginUpdate(
+                this, GH_RELEASE_NOTES_LINK.Url, _c.Settings.EnableAutoUpdates, _c.Settings.EnableBetaUpdates);
+        }
+
+        public void ObservatoryReady()
+        {
+            _c.Core.ExecuteOnUIThread(() =>
+            {
+                _c.UI.MaybeAdjustFontSize();
+            });
+
+            _c.Dispatcher.SendMessage(GenericPluginReadyMessage.New());
+
+            // Also populates commanders.
+            ReadCacheFile();
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -77,25 +94,30 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             // * -> ReadAll
             if (args.NewState.HasFlag(LogMonitorState.Batch))
             {
-                Core.ClearGrid(this, new HelmGrid());
-                data = new();
+                _c.Clear();
             }
             // ReadAll -> 
             else if (args.PreviousState.HasFlag(LogMonitorState.Batch))
             {
-                // Exiting read-all: Spit out summary of most recent session:
-                MaybeMakeGridItemForSummary(data.CommanderData?.LastJumpEvent?.Timestamp ?? "");
-
+                // Exiting read-all. Repaint things.
                 if (args.NewState.HasFlag(LogMonitorState.Realtime))
                 {
-                    MaybeRestoreDestinations();
+                    MaybeSetDestinationInClipboard();
+                    _c.UI.ChangeCommander(_c.Data.CurrentCommander);
+                    _c.UI.Draw();
+
+                    UpdateCache();
                 }
             }
             // Exiting Preread
             else if (args.PreviousState.HasFlag(LogMonitorState.PreRead)
                 && !args.NewState.HasFlag(LogMonitorState.PreRead))
             {
-                MaybeRestoreDestinations();
+                MaybeSetDestinationInClipboard();
+                _c.UI.ChangeCommander(_c.Data.CurrentCommander);
+                _c.UI.Draw();
+
+                UpdateCache();
             }
         }
 
@@ -104,237 +126,277 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             switch (journal)
             {
                 case LoadGame loadGame:
-                    if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
+                    bool commanderChanged = _c.Data.HasCurrentCommander
+                        && loadGame.FID != _c.Data.CurrentCommander.FID;
+
+                    _c.Data.SessionReset(loadGame);
+                    _c.Data.CommanderData.LastActive = loadGame.TimestampDateTime;
+
+                    if (!_c.Core.IsLogMonitorBatchReading && commanderChanged)
                     {
-                        // Summarize the last session:
-                        MaybeMakeGridItemForSummary(data.CommanderData?.LastJumpEvent?.Timestamp ?? "");
+                        MaybeSetDestinationInClipboard(commanderChanged);
+                        _c.UI.ChangeCommander(_c.Data.CurrentCommander);
+
+                        UpdateCache(); // ensure current commander is updated.
                     }
-
-                    bool commanderChanged = loadGame.Commander != data.CurrentCommander && !string.IsNullOrWhiteSpace(data.CurrentCommander);
-
-                    data.SessionReset(loadGame.Odyssey, loadGame.Commander, loadGame.FuelCapacity, loadGame.FuelLevel);
-
-                    MaybeRestoreDestinations(commanderChanged);
-                    break;
-                case Location location:
-                    if (!data.IsCommanderKnown) break;
-
-                    data.CommanderData.CurrentSystem = location.StarSystem;
                     break;
                 case Loadout loadOut:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
+                    _c.Data.CommanderData.Ships.UpdateLoadout(loadOut);
+                    _c.UI.ChangeShip(loadOut.ShipID);
+                    _c.Data.CommanderData.LastActive = loadOut.TimestampDateTime;
 
-                    var fsdModule = findFSD(loadOut.Modules);
-                    if (fsdModule != null && Constants.MaxFuelPerJumpByFSDSizeClass.ContainsKey(fsdModule.Item))
-                        data.CommanderData.MaxFuelPerJump = Constants.MaxFuelPerJumpByFSDSizeClass[fsdModule.Item];
-                    // TODO: If FuelCapacity is null, it's probably an old journal that had a different format: "FuelCapacity":2.000000
-                    // Consider parsing this out manually using System.Text.Json.
-                    data.CommanderData.FuelCapacity = (loadOut.FuelCapacity != null ?  loadOut.FuelCapacity.Main : MAX_FUEL);
+                    UpdateCache();
+                    break;
+                case StoredShips storedShips:
+                    if (!_c.Data.HasCurrentCommander) break;
+                    _c.Data.CommanderData.Ships.UpdateStoredShips(storedShips);
+                    _c.Data.CommanderData.LastActive = storedShips.TimestampDateTime;
+
+                    UpdateCache();
+                    break;
+                case ShipyardSwap:
+                    // Do we care? We should get a loadout momentarily.
                     break;
                 case FuelScoop fuelScoop:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
+                    _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining += fuelScoop.Scooped;
+                    _c.UI.ChangeFuelLevel(_c.Data.CommanderData.Ships.CurrentShip.FuelRemaining);
 
-                    data.CommanderData.FuelRemaining = Math.Min(data.CommanderData.FuelCapacity, data.CommanderData.FuelRemaining + fuelScoop.Scooped);
+                    UpdateCache();
+                    break;
+                case JetConeBoost jetConeBoost:
+                    _c.Data.CommanderData.Ships.CurrentShip.JetConeBoostFactor = jetConeBoost.BoostValue;
+                    _c.UI.ChangeJetConeBoost(jetConeBoost.BoostValue);
+                    if (_c.Settings.NotifyJetConeBoost)
+                    {
+                        _c.SendNotification(new()
+                        {
+                            Title = "FSD is Supercharged",
+                            ExtendedDetails = $"Boost factor: {jetConeBoost.BoostValue}",
+                            Sender = AboutInfo.ShortName,
+                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
+                        });
+                    }
+
+                    UpdateCache();
                     break;
                 case NavRouteFile navRoute:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
-                    data.CommanderData.LastNavRoute = navRoute;
-                    Core.SendNotification(new()
+                    _c.Data.CommanderData.LastNavRoute = navRoute;
+                    _c.Data.CommanderData.LastActive = navRoute.TimestampDateTime;
+                    _c.SendNotification(new()
                     {
                         Title = "New route",
                         Detail = "",
                         Sender = AboutInfo.ShortName,
-                        ExtendedDetails = $"{data.CommanderData.JumpsRemainingInRoute} jumps to {data.CommanderData.Destination}",
+                        ExtendedDetails = $"{_c.Data.CommanderData.JumpsRemainingInRoute} jumps to {_c.Data.CommanderData.Destination}",
                         Rendering = NotificationRendering.PluginNotifier,
                         CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                     });
 
-                    if (!Core.IsLogMonitorBatchReading)
-                        data.SaveRouteDestinations(Core.PluginStorageFolder);
+                    UpdateCache();
+                    _c.UI.ChangeRoute(navRoute);
                     break;
-                case NavRouteClear clear:
-                    if (!data.IsCommanderKnown) break;
+                case NavRouteClear:
+                    if (!_c.Data.HasCurrentCommander) break;
 
-                    data.CommanderData.JumpsRemainingInRoute = 0;
-                    data.CommanderData.Destination = "";
+                    _c.Data.CommanderData.JumpsRemainingInRoute = 0;
+                    _c.Data.CommanderData.Destination = "";
 
-                    if (!Core.IsLogMonitorBatchReading)
-                        data.SaveRouteDestinations(Core.PluginStorageFolder);
+                    UpdateCache();
+                    _c.UI.ChangeRoute(null);
+                    break;
+                case SupercruiseEntry:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    // Move to _c.UI.Change* method?
+                    _c.UIMgr.Realtime.ProspectedEvents.Clear();
+
                     break;
                 case StartJump startJump:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
+                    _c.Data.CommanderData.LastActive = startJump.TimestampDateTime;
 
                     if (startJump.JumpType == "Hyperspace")
                     {
-                        data.CommanderData.LastStartJumpEvent = startJump;
+                        _c.Data.CommanderData.LastStartJumpEvent = startJump;
                     }
                     break;
+                case Location location:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.SystemReset(location.SystemAddress, location.StarSystem, location.StarPos);
+
+                    _c.UI.ChangeSystem(location.SystemAddress);
+
+                    UpdateCache();
+                    break;
                 case FSDJump jump:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
                     incompleteSystemsNotified.Clear();
                     if (jump is CarrierJump carrierJump && (
                         carrierJump.Docked || carrierJump.OnFoot))
                     {
                         // Do nothing else. We're missing fuel level, etc. here.
-                        if (data.CommanderData.LastJumpEvent != null)
+                        if (_c.Data.CommanderData.LastJumpEvent != null)
                         {
-                            double distance = Id64.Id64CoordHelper.Distance(carrierJump.StarPos, data.CommanderData.LastJumpEvent.StarPos);
+                            double distance = Id64CoordHelper.Distance(carrierJump.StarPos, _c.Data.CommanderData.LastJumpEvent.StarPos);
 
                             //double distance = Id64CoordHelper.Distance((long) carrierJump.SystemAddress, (long)data.CommanderData.LastJumpEvent.SystemAddress);
-                            data.SystemResetDockedOnCarrier(carrierJump.StarSystem, distance);
+                            _c.Data.SystemResetDockedOnCarrier(carrierJump.SystemAddress, carrierJump.StarSystem, carrierJump.StarPos, distance);
                         }
                         else
                         {
-                            data.SystemResetDockedOnCarrier(carrierJump.StarSystem);
+                            _c.Data.SystemResetDockedOnCarrier(carrierJump.SystemAddress, carrierJump.StarSystem, carrierJump.StarPos);
                         }
-                        data.CommanderData.LastJumpEvent = jump;
-                        data.CommanderData.LastStartJumpEvent = null;
-                        MakeGridItem(jump.Timestamp, "(docked on carrier)");
+                        _c.Data.CommanderData.LastJumpEvent = jump;
+                        _c.Data.CommanderData.LastStartJumpEvent = null;
+                        _c.UI.ChangeSystem(jump.SystemAddress);
+                        // Move to _c.UI.Change* method?
+                        _c.UIMgr.Realtime.ProspectedEvents.Clear();
+                        UpdateCache();
                     }
                     else
                     {
-                        data.SystemReset(jump.StarSystem, jump.FuelLevel, jump.JumpDist);
-                        data.CommanderData.LastJumpEvent = jump;
-                        if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
+                        _c.Data.SystemReset(jump.SystemAddress, jump.StarSystem, jump.StarPos, jump.FuelLevel, jump.JumpDist);
+                        _c.Data.CommanderData.LastJumpEvent = jump;
+
+                        if ((_c.Data.CommanderData.Ships.CurrentShip?.JetConeBoostFactor ?? 1) > 1)
                         {
-                            // Don't output anything further during read-all. LoadGame handler spits out session summaries.
+                            _c.Data.CommanderData.Ships.CurrentShip.JetConeBoostFactor = 1.0;
+                            _c.UI.ChangeJetConeBoost(1);
+                        }
+
+                        UpdateCache();
+                        if (_c.Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch) || _c.UIMgr.ReplayMode)
+                        {
+                            // Don't output anything further during read-all or replay mode due to archivist message.
                             break;
                         }
 
-                        string coords = "";
-                        if (jump.StarPos != null)
-                            coords = $" ({jump.StarPos.x}, {jump.StarPos.y}, {jump.StarPos.z})";
-                        string isInSuppressionZone = (data.CommanderData.IsInSuppressionZone(settings) ?? false ? $"This system is in the suppression zone{coords}." : coords.Trim());
-                        if (data.CommanderData.IsInBubble() ?? false)
-                        {
-                            isInSuppressionZone = $"This system is in the bubble (< 250Ly from Sol{coords}).";
-                        }
-                        MakeGridItem(jump.Timestamp, (data.CommanderData.JumpsRemainingInRoute == 0 ? $"(no route) {isInSuppressionZone}" : isInSuppressionZone));
-                        string arrivalStarScoopableStr = (data.CommanderData.LastStartJumpEvent != null && !Constants.Scoopables.Contains(data.CommanderData.LastStartJumpEvent.StarClass))
-                                ? $"Arrival star (type: {data.CommanderData.LastStartJumpEvent.StarClass}) is not scoopable!"
+                        // This is noisy and now represented in the UI. Consider removing here altogether.
+                        //string suppressionZoneDetail = (_c.Data.CommanderData.CurrentSystemData.IsInSuppressionZone ?? false
+                        //    ? _c.Data.CommanderData.CurrentSystemData.SuppressionZoneDetails
+                        //    : string.Empty);
+                        //if (_c.Data.CommanderData.CurrentSystemData.IsInBubble ?? false)
+                        //{
+                        //    suppressionZoneDetail = $"This system is in the bubble (< {_settings.BubbleRadiusLy} Ly from Sol).";
+                        //}
+                        _c.UI.ChangeSystem(jump.SystemAddress);
+                        _c.UI.ChangeFuelLevel(jump.FuelLevel);
+                        string arrivalStarScoopableStr = (_c.Data.CommanderData.LastStartJumpEvent != null && !JournalConstants.Scoopables.Contains(_c.Data.CommanderData.LastStartJumpEvent.StarClass))
+                                ? $"Arrival star (type: {_c.Data.CommanderData.LastStartJumpEvent.StarClass}) is not scoopable!"
                                 : "";
-                        Core.SendNotification(new()
+
+                        _c.SendNotification(new()
                         {
                             Title = "Route Progress",
-                            Detail = $"{data.CommanderData.JumpsRemainingInRoute} jumps remaining{(!string.IsNullOrEmpty(data.CommanderData.Destination) ? $" to {data.CommanderData.Destination}" : "")}",
+                            Detail = $"{_c.Data.CommanderData.JumpsRemainingInRoute} jumps remaining{(!string.IsNullOrEmpty(_c.Data.CommanderData.Destination) ? $" to {_c.Data.CommanderData.Destination}" : "")}",
                             Sender = AboutInfo.ShortName,
-                            ExtendedDetails = $"{arrivalStarScoopableStr} {isInSuppressionZone}",
+                            //ExtendedDetails = $"{arrivalStarScoopableStr} {suppressionZoneDetail}",
+                            ExtendedDetails = arrivalStarScoopableStr,
                             Rendering = NotificationRendering.PluginNotifier,
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                         // This check is essential when travelling through areas where scans don't trigger (ie. known space).
-                        if (data.CommanderData.FuelWarningNotifiedSystem != jump.StarSystem && data.CommanderData.FuelRemaining < (data.CommanderData.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
+                        // TODO: Figure out why this occasionally misfires.
+                        if (_c.Data.CommanderData.FuelWarningNotifiedSystem != jump.StarSystem
+                            && _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining < (_c.Data.CommanderData.Ships.CurrentShip.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
                         {
-                            Core.SendNotification(new()
+                            Debug.WriteLine($"Helm: Low Fuel details: Ship: {_c.Data.CommanderData.Ships.CurrentShip.ShipName}; Fuel remaining: {_c.Data.CommanderData.Ships.CurrentShip.FuelRemaining}; Per jump: {_c.Data.CommanderData.Ships.CurrentShip.MaxFuelPerJump}");
+                            _c.SendNotification(new()
                             {
                                 Title = "Warning! Low fuel",
                                 Detail = $"Refuel soon! {arrivalStarScoopableStr}",
                                 Sender = AboutInfo.ShortName,
                                 CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                             });
-                            data.CommanderData.FuelWarningNotifiedSystem = jump.StarSystem;
+                            _c.Data.CommanderData.FuelWarningNotifiedSystem = jump.StarSystem;
                         }
                     }
                     break;
                 case Docked docked:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
                     if (docked.StationType == "FleetCarrier")
                     {
-                        data.CommanderData.IsDockedOnCarrier = true;
+                        _c.Data.CommanderData.IsDockedOnCarrier = true;
                     }
+                    _c.Data.CommanderData.LastActive = docked.TimestampDateTime;
                     break;
                 case Undocked undocked:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
-                    data.CommanderData.IsDockedOnCarrier = false;
+                    _c.Data.CommanderData.IsDockedOnCarrier = false;
+                    _c.Data.CommanderData.LastActive = undocked.TimestampDateTime;
+                    break;
+                case DockingCancelled cancelled: // And DockingDenied.
+                    if (cancelled is DockingDenied denied && !_c.Core.IsLogMonitorBatchReading)
+                    {
+                        _c.AddMessage($"Docking Denied due to: {denied.Reason}");
+                    }
                     break;
                 case FSDTarget target:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
-                    data.CommanderData.JumpsRemainingInRoute = target.RemainingJumpsInRoute;
+                    _c.Data.CommanderData.JumpsRemainingInRoute = target.RemainingJumpsInRoute;
+                    if (_c.Data.CommanderData.DerivedRoute == null && !string.IsNullOrEmpty(_c.Data.CommanderData.Destination))
+                    {
+                        _c.Data.CommanderData.DerivedRoute = new(
+                            _c.Data.CommanderData.CurrentSystemData,
+                            _c.Data.CommanderData.Destination,
+                            target.RemainingJumpsInRoute);
+                        // Use _c.UI.Change* method?
+                        _c.UIMgr.Realtime.JumpsRemaining = target.RemainingJumpsInRoute;
+                    }
                     break;
                 case ReservoirReplenished replenished:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
-                    data.CommanderData.FuelRemaining = replenished.FuelMain;
+                    _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining = replenished.FuelMain;
+                    _c.UI.ChangeFuelLevel(_c.Data.CommanderData.Ships.CurrentShip.FuelRemaining);
+
+                    UpdateCache();
                     break;
                 case RefuelAll refuel:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
                     if (refuel is RefuelPartial)
                     {
-                        data.CommanderData.FuelRemaining += refuel.Amount;
+                        _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining += refuel.Amount;
                     }
                     else
                     {
-                        data.CommanderData.FuelRemaining = data.CommanderData.FuelCapacity;
+                        _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining = _c.Data.CommanderData.Ships.CurrentShip.FuelCapacity;
                     }
+                    _c.UI.ChangeFuelLevel(_c.Data.CommanderData.Ships.CurrentShip.FuelRemaining);
+
+                    UpdateCache();
                     break;
                 case Scan scan:
-                    if (!data.IsCommanderKnown) break;
+                    OnScan(scan);
 
-                    if (scan.ScanType != "NavBeaconDetail" && scan.PlanetClass != "Barycentre" && !scan.WasDiscovered && scan.DistanceFromArrivalLS == 0)
-                    {
-                        data.CommanderData.UndiscoveredSystem = true;
-                    }
-                    data.CommanderData.Scans[scan.BodyName] = scan;
-                    if (data.CommanderData.FuelRemaining < (data.CommanderData.MaxFuelPerJump * Constants.FuelWarningLevelFactor) && data.CommanderData.FuelWarningNotifiedSystem != scan.StarSystem)
-                    {
-                        if (Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance)
-                        {
-                            string extendedDetails = $"Warning! Low Fuel! Scoopable star: {BodyShortName(scan.BodyName, data.CommanderData.CurrentSystem)}, {scan.DistanceFromArrivalLS:0.0} Ls";
-                            MakeGridItem(scan.Timestamp, extendedDetails);
-                            Core.SendNotification(new()
-                            {
-                                Title = "Warning! Low fuel",
-                                Detail = $"There is a scoopable star in this system!",
-                                ExtendedDetails = extendedDetails,
-                                Sender = AboutInfo.ShortName,
-                                CoalescingId = scan.BodyID,
-                            });
-                            data.CommanderData.FuelWarningNotifiedSystem = data.CommanderData.CurrentSystem;
-                        }
-                    }
+                    UpdateCache();
+                    break;
+                case FSSDiscoveryScan honk:
+                    if (!_c.Data.HasCurrentCommander) break;
+                    if (_c.Data.CommanderData.CurrentSystemData.SystemId64 == honk.SystemAddress)
+                        _c.Data.CommanderData.CurrentSystemData.Honk = honk;
 
-                    if (scan.StarType == "N" && scan.DistanceFromArrivalLS == 0) data.CommanderData.NeutronPrimarySystem = data.CommanderData.CurrentSystem;
-
-                    if (data.CommanderData.NeutronPrimarySystem == null || data.CommanderData.NeutronPrimarySystem != data.CommanderData.CurrentSystem) break;
-
-                    if ((Constants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < settings.MaxNearbyScoopableDistance && data.CommanderData.ScoopableSecondaryCandidateScan?.StarSystem != data.CommanderData.CurrentSystem)
-                        || (data.CommanderData.ScoopableSecondaryCandidateScan?.StarSystem == data.CommanderData.CurrentSystem && scan.DistanceFromArrivalLS < data.CommanderData.ScoopableSecondaryCandidateScan.DistanceFromArrivalLS))
-                    {
-                        data.CommanderData.ScoopableSecondaryCandidateScan = scan;
-                    }
-
-                    if (data.CommanderData.NeutronPrimarySystem == scan.StarSystem && data.CommanderData.ScoopableSecondaryCandidateScan?.StarSystem == data.CommanderData.CurrentSystem
-                        && data.CommanderData.NeutronPrimarySystemNotified != data.CommanderData.CurrentSystem)
-                    {
-                        data.CommanderData.NeutronPrimarySystemNotified = data.CommanderData.CurrentSystem;
-                        string extendedDetails = $"Nearby scoopable secondary star; Type: {data.CommanderData.ScoopableSecondaryCandidateScan?.StarType}, {Math.Round(data.CommanderData.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls";
-                        MakeGridItem(scan.Timestamp, extendedDetails);
-                        Core.SendNotification(new()
-                        {
-                            Title = $"Body {BodyShortName(scan.BodyName, data.CommanderData.CurrentSystem)}",
-                            Detail = $"Nearby scoopable secondary star",
-                            ExtendedDetails = extendedDetails,
-                            Sender = AboutInfo.ShortName,
-                            CoalescingId = scan.BodyID,
-                        });
-                    }
+                    UpdateCache();
                     break;
                 case FSSAllBodiesFound allFound:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
-                    if (data.CommanderData.FuelWarningNotifiedSystem == allFound.SystemName) break;
+                    if (_c.Data.CommanderData.FuelWarningNotifiedSystem == allFound.SystemName) break;
 
-                    if (data.CommanderData.FuelRemaining < (data.CommanderData.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
+                    if (!_c.UIMgr.ReplayMode && _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining < (_c.Data.CommanderData.Ships.CurrentShip.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
                     {
                         string extendedDetails = $"Warning! Low Fuel and no scoopable star! Be sure to jump to a system with a scoopable star!";
-                        MakeGridItem(allFound.Timestamp, extendedDetails);
-                        Core.SendNotification(new()
+                        _c.SendNotification(new()
                         {
                             Title = "Warning! Low fuel!",
                             Detail = "There is no scoopable star in this system!",
@@ -343,187 +405,333 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                     }
-                    if (!data.CommanderData.AllBodiesFound)
+                    if (!_c.Data.CommanderData.AllBodiesFound && !_c.UIMgr.ReplayMode)
                     {
-                        Core.SendNotification(new()
+                        // Two distinct notifications. One has only a title and is vocal only. The other has additional detail and
+                        // is plugin only. Alternatively: One notification, but put "All N bodies found" in Extended details which
+                        // is never spoken anyway?
+                        //
+                        // Make Vocal notification an option?
+                        _c.SendNotification(new()
                         {
-                            Title = "FSS completed",
+                            Title = "FSS complete",
+                            Rendering = NotificationRendering.NativeVocal,
+                            Sender = AboutInfo.ShortName,
+                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
+                        });
+                        _c.SendNotification(new()
+                        {
+                            Title = "FSS complete",
                             Detail = $"All {allFound.Count} bodies found",
                             Rendering = NotificationRendering.PluginNotifier,
                             Sender = AboutInfo.ShortName,
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                     }
-                    data.CommanderData.AllBodiesFound = true;
+                    _c.Data.CommanderData.AllBodiesFound = true;
+                    _c.Data.CommanderData.CurrentSystemData.AllBodiesFound = allFound;
+                    _c.UI.ChangeAllBodiesFound(true);
+
+                    if (_c.Data.CommanderData.LastStatus?.Destination?.Body > 0
+                        && _c.Data.CommanderData.LastStatus?.Destination?.System == _c.UIMgr.Realtime.SystemId64
+                        && _c.Data.CommanderData.LastStatus?.Destination?.Body != _c.UIMgr.Realtime.BodyId)
+                    {
+                        _c.UI.ChangeBody(_c.Data.CommanderData.LastStatus.Destination.Body);
+                    }
+
+                    UpdateCache();
                     break;
                 case ApproachBody approachBody:
-                    if (!data.IsCommanderKnown) break;
+                    if (!_c.Data.HasCurrentCommander) break;
 
-                    Scan s;
-                    if (!settings.EnableHighGravityAdvisory) break;
+                    PlanetData p;
+                    if (!_c.Settings.EnableHighGravityAdvisory) break;
 
-                    if (!data.CommanderData.Scans.TryGetValue(approachBody.Body, out s)) break;
-
-                    string bodyShortName = BodyShortName(approachBody.Body, approachBody.StarSystem);
-                    var gravityG = s.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
-                    if (gravityG > settings.GravityAdvisoryThreshold)
+                    if (!_c.Data.CommanderData.CurrentSystemData.Planets.TryGetValue(approachBody.BodyID, out p)) break;
+                    var gravityG = p.Scan.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
+                    if (gravityG > _c.Settings.GravityAdvisoryThreshold)
                     {
-                        Core.SendNotification(new()
+                        _c.SendNotification(new()
                         {
                             Title = $"Use caution when landing!",
                             Detail = $"Relatively high gravity: {gravityG:n1}g",
                             Sender = AboutInfo.ShortName,
                             CoalescingId = approachBody.BodyID,
+                            Rendering = NotificationRendering.NativeVocal | NotificationRendering.NativeVisual,
                         });
                     }
+                    _c.UI.ChangeBody(approachBody.BodyID);
+                    UpdateCache();
                     break;
+                case SAAScanComplete saaScan:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.CommanderData.CurrentSystemData.AddScan(saaScan);
+                    UpdateCache();
+                    break;
+                case SAASignalsFound signals:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.CommanderData.CurrentSystemData.AddSignals(signals);
+                    if (_c.Data.CommanderData.CurrentSystemData.Planets.ContainsKey(signals.BodyID))
+                        _c.UI.ChangeBody(signals.BodyID);
+                    UpdateCache();
+                    break;
+                case Statistics stats:
+                    if (!_c.Data.HasCurrentCommander) break;
+                    _c.Data.CommanderData.LastStatistics = stats;
+                    _c.Data.CommanderData.LastActive = stats.TimestampDateTime;
+                    UpdateCache();
+                    break;
+                case Cargo cargo:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.CommanderData.Ships.UpdateCargo(cargo);
+                    _c.UI.ChangeCargo(cargo.Count);
+                    UpdateCache();
+                    break;
+                case CargoFile cargo:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.CommanderData.Ships.UpdateCargo(cargo);
+                    _c.UI.ChangeCargo(cargo.Count);
+                    _c.Data.CommanderData.LastActive = cargo.TimestampDateTime;
+                    UpdateCache();
+                    break;
+                case ProspectedAsteroid prospect:
+                    if (!_c.Data.HasCurrentCommander) break;
+                    // Move to _c.UI.Change* method?
+                    _c.UIMgr.Realtime.ProspectedEvents.Add(prospect);
+                    _c.Data.CommanderData.LastActive = prospect.TimestampDateTime;
+                    break;
+            }
+        }
+
+        private void OnScan(Scan scan)
+        {
+            if (!_c.Data.HasCurrentCommander) return;
+
+            var cmdrData = _c.Data.CommanderData;
+            var sysData = cmdrData.CurrentSystemData;
+
+            if (scan.ScanType != "NavBeaconDetail"
+                && scan.PlanetClass != "Barycentre"
+                && !scan.WasDiscovered && scan.DistanceFromArrivalLS == 0)
+            {
+                cmdrData.UndiscoveredSystem = true;
+            }
+
+            var scanAlreadySeen = sysData.ContainsScan(scan);
+            var usefulScan = sysData.AddScan(scan);
+            // When mapping, a second scan fires; don't re-target the UI.
+            if (!scanAlreadySeen && usefulScan) _c.UI.ChangeBody(scan.BodyID);
+            if (cmdrData.Ships.CurrentShip.FuelRemaining < (cmdrData.Ships.CurrentShip.MaxFuelPerJump * Constants.FuelWarningLevelFactor)
+                && cmdrData.FuelWarningNotifiedSystem != scan.StarSystem)
+            {
+                if (JournalConstants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < _c.Settings.MaxNearbyScoopableDistance)
+                {
+                    string bodyDisplayName = SharedLogic.GetBodyDisplayName(SharedLogic.GetBodyShortName(scan.BodyName, cmdrData.CurrentSystemName));
+                    string extendedDetails = $"Warning! Low Fuel! Scoopable star: {bodyDisplayName}, {scan.DistanceFromArrivalLS:0.0} Ls";
+                    _c.SendNotification(new()
+                    {
+                        Title = "Warning! Low fuel",
+                        Detail = $"There is a scoopable star in this system!",
+                        ExtendedDetails = extendedDetails,
+                        Sender = AboutInfo.ShortName,
+                        CoalescingId = Constants.COALESCING_ID_HEADER,
+                    });
+                    cmdrData.FuelWarningNotifiedSystem = cmdrData.CurrentSystemName;
+                }
+            }
+
+            if (scan.StarType == "N" && scan.DistanceFromArrivalLS == 0)
+                cmdrData.NeutronPrimarySystem = cmdrData.CurrentSystemName;
+
+            if (cmdrData.NeutronPrimarySystem == null
+                || cmdrData.NeutronPrimarySystem != cmdrData.CurrentSystemName)
+                return;
+
+            if ((JournalConstants.Scoopables.Contains(scan.StarType) && scan.DistanceFromArrivalLS < _c.Settings.MaxNearbyScoopableDistance
+                && cmdrData.ScoopableSecondaryCandidateScan?.StarSystem != cmdrData.CurrentSystemName)
+                || (cmdrData.ScoopableSecondaryCandidateScan?.StarSystem == cmdrData.CurrentSystemName
+                && scan.DistanceFromArrivalLS < cmdrData.ScoopableSecondaryCandidateScan.DistanceFromArrivalLS))
+            {
+                cmdrData.ScoopableSecondaryCandidateScan = scan;
+            }
+
+            if (cmdrData.NeutronPrimarySystem == scan.StarSystem
+                && cmdrData.ScoopableSecondaryCandidateScan?.StarSystem == cmdrData.CurrentSystemName
+                && cmdrData.NeutronPrimarySystemNotified != cmdrData.CurrentSystemName)
+            {
+                cmdrData.NeutronPrimarySystemNotified = cmdrData.CurrentSystemName;
+                string extendedDetails = $"Nearby scoopable secondary star; Type: {cmdrData.ScoopableSecondaryCandidateScan?.StarType}, {Math.Round(cmdrData.ScoopableSecondaryCandidateScan?.DistanceFromArrivalLS ?? 0, 1)} Ls";
+                _c.SendNotification(new()
+                {
+                    Title = SharedLogic.GetBodyDisplayName(SharedLogic.GetBodyShortName(scan.BodyName, cmdrData.CurrentSystemName)),
+                    Detail = $"Nearby scoopable secondary star",
+                    ExtendedDetails = extendedDetails,
+                    Sender = AboutInfo.ShortName,
+                    CoalescingId = scan.BodyID,
+                });
             }
         }
 
         public void StatusChange(Status status)
         {
             // Update fuel level with latest, greatest data.
-            if (status.Fuel != null) 
-                data.CommanderData.FuelRemaining = status.Fuel.FuelMain;
-
-            if (status.Flags2.HasFlag(StatusFlags2.FsdHyperdriveCharging) && settings.WarnIncompleteUndiscoveredSystemScan
-                && !data.CommanderData.AllBodiesFound && data.CommanderData.UndiscoveredSystem && !incompleteSystemsNotified.Contains(data.CommanderData.CurrentSystem))
+            if (status.Fuel != null)
             {
-                incompleteSystemsNotified.Add(data.CommanderData.CurrentSystem);
-                Core.SendNotification(new()
+                var fuelChanged = (_c.Data.CommanderData.Ships.CurrentShip.FuelRemaining != status.Fuel.FuelMain);
+                _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining = status.Fuel.FuelMain;
+                if (fuelChanged)
+                {
+                    _c.UI.ChangeFuelLevel(status.Fuel.FuelMain);
+                }
+            }
+
+            if (status.Flags2.HasFlag(StatusFlags2.FsdHyperdriveCharging) && _c.Settings.WarnIncompleteUndiscoveredSystemScan
+                && !_c.Data.CommanderData.AllBodiesFound && _c.Data.CommanderData.UndiscoveredSystem
+                && !incompleteSystemsNotified.Contains(_c.Data.CommanderData.CurrentSystemName))
+            {
+                incompleteSystemsNotified.Add(_c.Data.CommanderData.CurrentSystemName);
+                _c.SendNotification(new()
                 {
                     Title = "Incomplete system scan!",
                     Detail = $"The undiscovered system you are about to leave is not fully scanned!",
                     Sender = AboutInfo.ShortName,
                     CoalescingId = Constants.COALESCING_ID_SYSTEM,
+                    Rendering = NotificationRendering.NativeVisual | NotificationRendering.NativeVocal,
                 });
             }
-        }
 
-
-
-        private static string BodyShortName(string bodyName, string systemName)
-        {
-            string shortName = bodyName.Replace(systemName, "").Trim();
-            // TODO handle barycenters
-            return (string.IsNullOrEmpty(shortName) ? "Primary star" : shortName);
-        }
-
-        private void MakeGridItem(string timestamp, string details = "")
-        {
-            if (Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch)) return;
-
-            HelmGrid gridItem = new()
+            if (_c.Data.CommanderData.LastStatus != null
+                && status.Destination?.System == _c.UIMgr.Realtime.SystemId64
+                && status.Destination?.Body >= 0
+                && status.Destination?.Body != _c.Data.CommanderData.LastStatus.Destination?.Body
+                && status.Destination?.Body != _c.UIMgr.Realtime.BodyId)
             {
-                Timestamp = timestamp,
-                System = data.CommanderData.CurrentSystem ?? "",
-                Fuel = (data.CommanderData.IsDockedOnCarrier ? "" : $"{(100 * data.CommanderData.FuelRemaining / data.CommanderData.FuelCapacity):0}% ({Math.Round(data.CommanderData.FuelRemaining, 2)} T)"),
-                DistanceTravelled = $"{data.CommanderData.DistanceTravelled:n1} ly ({data.CommanderData.JumpsCompleted} jumps" + (data.CommanderData.DockedCarrierJumpsCompleted > 0 ? $", {data.CommanderData.DockedCarrierJumpsCompleted} jumps on a carrier)" : ")"),
-                JumpsRemaining = data.CommanderData.IsDockedOnCarrier ? "" : 
-                        (data.CommanderData.JumpsRemainingInRoute > 0 ? $"{data.CommanderData.JumpsRemainingInRoute}{(!string.IsNullOrEmpty(data.CommanderData.Destination) ? $" en route to {data.CommanderData.Destination}" : "")}" : ""),
-                Details = $"{details}",
-            };
-            Core.AddGridItem(this, gridItem);
-        }
-
-        private void MaybeMakeGridItemForSummary(string timestamp)
-        {
-            if ((data.CommanderData?.JumpsCompleted ?? 0) == 0)
-            {
-                // Do nothing.
-                return;
+                _c.UI.ChangeBody(status.Destination.Body);
             }
 
-            HelmGrid gridItem = new()
+            if (status.Flags.HasFlag(StatusFlags.LatLongValid))
             {
-                Timestamp = timestamp,
-                System = data.CommanderData.CurrentSystem ?? "",
-                Fuel = "",
-                DistanceTravelled = $"{data.CommanderData.DistanceTravelled:n1} ly ({data.CommanderData.JumpsCompleted} jumps" + (data.CommanderData.DockedCarrierJumpsCompleted > 0 ? $", {data.CommanderData.DockedCarrierJumpsCompleted} jumps on a carrier)" : ")"),
-                JumpsRemaining = data.CommanderData.IsDockedOnCarrier ? "" : (data.CommanderData.JumpsRemainingInRoute > 0 ? $"{data.CommanderData.JumpsRemainingInRoute}" : ""),
-                Details = $"Previous session summary for {data.CommanderData.Commander}",
-            };
-
-            Core.AddGridItem(this, gridItem);
+                // Move to _c.UI.Change* method?
+                _c.UIMgr.Realtime.SurfacePosition = SurfacePosition.FromStatus(status);
+            }
+            else
+            {
+                // Move to _c.UI.Change* method?
+                _c.UIMgr.Realtime.SurfacePosition = null;
+            }
+            _c.Data.CommanderData.LastStatus = status;
         }
 
-        private void MaybeRestoreDestinations(bool forCommanderChange = false)
+        public void HandlePluginMessage(MessageSender sender, PluginMessage messageArgs)
         {
-            if (Core.IsLogMonitorBatchReading) return;
+            _c.Dispatcher.MaybeHandlePluginMessage(sender, messageArgs, out _);
+        }
 
-            if (!hasLoadedDestinations && data.RestoreRouteDestinations(Core.PluginStorageFolder)
-                && data.IsCommanderKnown && !string.IsNullOrWhiteSpace(data.CommanderData.Destination))
+        private void HandleHelmStatusMessage(HelmStatusMessage statusMessage)
+        {
+            _c.AddMessage(statusMessage.Message, statusMessage.TimestampUtc, statusMessage.Sender.FullName);
+        }
+
+        private void ReadCacheFile()
+        {
+            if (_c.Core.IsLogMonitorBatchReading) return;
+
+            if (!hasLoadedDestinations && _c.Data.RestoreFromCache())
             {
                 hasLoadedDestinations = true;
             }
 
-            MaybeSetDestinationInClipboard(forCommanderChange);
+            if (_c.Data.CurrentCommander is null) return;
+
+            // Rehydrate some UI state.
+            // Move to _c.UI.Change* method(s)?
+            _c.UIMgr.Realtime.SwitchCommander(_c.Data.CurrentCommander);
         }
 
-        private void MaybeSetDestinationInClipboard(bool forCommanderChange)
+        private bool _cacheWriteQueued = false;
+        private void UpdateCache()
         {
-            if (Core.IsLogMonitorBatchReading) return;
-            if (!string.IsNullOrWhiteSpace(data.CommanderData?.Destination))
+            if (_c.Core.IsLogMonitorBatchReading) return;
+
+            // Throttle writes by queuing a task to save in a few seconds so if there's a burst of
+            // changes, we don't slow things down or write super often.
+            if (!_cacheWriteQueued)
+            {
+                _cacheWriteQueued = true;
+                try
+                {
+                    Task.Run(() =>
+                    {
+                        Task.Delay(3000);
+                        try
+                        {
+                            _c.Data.SaveToCache();
+                        }
+                        finally
+                        {
+                            _cacheWriteQueued = false;
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _cacheWriteQueued = false;
+                    Debug.Fail($"Helm: Failed to write cache file: {ex.Message}");
+                }
+            }
+        }
+
+        private void MaybeSetDestinationInClipboard(bool forCommanderChange = false)
+        {
+            if (_c.Core.IsLogMonitorBatchReading) return;
+            if (!string.IsNullOrWhiteSpace(_c.Data.CommanderData?.Destination))
             {
                 // We have a known destination; Set the current destination into the clipboard.
-                Core.ExecuteOnUIThread(delegate() {
-                    Clipboard.SetText(data.CommanderData.Destination);
+                _c.Core.ExecuteOnUIThread(delegate ()
+                {
+                    Misc.SetTextToClipboard(_c.Data.CommanderData.Destination);
                 });
 
-                var detailStr = $"Last destination system for Cmdr {data.CurrentCommander} inserted into clipboard for re-plot";
+                var detailStr = $"Last destination system ({_c.Data.CommanderData.Destination}) for Cmdr {_c.Data.CurrentCommander.Name} inserted into clipboard for re-plot";
                 if (forCommanderChange)
                 {
-                    detailStr = $"Switched to Cmdr {data.CurrentCommander}; last destination system inserted into clipboard for re-plot";
+                    detailStr = $"Switched to Cmdr {_c.Data.CurrentCommander.Name}; last destination system ({_c.Data.CommanderData.Destination}) inserted into clipboard for re-plot";
                 }
-                HelmGrid gridItem = new()
-                {
-                    Timestamp = DateTime.UtcNow.ToString(),
-                    System = data.CommanderData.Destination,
-                    Fuel = "",
-                    DistanceTravelled = "",
-                    JumpsRemaining = "",
-                    Details = detailStr,
-                };
-                Core.AddGridItem(this, gridItem);
 
-                Core.SendNotification(new()
+                _c.AddMessage(detailStr);
+                _c.SendNotification(new()
                 {
                     Title = "Ready to re-plot route",
                     Detail = "Destination is in the system clipboard",
                     Sender = AboutInfo.ShortName,
-                    ExtendedDetails = $"Destination: {data.CommanderData.Destination}",
+                    ExtendedDetails = $"Destination: {_c.Data.CommanderData.Destination}",
                     Rendering = NotificationRendering.PluginNotifier,
                     CoalescingId = Constants.COALESCING_ID_HEADER,
                 });
             }
         }
 
-        private static Modules? findFSD(ImmutableList<Modules> modules)
+        private void HandleArchivistScansMessage(ArchivistJournalsMessage m)
         {
-            foreach (var m in modules)
+            _c.UIMgr.ReplayMode = true;
+
+            try
             {
-                if (m.Slot.Equals("FrameShiftDrive", StringComparison.OrdinalIgnoreCase))
+                foreach (var entry in m.SystemJournalEntries)
                 {
-                    return m;
+                    JournalEvent(entry);
                 }
             }
-            return null;
-        }
-
-        class HelmGrid
-        {
-            [ColumnSuggestedWidth(300)]
-            public string Timestamp { get; set; }
-            [ColumnSuggestedWidth(350)]
-            public string System { get; set; }
-            [ColumnSuggestedWidth(150)]
-            public string Fuel { get; set; }
-            [ColumnSuggestedWidth(250)]
-            public string DistanceTravelled { get; set; }
-            [ColumnSuggestedWidth(250)]
-            public string JumpsRemaining { get; set; }
-            [ColumnSuggestedWidth(500)]
-            public string Details { get; set; }
+            finally
+            {
+                _c.UIMgr.ReplayMode = false;
+                _c.AddMessage($"Got system data from Archivist for {m.SystemName}");
+                _c.UI.Draw();
+            }
         }
     }
 }
