@@ -1,57 +1,39 @@
 ﻿using com.github.fredjk_gh.ObservatoryFleetCommander.Data;
 using com.github.fredjk_gh.ObservatoryFleetCommander.UI;
-using Observatory.Framework.Files.ParameterTypes;
-using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Security.Policy;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using com.github.fredjk_gh.PluginCommon.Data.Spansh;
+using com.github.fredjk_gh.PluginCommon.Data.Spansh.CommonGeneric;
+using com.github.fredjk_gh.PluginCommon.Utilities;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
-    public partial class SpanshCarrierRouterForm : Form, ICarrierRouteCreator
+    internal partial class SpanshCarrierRouterForm : Form, ICarrierRouteCreator
     {
-        private IObservatoryCore _core;
-        private IObservatoryWorker _worker;
-        private string _currentCommander;
-        private CarrierManager _carrierManager;
-        private CarrierRoute _carrierRoute;
+        private readonly CommanderContext _c;
+        private FleetCarrierRouteJobResult.RouteResult _carrierRoute;
 
-        public SpanshCarrierRouterForm(IObservatoryCore core, IObservatoryWorker worker, string currentCommander, CarrierManager carrierManager)
+        internal SpanshCarrierRouterForm(CommanderContext ctx, string currentCommander)
         {
             InitializeComponent();
 
-            _core = core;
-            _worker = worker;
-            _currentCommander = currentCommander;
-            _carrierManager = carrierManager;
+            _c = ctx;
 
             btnClearRoute.Visible = false;
             btnClearRoute.Enabled = false;
 
-            if (_carrierManager.Count == 0)
+            if (_c.Manager.CarrierCount == 0)
             {
-                txtOutput.Text = "No known carriers. Please close this window, and perform a Read-All and try again.";
+                SetOutput("No known carriers. Please close this window, and perform a Read-All and try again.");
                 btnSaveRoute.Enabled = false;
                 btnGenerateRoute.Enabled = false;
             }
             else
             {
-                foreach (var carrierData in _carrierManager.Carriers)
+                foreach (var carrierData in _c.Manager.Carriers)
                 {
-                    int cmdrIndex = cbCommanders.Items.Add(carrierData.OwningCommander);
-
-                    if (carrierData.OwningCommander == _currentCommander)
+                    int carrierIndex = cbCarriers.Items.Add(carrierData);
+                    if (carrierData.Owner == currentCommander)
                     {
-                        cbCommanders.SelectedIndex = cmdrIndex;
+                        cbCarriers.SelectedIndex = carrierIndex;
                     }
                 }
             }
@@ -59,24 +41,28 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             DialogResult = DialogResult.Cancel;
         }
 
-        public string SelectedCommander { get => _currentCommander; }
+        public ulong SelectedCarrierId { get => ((CarrierData)cbCarriers.SelectedItem).CarrierId; }
 
-        public CarrierData CarrierDataForSelectedCommander
+        public CarrierData CarrierDataForSelectedId
         {
-            get => _carrierManager.GetByCommander(SelectedCommander);
+            get => (CarrierData)cbCarriers.SelectedItem;
+        }
+
+        private void SetOutput(string msg = "")
+        {
+            _c.Core.ExecuteOnUIThread(() => { txtOutput.Text = msg; });
         }
 
         private void ValidateInputs()
         {
-            if (cbCommanders.SelectedIndex < 0)
+            if (cbCarriers.SelectedIndex < 0)
             {
                 btnGenerateRoute.Enabled = false;
                 btnSaveRoute.Enabled = false;
                 return;
             }
 
-            string selectedCmdr = cbCommanders.Items[cbCommanders.SelectedIndex]?.ToString() ?? "";
-            CarrierData carrierData = _carrierManager.GetByCommander(selectedCmdr);
+            CarrierData carrierData = (CarrierData)cbCarriers.SelectedItem;
 
             if (carrierData == null)
             {
@@ -109,13 +95,16 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (carrierData == null)
             {
-                lblCarrierNameAndId.Text = string.Empty;
+                lblCarrierTypeValue.Text = string.Empty;
                 txtStartSystem.Text = string.Empty;
                 nudUsedCapacity.Value = 0;
-            };
+                return;
+            }
 
-            lblCarrierNameAndId.Text = $"{carrierData.CarrierName} ({carrierData.CarrierCallsign})";
-            JumpInfo nextJump = null;
+            lblCarrierTypeValue.Text = $"{carrierData.CarrierType}";
+            nudUsedCapacity.Maximum = carrierData.CarrierCapacity;
+
+            FleetCarrierRouteJobResult.Jump nextJump = null;
             if (carrierData.IsPositionKnown)
             {
                 txtStartSystem.Text = carrierData.Position.SystemName;
@@ -129,19 +118,21 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 txtStartSystem.Text = "";
             }
-            nudUsedCapacity.Value = carrierData.CapacityUsed;
+            nudUsedCapacity.Value = carrierData.LastCarrierStats is null 
+                ? carrierData.CarrierCapacity 
+                : carrierData.CarrierCapacity - carrierData.LastCarrierStats.SpaceUsage.FreeSpace;
 
             if (carrierData.HasRoute)
             {
-                txtDestSystem.Text = carrierData.Route.DestinationSystem;
+                txtDestSystem.Text = carrierData.Route.Destinations.LastOrDefault();
                 btnClearRoute.Visible = true;
                 btnClearRoute.Enabled = true;
 
                 if (nextJump != null)
                 {
                     var nextSystem = nextJump.SystemName;
-                    Clipboard.SetText(nextSystem);
-                    txtOutput.Text = $"Route to {carrierData.Route.DestinationSystem} detected; next jump is {nextSystem} and has been placed on the clipboard.";
+                    Misc.SetTextToClipboard(nextSystem);
+                    SetOutput($"Route to {carrierData.Route.Destinations.LastOrDefault()} detected; next jump is {nextSystem} and has been placed on the clipboard.");
                 }
                 // Otherwise, route is presumably completed or we're not on-course... Either way, enable clearing it.
             }
@@ -149,146 +140,119 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 btnClearRoute.Visible = false;
                 btnClearRoute.Enabled = false;
-                txtOutput.Text = string.Empty;
+                SetOutput();
                 txtDestSystem.Text = "";
             }
         }
 
         private void ToggleInputs(bool isEnabled)
         {
-            cbCommanders.Enabled = isEnabled;
+            cbCarriers.Enabled = isEnabled;
             txtStartSystem.Enabled = isEnabled;
             txtDestSystem.Enabled = isEnabled;
             nudUsedCapacity.Enabled = isEnabled;
             btnClearRoute.Enabled = isEnabled;
         }
 
-        private void cbCommanders_SelectedIndexChanged(object sender, EventArgs e)
+        private void CbCarriers_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (cbCommanders.SelectedIndex >= 0)
+            if (cbCarriers.SelectedIndex >= 0)
             {
-                string selectedCmdr = cbCommanders.Items[cbCommanders.SelectedIndex]?.ToString() ?? "";
-
-                if (!string.IsNullOrWhiteSpace(selectedCmdr))
-                {
-                    _currentCommander = selectedCmdr;
-                    PrefillCarrierInfo(CarrierDataForSelectedCommander);
-                }
+                PrefillCarrierInfo(CarrierDataForSelectedId);
             }
             ValidateInputs();
         }
 
-        private void txtStartSystem_TextChanged(object sender, EventArgs e)
+        private void TxtStartSystem_TextChanged(object sender, EventArgs e)
         {
             ValidateInputs();
         }
 
-        private void txtDestSystem_TextChanged(object sender, EventArgs e)
+        private void TxtDestSystem_TextChanged(object sender, EventArgs e)
         {
             ValidateInputs();
         }
 
-        private void nudUsedCapacity_ValueChanged(object sender, EventArgs e)
+        private void NudUsedCapacity_ValueChanged(object sender, EventArgs e)
         {
             ValidateInputs();
         }
 
-        private async void btnGenerateRoute_Click(object sender, EventArgs e)
+        private void BtnGenerateRoute_Click(object sender, EventArgs e)
         {
             // Disable UI elements to prevent fiddling.
             btnGenerateRoute.Enabled = false;
             ToggleInputs(false);
 
-            string destinationsParams = "";
-            foreach (var dest in txtDestSystem.Text.Trim().Split(','))
-            {
-                if (string.IsNullOrWhiteSpace(dest)) continue;
-
-                destinationsParams += $"&destinations={Uri.EscapeDataString(dest.Trim())}";
-            }
-            if (destinationsParams.Length == 0)
-            {
-                txtOutput.Text = $"No destination(s) provided!";
-                ToggleInputs(true);
-                return;
-            }
+            // Maybe make this a member variable and use it to enable btnGenerateRoute?
+            CarrierData data = (CarrierData)cbCarriers.SelectedItem;
 
             // Create a request
-            var requestUri = $"https://spansh.co.uk/api/fleetcarrier/route?source={Uri.EscapeDataString(txtStartSystem.Text.Trim())}{destinationsParams}&capacity_used={nudUsedCapacity.Value}&calculate_starting_fuel=1";
-            string jobJson = "";
-
-            // Send it, get result ID.
-            var searchStartTask = _core.HttpClient.GetStringAsync(requestUri);
-            try
+            FleetCarrierRouteJobResult.Parameters req = new()
             {
-                jobJson = searchStartTask.Result;
-            }
-            catch (Exception ex)
+                SourceSystem = txtStartSystem.Text.Trim(),
+                DestinationSystems = [.. txtDestSystem.Text.Trim().Split(',').Where(d => !string.IsNullOrWhiteSpace(d))],
+                CurrentFuel = data.CarrierFuel,
+                CapacityUsed = (int)nudUsedCapacity.Value,
+                Capacity = data.CarrierCapacity,
+                Mass = data.IsSquadronCarrier ? 15000 : data.CarrierCapacity,
+            };
+            if (!req.IsValid())
             {
-                txtOutput.Text = $"Failed to start search on Spansh: {ex.Message}.";
+                SetOutput($"Request is not valid!");
                 ToggleInputs(true);
+                ValidateInputs();
                 return;
             }
 
-            using var jobDoc = JsonDocument.Parse(jobJson);
-            var jobRoot = jobDoc.RootElement;
-            var jobId = jobRoot.GetProperty("job").GetString();
-            txtOutput.Text = $"Got Job ID {jobId}; polling for result...";
-
-            // Poll until it's ready. Unfortunate, but the only way we can do it.
-            // That said, I wonder if this should be a separate task at some point.
-            var routeJson = string.Empty;
-            do
+            Task.Run(() =>
             {
-                Task pause = Task.Delay(1500); // Non-blocking wait.
-                await pause;
-                var fetchResultTask = _core.HttpClient.GetStringAsync($"https://spansh.co.uk/api/results/{jobId}");
+#if DEBUG
+                using CancellationTokenSource cts = new();
+
+#else
+                using CancellationTokenSource cts = new(10000); // This polls, give extra time.
+#endif
                 try
                 {
-                    await fetchResultTask;
+                    var fetchTask = SpanshHelper.FetchFleetCarrierRoute(_c, req, cts.Token);
+                    var result = fetchTask.Result;
+
+                    if (result is not null && result.Result is not null)
+                    {
+                        _carrierRoute = result.Result;
+                        SetOutput($"Route ready! {_carrierRoute.Jumps.Count - 1} jumps.");
+                    }
+                    else
+                    {
+                        SetOutput("Unexpected: No result AND no error from Spansh fetch!?");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    txtOutput.Text = $"Spansh result fetch failed: {ex.Message}"
-                        + $"{Environment.NewLine}Possible reasons for this include invalid inputs or unknown systems; please try something else.";
-                    break;
+                    // These are likely to be SpanshException wrapped and should be half decently descriptive.
+                    // The helper logs the errors at source for pure call stacks.
+                    SetOutput(ex.Message);
                 }
-
-                routeJson = fetchResultTask.Result;
-                using var resultDoc = JsonDocument.Parse(routeJson);
-                var resultRoot = resultDoc.RootElement;
-                JsonElement property;
-                if (resultRoot.TryGetProperty("result", out property))
+                finally
                 {
-                    // We have a result! Always check this first, in case both "job" and "result" are present to avoid loops.
-                    _carrierRoute = CarrierRoute.FromSpanshResultJson(property, jobId);
-                    txtOutput.Text = $"Route ready! {_carrierRoute.Jumps.Count - 1} jumps.";
-                    break;
+                    // We're explicitly not on the UI thread here, don't touch the UI directly.
+                    _c.Core.ExecuteOnUIThread(() =>
+                    {
+                        ToggleInputs(true);
+                        ValidateInputs(); // will now enable the Save-and-Start button if successful.
+                    });
                 }
-                else if (resultRoot.TryGetProperty("job", out property))
-                {
-                    routeJson = ""; // Still working on it...
-                    continue;
-                }
-                else
-                {
-                    txtOutput.Text = $"Spansh returned unknown response: {routeJson}";
-                    ToggleInputs(true);
-                    return;
-                }
-            } while (string.IsNullOrWhiteSpace(routeJson));
-
-            ToggleInputs(true);
-            ValidateInputs(); // will now enable the Save-and-Start button.
+            });
         }
 
-        private void btnAccept_Click(object sender, EventArgs e)
+        private void BtnAccept_Click(object sender, EventArgs e)
         {
-            // If a route has been fetched, set the route into the CarrierData object for the SelectedCommander.
-            var data = CarrierDataForSelectedCommander;
+            // If a route has been fetched, set the route into the CarrierData object for the selected carrier.
+            var data = CarrierDataForSelectedId;
             if (data == null) // This shouldn't happen.
             {
-                txtOutput.Text = $"Nowhere to save route!? Data";
+                SetOutput($"Nowhere to save route!? Data");
                 btnSaveRoute.Enabled = false;
                 ValidateInputs();
                 return;
@@ -299,12 +263,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             Close();
         }
 
-        private void btnCancel_Click(object sender, EventArgs e)
+        private void BtnCancel_Click(object sender, EventArgs e)
         {
             Close();
         }
 
-        private void btnClearRoute_Click(object sender, EventArgs e)
+        private void BtnClearRoute_Click(object sender, EventArgs e)
         {
             txtDestSystem.Text = string.Empty;
             btnClearRoute.Enabled = false;

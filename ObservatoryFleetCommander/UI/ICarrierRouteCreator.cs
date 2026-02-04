@@ -1,17 +1,11 @@
 ﻿using com.github.fredjk_gh.ObservatoryFleetCommander.Data;
-using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 {
-    public interface ICarrierRouteCreator
+    internal interface ICarrierRouteCreator
     {
-        string SelectedCommander { get; }
+        ulong SelectedCarrierId { get; }
 
-        CarrierData CarrierDataForSelectedCommander { get; }
+        CarrierData CarrierDataForSelectedId { get; }
     }
 }

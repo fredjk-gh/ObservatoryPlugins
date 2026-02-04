@@ -1,29 +1,23 @@
 ﻿using com.github.fredjk_gh.ObservatoryFleetCommander.Data;
+using com.github.fredjk_gh.PluginCommon.UI;
 using Observatory.Framework;
 using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing.Text;
 using System.Timers;
-using System.Windows.Forms;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 {
-    public partial class CountdownTimerForm : Form
+    internal partial class CountdownTimerForm : Form
     {
-        private IObservatoryCore _core;
-        private CarrierData _data;
+        private readonly IObservatoryCore _core;
+        private readonly CarrierData _data;
         private FormWindowState _lastWindowState;
 
-        public CountdownTimerForm(IObservatoryCore core, CarrierData data)
+        internal CountdownTimerForm(IObservatoryCore core, CarrierData data)
         {
             InitializeComponent();
+            TransparencyKey = BackColor;
+
             _lastWindowState = WindowState;
             _core = core;
             _data = data;
@@ -31,8 +25,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             // Ticker running state is managed by the main UI.
             _data.Ticker.Elapsed += Countdown_Tick;
 
-            AdjustTimerFont();
             RefreshDisplay();
+            AdjustLabelFont(lblTimerValue);
         }
 
         internal void RefreshDisplay()
@@ -45,25 +39,30 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             if (_data.CarrierJumpTimerScheduled && DateTime.Now.CompareTo(_data.DepartureDateTime) < 0)
             {
                 timerDesc = "Jump Timer";
-                time = $"{_data.DepartureDateTime.Subtract(DateTime.Now).ToString(@"h\:mm\:ss")}";
+                time = UIFormatter.Timehmmss(_data.DepartureDateTime.Subtract(DateTime.Now));
             }
             else if (DateTime.Now.CompareTo(_data.CooldownDateTime) <= 0)
             {
                 timerDesc = "Cooldown Timer";
-                time = $"{_data.CooldownDateTime.Subtract(DateTime.Now).ToString(@"h\:mm\:ss")}";
+                time = UIFormatter.Timehmmss(_data.CooldownDateTime.Subtract(DateTime.Now));
             }
 
             lblTimerTitle.Text = $"{_data.CarrierName}{Environment.NewLine}{timerDesc}";
             lblTimerValue.Text = time;
         }
 
-        private void AdjustTimerFont()
+        protected override void OnShown(EventArgs e)
         {
-            // Adjust timer text font size to fit inside the label.
-            var fontSize = GetFontSize(lblTimerValue, lblTimerValue.Text);
+            base.OnShown(e);
+        }
 
-            Font f = lblTimerValue.Font;
-            lblTimerValue.Font = new Font(f.FontFamily, fontSize);
+        private void AdjustLabelFont(Label label)
+        {
+            // Adjust text font size to fit inside the label.
+            var fontSize = GetFontSize(label, label.Text);
+
+            Font f = label.Font;
+            label.Font = new Font(f.FontFamily, fontSize);
         }
 
         // Adapted from https://www.csharphelper.com/howtos/howto_biggest_font_label.html
@@ -75,25 +74,23 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             // See how much room we have, allowing a bit for the Label's padding.
             int wid = label.DisplayRectangle.Width - (label.Padding.Left + label.Padding.Right);
             int hgt = label.DisplayRectangle.Height - (label.Padding.Top + label.Padding.Bottom);
+            Size proposed = new(wid, hgt);
 
             // Make a Graphics object to measure the text.
-            using (Graphics gr = label.CreateGraphics())
+            using Graphics gr = label.CreateGraphics();
+            gr.TextRenderingHint = TextRenderingHint.AntiAlias;
+            while (max_size - min_size > 1.0f)
             {
-                while (max_size - min_size > 0.1f)
-                {
-                    float pt = (min_size + max_size) / 2f;
-                    using (Font test_font = new Font(label.Font.FontFamily, pt, FontStyle.Bold))
-                    {
-                        // See if this font is too big.
-                        SizeF text_size = gr.MeasureString(text, test_font);
-                        if ((text_size.Width > wid) || (text_size.Height > hgt))
-                            max_size = pt;
-                        else
-                            min_size = pt;
-                    }
-                }
-                return min_size;
+                float pt = (min_size + max_size) / 2f;
+                using Font test_font = new(label.Font.FontFamily, pt);
+                // See if this font is too big.
+                SizeF text_size = TextRenderer.MeasureText(gr, text, test_font, proposed);
+                if ((text_size.Width > wid) || (text_size.Height > hgt))
+                    max_size = pt;
+                else
+                    min_size = pt;
             }
+            return min_size;
         }
 
         private void Countdown_Tick(object sender, ElapsedEventArgs e)
@@ -110,18 +107,76 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
         {
             if (WindowState != _lastWindowState)
             {
-                AdjustTimerFont();
+                AdjustLabelFont(lblTimerValue);
                 _lastWindowState = WindowState;
             }
         }
+
         private void CountdownTimerForm_ResizeEnd(object sender, EventArgs e)
         {
-            AdjustTimerFont();
+            AdjustLabelFont(lblTimerValue);
         }
 
         private void CountdownTimerForm_Shown(object sender, EventArgs e)
         {
-            AdjustTimerFont();
+            AdjustLabelFont(lblTimerValue);
         }
+
+        private void CountdownTimerForm_BackColorChanged(object sender, EventArgs e)
+        {
+            if (!TransparencyKey.IsEmpty)
+            {
+                TransparencyKey = BackColor;
+            }
+        }
+
+        private void ToggleTransparency()
+        {
+            if (!TransparencyKey.IsEmpty)
+            {
+                TransparencyKey = Color.Empty;
+            }
+            else
+            {
+                TransparencyKey = BackColor;
+            }
+        }
+
+        private void ToggleBorder()
+        {
+            if (FormBorderStyle == FormBorderStyle.None)
+            {
+                FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            }
+            else
+            {
+                FormBorderStyle = FormBorderStyle.None;
+            }
+        }
+
+        private void ToggleBorderToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ToggleBorder();
+        }
+
+        private void ToggleTransparencyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ToggleTransparency();
+        }
+
+        private void CloseToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        private void CountdownTimerForm_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                ctxActions.Show();
+            }
+        }
+
+        protected override bool ShowWithoutActivation => true;
     }
 }

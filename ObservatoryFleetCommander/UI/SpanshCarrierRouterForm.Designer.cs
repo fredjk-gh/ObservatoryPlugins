@@ -31,9 +31,9 @@
             components = new System.ComponentModel.Container();
             mainLayoutPanel = new TableLayoutPanel();
             lblCommander = new Label();
-            cbCommanders = new ComboBox();
-            lblCarrier = new Label();
-            lblCarrierNameAndId = new Label();
+            cbCarriers = new ComboBox();
+            lblCarrierType = new Label();
+            lblCarrierTypeValue = new Label();
             lblStartSystem = new Label();
             txtStartSystem = new TextBox();
             lblDestinationSystem = new Label();
@@ -60,9 +60,9 @@
             mainLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30.9597511F));
             mainLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 69.04025F));
             mainLayoutPanel.Controls.Add(lblCommander, 0, 0);
-            mainLayoutPanel.Controls.Add(cbCommanders, 1, 0);
-            mainLayoutPanel.Controls.Add(lblCarrier, 0, 1);
-            mainLayoutPanel.Controls.Add(lblCarrierNameAndId, 1, 1);
+            mainLayoutPanel.Controls.Add(cbCarriers, 1, 0);
+            mainLayoutPanel.Controls.Add(lblCarrierType, 0, 1);
+            mainLayoutPanel.Controls.Add(lblCarrierTypeValue, 1, 1);
             mainLayoutPanel.Controls.Add(lblStartSystem, 0, 2);
             mainLayoutPanel.Controls.Add(txtStartSystem, 1, 2);
             mainLayoutPanel.Controls.Add(lblDestinationSystem, 0, 3);
@@ -91,48 +91,48 @@
             // 
             lblCommander.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             lblCommander.AutoSize = true;
-            lblCommander.Location = new Point(62, 0);
+            lblCommander.Location = new Point(94, 0);
             lblCommander.Margin = new Padding(2, 0, 2, 0);
             lblCommander.Name = "lblCommander";
-            lblCommander.Size = new Size(77, 33);
+            lblCommander.Size = new Size(45, 33);
             lblCommander.TabIndex = 0;
-            lblCommander.Text = "Commander:";
+            lblCommander.Text = "Carrier:";
             lblCommander.TextAlign = ContentAlignment.MiddleRight;
             // 
-            // cbCommanders
+            // cbCarriers
             // 
-            cbCommanders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            cbCommanders.FormattingEnabled = true;
-            cbCommanders.Location = new Point(143, 6);
-            cbCommanders.Margin = new Padding(2, 6, 2, 2);
-            cbCommanders.Name = "cbCommanders";
-            cbCommanders.Size = new Size(313, 23);
-            cbCommanders.TabIndex = 1;
-            cbCommanders.SelectedIndexChanged += cbCommanders_SelectedIndexChanged;
+            cbCarriers.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            cbCarriers.FormattingEnabled = true;
+            cbCarriers.Location = new Point(143, 6);
+            cbCarriers.Margin = new Padding(2, 6, 2, 2);
+            cbCarriers.Name = "cbCarriers";
+            cbCarriers.Size = new Size(313, 23);
+            cbCarriers.TabIndex = 1;
+            cbCarriers.SelectedIndexChanged += CbCarriers_SelectedIndexChanged;
             // 
-            // lblCarrier
+            // lblCarrierType
             // 
-            lblCarrier.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            lblCarrier.AutoSize = true;
-            lblCarrier.Location = new Point(94, 33);
-            lblCarrier.Margin = new Padding(2, 0, 2, 0);
-            lblCarrier.Name = "lblCarrier";
-            lblCarrier.Size = new Size(45, 33);
-            lblCarrier.TabIndex = 2;
-            lblCarrier.Text = "Carrier:";
-            lblCarrier.TextAlign = ContentAlignment.MiddleRight;
+            lblCarrierType.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            lblCarrierType.AutoSize = true;
+            lblCarrierType.Location = new Point(67, 33);
+            lblCarrierType.Margin = new Padding(2, 0, 2, 0);
+            lblCarrierType.Name = "lblCarrierType";
+            lblCarrierType.Size = new Size(72, 33);
+            lblCarrierType.TabIndex = 2;
+            lblCarrierType.Text = "Carrier Type:";
+            lblCarrierType.TextAlign = ContentAlignment.MiddleRight;
             // 
-            // lblCarrierNameAndId
+            // lblCarrierTypeValue
             // 
-            lblCarrierNameAndId.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
-            lblCarrierNameAndId.AutoSize = true;
-            lblCarrierNameAndId.Location = new Point(143, 33);
-            lblCarrierNameAndId.Margin = new Padding(2, 0, 2, 0);
-            lblCarrierNameAndId.Name = "lblCarrierNameAndId";
-            lblCarrierNameAndId.Size = new Size(116, 33);
-            lblCarrierNameAndId.TabIndex = 3;
-            lblCarrierNameAndId.Text = "(Select Commander)";
-            lblCarrierNameAndId.TextAlign = ContentAlignment.MiddleLeft;
+            lblCarrierTypeValue.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            lblCarrierTypeValue.AutoSize = true;
+            lblCarrierTypeValue.Location = new Point(143, 33);
+            lblCarrierTypeValue.Margin = new Padding(2, 0, 2, 0);
+            lblCarrierTypeValue.Name = "lblCarrierTypeValue";
+            lblCarrierTypeValue.Size = new Size(82, 33);
+            lblCarrierTypeValue.TabIndex = 3;
+            lblCarrierTypeValue.Text = "(Select carrier)";
+            lblCarrierTypeValue.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblStartSystem
             // 
@@ -154,7 +154,7 @@
             txtStartSystem.Name = "txtStartSystem";
             txtStartSystem.Size = new Size(308, 23);
             txtStartSystem.TabIndex = 5;
-            txtStartSystem.TextChanged += txtStartSystem_TextChanged;
+            txtStartSystem.TextChanged += TxtStartSystem_TextChanged;
             // 
             // lblDestinationSystem
             // 
@@ -177,7 +177,7 @@
             txtDestSystem.Name = "txtDestSystem";
             txtDestSystem.Size = new Size(308, 23);
             txtDestSystem.TabIndex = 7;
-            txtDestSystem.TextChanged += txtDestSystem_TextChanged;
+            txtDestSystem.TextChanged += TxtDestSystem_TextChanged;
             // 
             // lblUsedCapacity
             // 
@@ -229,7 +229,7 @@
             btnSaveRoute.TabIndex = 0;
             btnSaveRoute.Text = "Save and Start";
             btnSaveRoute.UseVisualStyleBackColor = true;
-            btnSaveRoute.Click += btnAccept_Click;
+            btnSaveRoute.Click += BtnAccept_Click;
             // 
             // btnClearRoute
             // 
@@ -243,7 +243,7 @@
             btnClearRoute.TabIndex = 14;
             btnClearRoute.Text = "Clear Route";
             btnClearRoute.UseVisualStyleBackColor = true;
-            btnClearRoute.Click += btnClearRoute_Click;
+            btnClearRoute.Click += BtnClearRoute_Click;
             // 
             // btnCancel
             // 
@@ -257,7 +257,7 @@
             btnCancel.TabIndex = 1;
             btnCancel.Text = "Cancel";
             btnCancel.UseVisualStyleBackColor = true;
-            btnCancel.Click += btnCancel_Click;
+            btnCancel.Click += BtnCancel_Click;
             // 
             // nudUsedCapacity
             // 
@@ -267,7 +267,7 @@
             nudUsedCapacity.Name = "nudUsedCapacity";
             nudUsedCapacity.Size = new Size(126, 23);
             nudUsedCapacity.TabIndex = 12;
-            nudUsedCapacity.ValueChanged += nudUsedCapacity_ValueChanged;
+            nudUsedCapacity.ValueChanged += NudUsedCapacity_ValueChanged;
             // 
             // flowLayoutPanel1
             // 
@@ -293,7 +293,7 @@
             btnGenerateRoute.TabIndex = 13;
             btnGenerateRoute.Text = "Generate Route";
             btnGenerateRoute.UseVisualStyleBackColor = true;
-            btnGenerateRoute.Click += btnGenerateRoute_Click;
+            btnGenerateRoute.Click += BtnGenerateRoute_Click;
             // 
             // SpanshCarrierRouterForm
             // 
@@ -322,9 +322,9 @@
 
         private TableLayoutPanel mainLayoutPanel;
         private Label lblCommander;
-        private ComboBox cbCommanders;
-        private Label lblCarrier;
-        private Label lblCarrierNameAndId;
+        private ComboBox cbCarriers;
+        private Label lblCarrierType;
+        private Label lblCarrierTypeValue;
         private Label lblStartSystem;
         private TextBox txtStartSystem;
         private Label lblDestinationSystem;

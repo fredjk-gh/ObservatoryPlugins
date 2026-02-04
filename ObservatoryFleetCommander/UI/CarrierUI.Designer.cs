@@ -20,7 +20,9 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             components = new System.ComponentModel.Container();
             tlpCarrierLayout = new TableLayoutPanel();
-            lblCapacityValue = new Label();
+            lblDistanceTravelledValue = new Label();
+            lblDistanceTravelled = new Label();
+            lblUsedCapacityValue = new Label();
             lblCapacityTitle = new Label();
             lblNameAndCallsign = new Label();
             lblOwningCommander = new Label();
@@ -35,10 +37,9 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             lblNextJumpValue = new Label();
             lblTimerTitle = new Label();
             flowLayoutPanel1 = new FlowLayoutPanel();
-            btnNewRoute = new ThemeableIconButton();
-            btnOpenFromSpansh = new ThemeableIconButton();
-            btnClearRoute = new ThemeableIconButton();
-            btnOpenSpansh = new ThemeableIconButton();
+            btnNewRoute = new ThemeableImageButton();
+            btnClearRoute = new ThemeableImageButton();
+            btnOpenInventory = new ThemeableImageButton();
             clbRoute = new CheckedListBox();
             ctxRouteMenu = new ContextMenuStrip(components);
             ctxRouteMenu_CopySystemName = new ToolStripMenuItem();
@@ -48,7 +49,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             pbFuelLevel = new ThemeableProgressBar();
             tableLayoutPanel1 = new TableLayoutPanel();
             lblTimerValue = new Label();
-            btnPopOutTimer = new ThemeableIconButton();
+            btnPopOutTimer = new ThemeableImageButton();
             ttipCarrierUI = new ToolTip(components);
             tlpCarrierLayout.SuspendLayout();
             flowLayoutPanel1.SuspendLayout();
@@ -63,33 +64,36 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             tlpCarrierLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             tlpCarrierLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
             tlpCarrierLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
-            tlpCarrierLayout.Controls.Add(lblCapacityValue, 1, 2);
+            tlpCarrierLayout.Controls.Add(lblDistanceTravelledValue, 1, 4);
+            tlpCarrierLayout.Controls.Add(lblDistanceTravelled, 0, 4);
+            tlpCarrierLayout.Controls.Add(lblUsedCapacityValue, 1, 2);
             tlpCarrierLayout.Controls.Add(lblCapacityTitle, 0, 2);
             tlpCarrierLayout.Controls.Add(lblNameAndCallsign, 0, 0);
             tlpCarrierLayout.Controls.Add(lblOwningCommander, 2, 0);
             tlpCarrierLayout.Controls.Add(lblFuelTitle, 0, 1);
             tlpCarrierLayout.Controls.Add(lblBalanceTitle, 0, 3);
             tlpCarrierLayout.Controls.Add(lblBalanceValue, 1, 3);
-            tlpCarrierLayout.Controls.Add(lblPositionTitle, 0, 4);
-            tlpCarrierLayout.Controls.Add(lblPositionValue, 1, 4);
-            tlpCarrierLayout.Controls.Add(lblCommanderStateTitle, 0, 5);
-            tlpCarrierLayout.Controls.Add(lblCommanderStateValue, 1, 5);
-            tlpCarrierLayout.Controls.Add(lblNextJumpTitle, 0, 6);
-            tlpCarrierLayout.Controls.Add(lblNextJumpValue, 1, 6);
-            tlpCarrierLayout.Controls.Add(lblTimerTitle, 0, 7);
+            tlpCarrierLayout.Controls.Add(lblPositionTitle, 0, 5);
+            tlpCarrierLayout.Controls.Add(lblPositionValue, 1, 5);
+            tlpCarrierLayout.Controls.Add(lblCommanderStateTitle, 0, 6);
+            tlpCarrierLayout.Controls.Add(lblCommanderStateValue, 1, 6);
+            tlpCarrierLayout.Controls.Add(lblNextJumpTitle, 0, 7);
+            tlpCarrierLayout.Controls.Add(lblNextJumpValue, 1, 7);
+            tlpCarrierLayout.Controls.Add(lblTimerTitle, 0, 8);
             tlpCarrierLayout.Controls.Add(flowLayoutPanel1, 2, 1);
             tlpCarrierLayout.Controls.Add(clbRoute, 2, 2);
-            tlpCarrierLayout.Controls.Add(txtMessages, 1, 8);
-            tlpCarrierLayout.Controls.Add(lblMessages, 0, 8);
+            tlpCarrierLayout.Controls.Add(txtMessages, 1, 9);
+            tlpCarrierLayout.Controls.Add(lblMessages, 0, 9);
             tlpCarrierLayout.Controls.Add(pbFuelLevel, 1, 1);
-            tlpCarrierLayout.Controls.Add(tableLayoutPanel1, 1, 7);
+            tlpCarrierLayout.Controls.Add(tableLayoutPanel1, 1, 8);
             tlpCarrierLayout.Dock = DockStyle.Fill;
             tlpCarrierLayout.Location = new Point(0, 0);
             tlpCarrierLayout.Margin = new Padding(7, 6, 7, 6);
             tlpCarrierLayout.Name = "tlpCarrierLayout";
-            tlpCarrierLayout.RowCount = 9;
+            tlpCarrierLayout.RowCount = 10;
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
+            tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
@@ -97,19 +101,41 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpCarrierLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 75F));
-            tlpCarrierLayout.Size = new Size(873, 388);
+            tlpCarrierLayout.Size = new Size(873, 385);
             tlpCarrierLayout.TabIndex = 0;
             // 
-            // lblCapacityValue
+            // lblDistanceTravelledValue
             // 
-            lblCapacityValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            lblCapacityValue.AutoSize = true;
-            lblCapacityValue.Location = new Point(178, 59);
-            lblCapacityValue.Margin = new Padding(4, 3, 4, 3);
-            lblCapacityValue.Name = "lblCapacityValue";
-            lblCapacityValue.Size = new Size(341, 15);
-            lblCapacityValue.TabIndex = 21;
-            lblCapacityValue.Text = "[xx,xxx T]";
+            lblDistanceTravelledValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblDistanceTravelledValue.AutoSize = true;
+            lblDistanceTravelledValue.Location = new Point(178, 107);
+            lblDistanceTravelledValue.Margin = new Padding(4, 3, 4, 3);
+            lblDistanceTravelledValue.Name = "lblDistanceTravelledValue";
+            lblDistanceTravelledValue.Size = new Size(341, 15);
+            lblDistanceTravelledValue.TabIndex = 23;
+            lblDistanceTravelledValue.Text = "(unknown)";
+            // 
+            // lblDistanceTravelled
+            // 
+            lblDistanceTravelled.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            lblDistanceTravelled.AutoSize = true;
+            lblDistanceTravelled.Location = new Point(66, 107);
+            lblDistanceTravelled.Margin = new Padding(4, 3, 4, 3);
+            lblDistanceTravelled.Name = "lblDistanceTravelled";
+            lblDistanceTravelled.Size = new Size(104, 15);
+            lblDistanceTravelled.TabIndex = 22;
+            lblDistanceTravelled.Text = "Distance Travelled:";
+            // 
+            // lblUsedCapacityValue
+            // 
+            lblUsedCapacityValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblUsedCapacityValue.AutoSize = true;
+            lblUsedCapacityValue.Location = new Point(178, 59);
+            lblUsedCapacityValue.Margin = new Padding(4, 3, 4, 3);
+            lblUsedCapacityValue.Name = "lblUsedCapacityValue";
+            lblUsedCapacityValue.Size = new Size(341, 15);
+            lblUsedCapacityValue.TabIndex = 21;
+            lblUsedCapacityValue.Text = "[xx,xxx T]";
             // 
             // lblCapacityTitle
             // 
@@ -146,7 +172,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             lblOwningCommander.Name = "lblOwningCommander";
             lblOwningCommander.Size = new Size(346, 20);
             lblOwningCommander.TabIndex = 1;
-            lblOwningCommander.Text = "Owned by: [commander]";
+            lblOwningCommander.Text = "Owner: [commander]";
             // 
             // lblFuelTitle
             // 
@@ -185,7 +211,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // 
             lblPositionTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblPositionTitle.AutoSize = true;
-            lblPositionTitle.Location = new Point(117, 107);
+            lblPositionTitle.Location = new Point(117, 131);
             lblPositionTitle.Margin = new Padding(4, 3, 4, 3);
             lblPositionTitle.Name = "lblPositionTitle";
             lblPositionTitle.Size = new Size(53, 15);
@@ -197,7 +223,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             lblPositionValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblPositionValue.AutoEllipsis = true;
             lblPositionValue.AutoSize = true;
-            lblPositionValue.Location = new Point(178, 107);
+            lblPositionValue.Location = new Point(178, 131);
             lblPositionValue.Margin = new Padding(4, 3, 4, 3);
             lblPositionValue.Name = "lblPositionValue";
             lblPositionValue.Size = new Size(341, 15);
@@ -209,30 +235,31 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // 
             lblCommanderStateTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblCommanderStateTitle.AutoSize = true;
-            lblCommanderStateTitle.Location = new Point(82, 131);
+            lblCommanderStateTitle.Location = new Point(48, 155);
             lblCommanderStateTitle.Margin = new Padding(4, 3, 4, 3);
             lblCommanderStateTitle.Name = "lblCommanderStateTitle";
-            lblCommanderStateTitle.Size = new Size(88, 15);
+            lblCommanderStateTitle.Size = new Size(122, 15);
             lblCommanderStateTitle.TabIndex = 8;
-            lblCommanderStateTitle.Text = "Commander is:";
+            lblCommanderStateTitle.Text = "Commanders aboard:";
+            ttipCarrierUI.SetToolTip(lblCommanderStateTitle, "Only commanders known from available journals are included.");
             // 
             // lblCommanderStateValue
             // 
             lblCommanderStateValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblCommanderStateValue.AutoEllipsis = true;
             lblCommanderStateValue.AutoSize = true;
-            lblCommanderStateValue.Location = new Point(178, 131);
+            lblCommanderStateValue.Location = new Point(178, 155);
             lblCommanderStateValue.Margin = new Padding(4, 3, 4, 3);
             lblCommanderStateValue.Name = "lblCommanderStateValue";
             lblCommanderStateValue.Size = new Size(341, 15);
             lblCommanderStateValue.TabIndex = 9;
-            lblCommanderStateValue.Text = "[On-foot|Docked|Away|Unknown]";
+            lblCommanderStateValue.Text = "(none)";
             // 
             // lblNextJumpTitle
             // 
             lblNextJumpTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblNextJumpTitle.AutoSize = true;
-            lblNextJumpTitle.Location = new Point(104, 155);
+            lblNextJumpTitle.Location = new Point(104, 179);
             lblNextJumpTitle.Margin = new Padding(4, 3, 4, 3);
             lblNextJumpTitle.Name = "lblNextJumpTitle";
             lblNextJumpTitle.Size = new Size(66, 15);
@@ -244,7 +271,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             lblNextJumpValue.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblNextJumpValue.AutoEllipsis = true;
             lblNextJumpValue.AutoSize = true;
-            lblNextJumpValue.Location = new Point(178, 155);
+            lblNextJumpValue.Location = new Point(178, 179);
             lblNextJumpValue.Margin = new Padding(4, 3, 4, 3);
             lblNextJumpValue.Name = "lblNextJumpValue";
             lblNextJumpValue.Size = new Size(341, 15);
@@ -256,7 +283,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // 
             lblTimerTitle.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblTimerTitle.AutoSize = true;
-            lblTimerTitle.Location = new Point(40, 206);
+            lblTimerTitle.Location = new Point(40, 230);
             lblTimerTitle.Margin = new Padding(4, 6, 4, 3);
             lblTimerTitle.Name = "lblTimerTitle";
             lblTimerTitle.Size = new Size(130, 15);
@@ -266,9 +293,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // flowLayoutPanel1
             // 
             flowLayoutPanel1.Controls.Add(btnNewRoute);
-            flowLayoutPanel1.Controls.Add(btnOpenFromSpansh);
             flowLayoutPanel1.Controls.Add(btnClearRoute);
-            flowLayoutPanel1.Controls.Add(btnOpenSpansh);
+            flowLayoutPanel1.Controls.Add(btnOpenInventory);
             flowLayoutPanel1.Dock = DockStyle.Fill;
             flowLayoutPanel1.Location = new Point(525, 26);
             flowLayoutPanel1.Margin = new Padding(2);
@@ -280,53 +306,45 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // 
             btnNewRoute.FlatAppearance.BorderSize = 0;
             btnNewRoute.FlatStyle = FlatStyle.Flat;
+            btnNewRoute.ImageSize = null;
             btnNewRoute.Location = new Point(3, 3);
             btnNewRoute.Name = "btnNewRoute";
+            btnNewRoute.OriginalImage = null;
             btnNewRoute.Padding = new Padding(1);
             btnNewRoute.Size = new Size(26, 26);
             btnNewRoute.TabIndex = 3;
             ttipCarrierUI.SetToolTip(btnNewRoute, "Create a new route via Spansh");
             btnNewRoute.UseVisualStyleBackColor = true;
-            btnNewRoute.Click += btnNewRoute_Click;
-            // 
-            // btnOpenFromSpansh
-            // 
-            btnOpenFromSpansh.FlatAppearance.BorderSize = 0;
-            btnOpenFromSpansh.FlatStyle = FlatStyle.Flat;
-            btnOpenFromSpansh.Location = new Point(35, 3);
-            btnOpenFromSpansh.Name = "btnOpenFromSpansh";
-            btnOpenFromSpansh.Size = new Size(26, 26);
-            btnOpenFromSpansh.TabIndex = 4;
-            ttipCarrierUI.SetToolTip(btnOpenFromSpansh, "Import route from Spansh URL");
-            btnOpenFromSpansh.UseVisualStyleBackColor = true;
-            btnOpenFromSpansh.Visible = false;
-            btnOpenFromSpansh.Click += btnOpenFromSpansh_Click;
+            btnNewRoute.Click += BtnNewRoute_Click;
             // 
             // btnClearRoute
             // 
             btnClearRoute.FlatAppearance.BorderSize = 0;
             btnClearRoute.FlatStyle = FlatStyle.Flat;
-            btnClearRoute.Location = new Point(67, 3);
+            btnClearRoute.ImageSize = null;
+            btnClearRoute.Location = new Point(35, 3);
             btnClearRoute.Name = "btnClearRoute";
+            btnClearRoute.OriginalImage = null;
             btnClearRoute.Padding = new Padding(1);
             btnClearRoute.Size = new Size(26, 26);
             btnClearRoute.TabIndex = 5;
             ttipCarrierUI.SetToolTip(btnClearRoute, "Clear route");
             btnClearRoute.UseVisualStyleBackColor = true;
-            btnClearRoute.Click += btnClearRoute_Click;
+            btnClearRoute.Click += BtnClearRoute_Click;
             // 
-            // btnOpenSpansh
+            // btnOpenInventory
             // 
-            btnOpenSpansh.FlatAppearance.BorderSize = 0;
-            btnOpenSpansh.FlatStyle = FlatStyle.Flat;
-            btnOpenSpansh.Location = new Point(99, 3);
-            btnOpenSpansh.Name = "btnOpenSpansh";
-            btnOpenSpansh.Padding = new Padding(1);
-            btnOpenSpansh.Size = new Size(26, 26);
-            btnOpenSpansh.TabIndex = 6;
-            ttipCarrierUI.SetToolTip(btnOpenSpansh, "Open route on Spansh");
-            btnOpenSpansh.UseVisualStyleBackColor = true;
-            btnOpenSpansh.Click += btnOpenSpansh_Click;
+            btnOpenInventory.FlatAppearance.BorderSize = 0;
+            btnOpenInventory.FlatStyle = FlatStyle.Flat;
+            btnOpenInventory.ImageSize = null;
+            btnOpenInventory.Location = new Point(67, 3);
+            btnOpenInventory.Name = "btnOpenInventory";
+            btnOpenInventory.OriginalImage = null;
+            btnOpenInventory.Size = new Size(26, 26);
+            btnOpenInventory.TabIndex = 6;
+            ttipCarrierUI.SetToolTip(btnOpenInventory, "Open Inventory viewer");
+            btnOpenInventory.UseVisualStyleBackColor = true;
+            btnOpenInventory.Click += BtnOpenInventory_Click;
             // 
             // clbRoute
             // 
@@ -336,10 +354,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             clbRoute.Location = new Point(527, 59);
             clbRoute.Margin = new Padding(4, 3, 4, 3);
             clbRoute.Name = "clbRoute";
-            tlpCarrierLayout.SetRowSpan(clbRoute, 6);
-            clbRoute.Size = new Size(342, 251);
+            tlpCarrierLayout.SetRowSpan(clbRoute, 7);
+            clbRoute.Size = new Size(342, 248);
             clbRoute.TabIndex = 15;
-            clbRoute.MouseDown += clbRoute_MouseDown;
+            clbRoute.MouseDown += ClbRoute_MouseDown;
             // 
             // ctxRouteMenu
             // 
@@ -353,20 +371,20 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             ctxRouteMenu_CopySystemName.Name = "ctxRouteMenu_CopySystemName";
             ctxRouteMenu_CopySystemName.Size = new Size(177, 22);
             ctxRouteMenu_CopySystemName.Text = "Copy system name";
-            ctxRouteMenu_CopySystemName.Click += ctxRouteMenu_CopySystemName_Click;
+            ctxRouteMenu_CopySystemName.Click += CtxRouteMenu_CopySystemName_Click;
             // 
             // ctxRouteMenu_SetCurrentPosition
             // 
             ctxRouteMenu_SetCurrentPosition.Name = "ctxRouteMenu_SetCurrentPosition";
             ctxRouteMenu_SetCurrentPosition.Size = new Size(177, 22);
             ctxRouteMenu_SetCurrentPosition.Text = "Set current position";
-            ctxRouteMenu_SetCurrentPosition.Click += ctxRouteMenu_SetCurrentPosition_Click;
+            ctxRouteMenu_SetCurrentPosition.Click += CtxRouteMenu_SetCurrentPosition_Click;
             // 
             // txtMessages
             // 
             tlpCarrierLayout.SetColumnSpan(txtMessages, 2);
             txtMessages.Dock = DockStyle.Fill;
-            txtMessages.Location = new Point(178, 316);
+            txtMessages.Location = new Point(178, 313);
             txtMessages.Margin = new Padding(4, 3, 4, 3);
             txtMessages.Multiline = true;
             txtMessages.Name = "txtMessages";
@@ -378,7 +396,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             // 
             lblMessages.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             lblMessages.AutoSize = true;
-            lblMessages.Location = new Point(109, 316);
+            lblMessages.Location = new Point(109, 313);
             lblMessages.Margin = new Padding(4, 3, 4, 3);
             lblMessages.Name = "lblMessages";
             lblMessages.Size = new Size(61, 15);
@@ -406,11 +424,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             tableLayoutPanel1.Controls.Add(lblTimerValue, 0, 0);
             tableLayoutPanel1.Controls.Add(btnPopOutTimer, 1, 0);
             tableLayoutPanel1.Dock = DockStyle.Fill;
-            tableLayoutPanel1.Location = new Point(177, 203);
+            tableLayoutPanel1.Location = new Point(177, 227);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(343, 107);
+            tableLayoutPanel1.Size = new Size(343, 80);
             tableLayoutPanel1.TabIndex = 19;
             // 
             // lblTimerValue
@@ -430,14 +448,16 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             btnPopOutTimer.FlatAppearance.BorderSize = 0;
             btnPopOutTimer.FlatStyle = FlatStyle.Flat;
             btnPopOutTimer.ImageAlign = ContentAlignment.TopCenter;
+            btnPopOutTimer.ImageSize = null;
             btnPopOutTimer.Location = new Point(310, 3);
             btnPopOutTimer.Name = "btnPopOutTimer";
+            btnPopOutTimer.OriginalImage = null;
             btnPopOutTimer.Padding = new Padding(1);
             btnPopOutTimer.Size = new Size(30, 30);
             btnPopOutTimer.TabIndex = 17;
             ttipCarrierUI.SetToolTip(btnPopOutTimer, "Open Timer in pop-out window");
             btnPopOutTimer.UseVisualStyleBackColor = true;
-            btnPopOutTimer.Click += btnPopOutTimer_Click;
+            btnPopOutTimer.Click += BtnPopOutTimer_Click;
             // 
             // CarrierUI
             // 
@@ -445,10 +465,9 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Control;
             Controls.Add(tlpCarrierLayout);
-            DoubleBuffered = true;
             Margin = new Padding(2);
             Name = "CarrierUI";
-            Size = new Size(873, 388);
+            Size = new Size(873, 385);
             tlpCarrierLayout.ResumeLayout(false);
             tlpCarrierLayout.PerformLayout();
             flowLayoutPanel1.ResumeLayout(false);
@@ -482,13 +501,14 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         private ThemeableProgressBar pbFuelLevel;
         private TableLayoutPanel tableLayoutPanel1;
         private Label lblTimerValue;
-        private ThemeableIconButton btnPopOutTimer;
+        private ThemeableImageButton btnPopOutTimer;
         private ToolTip ttipCarrierUI;
-        private ThemeableIconButton btnNewRoute;
-        private ThemeableIconButton btnClearRoute;
-        private ThemeableIconButton btnOpenSpansh;
+        private ThemeableImageButton btnNewRoute;
+        private ThemeableImageButton btnClearRoute;
         private Label lblCapacityTitle;
-        private Label lblCapacityValue;
-        private ThemeableIconButton btnOpenFromSpansh;
+        private Label lblUsedCapacityValue;
+        private Label lblDistanceTravelled;
+        private Label lblDistanceTravelledValue;
+        private ThemeableImageButton btnOpenInventory;
     }
 }

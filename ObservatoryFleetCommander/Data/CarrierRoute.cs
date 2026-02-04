@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing.Text;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
     public class CarrierRoute
     {
-        private List<JumpInfo> _jumps = new();
+        private List<JumpInfo> _jumps = [];
 
         public string JobID { get; set; }
 
@@ -22,17 +16,18 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 
         public static CarrierRoute FromSpanshResultJson(JsonElement resultElement, string jobId = "")
         {
-            CarrierRoute route = new CarrierRoute();
-
-            route.JobID = jobId;
-            route.StartSystem =  resultElement.GetProperty("source").GetString();
-            route.DestinationSystem = resultElement.GetProperty("destinations")[0].GetString();
+            CarrierRoute route = new()
+            {
+                JobID = jobId,
+                StartSystem = resultElement.GetProperty("source").GetString(),
+                DestinationSystem = resultElement.GetProperty("destinations")[0].GetString()
+            };
 
             var jumpsArray = resultElement.GetProperty("jumps");
             for (int j = 0; j < jumpsArray.GetArrayLength(); j++)
             {
                 var jump = JumpInfo.FromSpanshResultJson(jumpsArray[j]);
-                if (j > 0 && jump.SystemName == route.Jumps[route.Jumps.Count-1].SystemName)
+                if (j > 0 && jump.SystemName == route.Jumps[^1].SystemName)
                 {
                     // This is a waypoint destination which appears twice in the results; don't include it.
                     continue;
@@ -57,13 +52,13 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             var nextJumpIndex = index + 1;
 
             if (index == -1 || nextJumpIndex >= Jumps.Count) return null;
-            
+
             return Jumps[nextJumpIndex];
         }
 
         public bool IsDestination(string systemName)
         {
-            return systemName == Jumps[Jumps.Count - 1].SystemName;
+            return systemName == Jumps[^1].SystemName;
         }
 
         public int IndexOf(string systemName)

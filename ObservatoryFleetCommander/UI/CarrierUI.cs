@@ -1,102 +1,89 @@
 ﻿using com.github.fredjk_gh.ObservatoryFleetCommander.Data;
 using com.github.fredjk_gh.ObservatoryFleetCommander.UI;
-using Observatory.Framework;
-using Observatory.Framework.Files.Journal;
-using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+using com.github.fredjk_gh.PluginCommon;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages.Data;
+using com.github.fredjk_gh.PluginCommon.UI;
+using com.github.fredjk_gh.PluginCommon.Utilities;
+using Observatory.Framework.Files.ParameterTypes;
 using System.Data;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Security.Policy;
-using System.Text;
-using System.Threading.Tasks;
 using System.Timers;
-using System.Windows.Forms;
+using static com.github.fredjk_gh.PluginCommon.PluginInterop.PluginTracker;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander
 {
-    public partial class CarrierUI : UserControl
+    public partial class CarrierUI : CollapsibleGroupBoxContent
     {
         private const string TIMER_JUMP_TITLE = "Jump timer:";
         private const string TIMER_JUMP_COOLDOWN = "Cooldown timer:";
 
-        private IObservatoryCore _core;
-        private Commander _commanderPlugin;
-        private CarrierManager _manager;
-        private CarrierData _data;
+        private readonly CommanderContext _c;
+        private readonly CarrierData _data;
         private CountdownTimerForm _timerForm;
         private string _selectedSystemName = "";
 
-        public CarrierUI(IObservatoryCore core, Commander caller, CarrierManager manager, CarrierData data)
+        internal CarrierUI(CommanderContext context, CarrierData data)
         {
             InitializeComponent();
-            btnPopOutTimer.SetIcon(Properties.Resources.OpenInNewIcon.ToBitmap(), new(32, 32));
-            btnNewRoute.SetIcon(Properties.Resources.RouteAddIcon.ToBitmap(), new(32, 32));
-            btnOpenFromSpansh.SetIcon(Properties.Resources.OpenFromLinkIcon.ToBitmap(), new(32, 32));
-            btnClearRoute.SetIcon(Properties.Resources.RouteClearIcon.ToBitmap(), new(32, 32));
-            btnOpenSpansh.SetIcon(Properties.Resources.OpenInBrowserIcon.ToBitmap(), new(32, 32));
+            DoubleBuffered = true;
 
-            _core = core;
-            _commanderPlugin = caller;
-            _manager = manager;
+            SuspendLayout();
+            btnPopOutTimer.SetOriginalImage(Images.OpenInNewImage);
+            btnNewRoute.SetOriginalImage(Images.RouteAddImage);
+            btnClearRoute.SetOriginalImage(Images.RouteClearImage);
+            btnOpenInventory.SetOriginalImage(Images.CommoditiesImage);
+
+            _c = context;
             _data = data;
 
             _data.Ticker.Elapsed += Countdown_Tick;
 
-            if (!core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch))
-            {
-                JumpCanceled();
+            InternalDraw();
+            JumpCanceled();
 #if DEBUG
-                btnPopOutTimer.Visible = true;
+            btnPopOutTimer.Visible = true;
 #endif
-                Draw();
-            }
+
+            ResumeLayout();
         }
 
-        public string ShortName { get => _data.CarrierName; }
-
-        private bool IsReadAll { get => _core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch); }
+        private bool IsReadAll { get => _c.IsReadAll; }
+        internal InventoryForm InventoryForm { get; private set; }
 
         #region Public methods
-        public void Draw(string msg = "") // UI thread.
+        public override void Draw()
         {
-            txtMessages.Text = string.Empty;
-            lblNameAndCallsign.Text = $"{_data.CarrierName} ({_data.CarrierCallsign})";
-            lblOwningCommander.Text = $"Owned by: {_data.OwningCommander}";
-            DisplayPosition(_data.Position);
-            UpdateStats();
-            UpdateFuel();
-            UpdateCommanderState();
-
-            if (_data.LastCarrierJumpRequest != null)
+            _c.Core.ExecuteOnUIThread(() =>
             {
-                lblNextJumpValue.Text = _data.LastCarrierJumpRequest.SystemName;
-                InitCountdown();
-            }
+                InternalDraw();
+            });
+        }
 
-            PopulateRoute();
-
-            SetMessage(msg);
+        public void Draw(string msg)
+        {
+            _c.Core.ExecuteOnUIThread(() =>
+            {
+                InternalDraw(msg);
+            });
         }
 
         public void InitCountdown()
         {
             if (IsReadAll || !(_data.CarrierJumpTimerScheduled || _data.CooldownNotifyScheduled)) return;
 
-            var nextSystem = new CarrierPositionData(_data.LastCarrierJumpRequest);
-            int estFuelUsage = _data.EstimateFuelForJumpFromCurrentPosition(nextSystem, _core, _commanderPlugin);
-            if (estFuelUsage > 0)
+            if (_data.LastCarrierJumpRequest != null)
             {
-                lblNextJumpValue.Text = $"{_data.LastCarrierJumpRequest.SystemName} @ {_data.DepartureDateTime.ToShortTimeString()}{Environment.NewLine}Estimated fuel usage: {estFuelUsage} T";
-            }
-            else
-            {
-                lblNextJumpValue.Text = $"{_data.LastCarrierJumpRequest.SystemName} @ {_data.DepartureDateTime.ToShortTimeString()}";
+                var nextSystem = new CarrierPositionData(_data.LastCarrierJumpRequest);
+                var departureTime = UIFormatter.DateTimeAsShortTime(_data.DepartureDateTime, _c.Settings.UIDateTimesUseInGameTime);
+
+                // TODO: Spawn this off in its own task that can block on fetching data externally.
+                int estFuelUsage = _data.EstimateFuelForJumpFromCurrentPosition(_c, nextSystem);
+                var usageStr = string.Empty;
+                if (estFuelUsage > 0)
+                {
+                    usageStr = $"{Environment.NewLine}Estimated fuel usage: {UIFormatter.Tonnage(estFuelUsage)}";
+                }
+                lblNextJumpValue.Text = $"{_data.LastCarrierJumpRequest.SystemName} @ {departureTime}{usageStr}";
             }
 
             UpdateCountdown();
@@ -115,16 +102,16 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (IsReadAll) return;
 
-            _data.Ticker.Stop();
             lblNextJumpValue.Text = "(none scheduled)";
-            lblTimerTitle.Visible = false;
-            lblTimerValue.Visible = false;
-            btnPopOutTimer.Visible = false;
-
-            if (_timerForm != null)
+            if (_data.LastCarrierJumpCancelled == null || !_data.CooldownNotifyScheduled)
             {
-                _timerForm.RefreshDisplay();
+                _data.Ticker.Stop();
+                lblTimerTitle.Visible = false;
+                lblTimerValue.Visible = false;
+                btnPopOutTimer.Visible = false;
             }
+
+            _timerForm?.RefreshDisplay();
             SetMessage(msg);
         }
 
@@ -146,7 +133,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                         jumpsRemaining = $"{Environment.NewLine}{_data.Route.Jumps.Count - index - 1} jumps remaining in route.";
                 }
 
-                SetMessage($"Requested a jump to {jumpTargetBody}. Jump in {departureTimeMins:#.0} minutes (@ {_data.DepartureDateTime.ToShortTimeString()}).{jumpsRemaining}");
+                string departureTime = _data.DepartureDateTime.ToShortTimeString();
+                if (_c.Settings.UIDateTimesUseInGameTime)
+                {
+                    departureTime = _data.DepartureDateTime.ToUniversalTime().ToShortTimeString();
+                }
+                SetMessage($"Requested a jump to {jumpTargetBody}. Jump in {UIFormatter.Minutes(departureTimeMins)} (@ {departureTime}).{jumpsRemaining}");
             }
         }
 
@@ -163,7 +155,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
                 for (var j = 0; j < _data.Route.Jumps.Count; j++)
                 {
-                    var jump = _data.Route.Jumps[j];
                     clbRoute.SetItemChecked(j, j <= indexOfCurrent);
                 }
 
@@ -201,7 +192,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (IsReadAll) return;
 
             pbFuelLevel.Value = Math.Clamp(_data.CarrierFuel, pbFuelLevel.Minimum, pbFuelLevel.Maximum);
-            ttipCarrierUI.SetToolTip(pbFuelLevel, $"{_data.CarrierFuel} T / {pbFuelLevel.Maximum - _data.CarrierFuel} T to refill");
+            ttipCarrierUI.SetToolTip(pbFuelLevel, $"{UIFormatter.Tonnage(_data.CarrierFuel)} / {UIFormatter.Tonnage(pbFuelLevel.Maximum - _data.CarrierFuel)} to refill");
 
             SetMessage(msg);
         }
@@ -224,20 +215,31 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 {
                     msg = msg + Environment.NewLine + "WARNING: Carrier may have low funds remaining! Add funds to the carrier budget to avoid it being decommissioned.";
                 }
-                lblBalanceValue.Text = $"{_data.CarrierBalance:n0} Cr";
+                lblBalanceValue.Text = UIFormatter.Credits(_data.CarrierBalance);
                 ttipCarrierUI.SetToolTip(
                     lblBalanceValue,
-                    $"Balance as of {asOfDate}; upkeep until {upkeepUntilDate.ToString("MMM yyyy")}");
+                    $"Balance as of {asOfDate}; upkeep until {UIFormatter.DateMMMyyyy(upkeepUntilDate)}");
             }
 
-            if (_data.CapacityUsed == 0)
+            if (_data.LastCarrierStats is null)
             {
-                lblCapacityValue.Text = "(unknown)";
+                lblUsedCapacityValue.Text = "(unknown)";
             }
             else
             {
-                lblCapacityValue.Text = $"{_data.CapacityUsed:#,###} T";
-                ttipCarrierUI.SetToolTip(lblCapacityValue, $"Capacity as of {asOfDate}");
+                lblUsedCapacityValue.Text = UIFormatter.Tonnage(_data.CarrierCapacity - _data.LastCarrierStats.SpaceUsage.FreeSpace);
+                ttipCarrierUI.SetToolTip(lblUsedCapacityValue, $"Capacity as of {asOfDate}");
+            }
+
+            if (_data.DistanceTravelledLy == 0)
+            {
+                lblDistanceTravelledValue.Text = "(unknown)";
+                ttipCarrierUI.SetToolTip(lblDistanceTravelledValue, "");
+            }
+            else
+            {
+                lblDistanceTravelledValue.Text = UIFormatter.DistanceLy(_data.DistanceTravelledLy);
+                ttipCarrierUI.SetToolTip(lblDistanceTravelledValue, $"{_data.TotalJumps} jumps");
             }
 
             SetMessage(msg);
@@ -247,12 +249,53 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (IsReadAll) return;
 
-            lblCommanderStateValue.Text = _data.CommanderIsDockedOrOnFoot ? "Aboard" : "Away";
+            if (_data.CommandersOnBoard.Count > 0)
+            {
+                lblCommanderStateValue.Text = string.Join(", ", _data.CommandersOnBoard);
+            }
+            else
+            {
+                lblCommanderStateValue.Text = "(none)";
+            }
         }
 
         #endregion
 
         #region Private methods
+
+        internal void InternalDraw(string msg = "") // UI thread.
+        {
+            txtMessages.Text = string.Empty;
+            lblNameAndCallsign.Text = $"{_data.CarrierName} ({_data.CarrierCallsign})";
+            ContentTitle = _data.CarrierName;
+
+            if (_data.CarrierType == CarrierType.SquadronCarrier)
+            {
+                if (_data.Owner == Manager.SQUADRON_CARRIER_OWNER)
+                    lblOwningCommander.Text = Manager.SQUADRON_CARRIER_OWNER;
+                else
+                    lblOwningCommander.Text = $"Squadron: {_data.Owner}";
+            }
+            else
+            {
+                lblOwningCommander.Text = $"Owner: {_data.Owner}";
+            }
+            ttipCarrierUI.SetToolTip(lblOwningCommander, _data.Owner);
+            DisplayPosition(_data.Position);
+            UpdateStats();
+            UpdateFuel();
+            UpdateCommanderState();
+
+            if (_data.LastCarrierJumpRequest != null)
+            {
+                lblNextJumpValue.Text = _data.LastCarrierJumpRequest.SystemName;
+                InitCountdown();
+            }
+
+            PopulateRoute();
+
+            SetMessage(msg);
+        }
 
         private void UpdateCountdown() // UI Thread
         {
@@ -265,7 +308,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 if (!btnPopOutTimer.Visible) btnPopOutTimer.Visible = true;
 
                 lblTimerTitle.Text = TIMER_JUMP_TITLE;
-                lblTimerValue.Text = $"{_data.DepartureDateTime.Subtract(DateTime.Now).ToString(@"h\:mm\:ss")}";
+                lblTimerValue.Text = UIFormatter.Timehmmss(_data.DepartureDateTime.Subtract(DateTime.Now));
             }
             else if (_data.CooldownNotifyScheduled && DateTime.Now.CompareTo(_data.CooldownDateTime) <= 0)
             {
@@ -273,9 +316,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 if (!lblTimerValue.Visible) lblTimerValue.Visible = true;
                 if (!btnPopOutTimer.Visible) btnPopOutTimer.Visible = true;
 
-                lblNextJumpValue.Text = $"(completed)";
+                if (_data.LastCarrierJumpRequest != null)
+                    lblNextJumpValue.Text = $"(completed)";
+                else
+                    lblNextJumpTitle.Text = $"(cancelled)";
                 lblTimerTitle.Text = TIMER_JUMP_COOLDOWN;
-                lblTimerValue.Text = $"{_data.CooldownDateTime.Subtract(DateTime.Now).ToString(@"h\:mm\:ss")}";
+                lblTimerValue.Text = UIFormatter.Timehmmss(_data.CooldownDateTime.Subtract(DateTime.Now));
             }
             else
             {
@@ -302,14 +348,15 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
                     // While we're here:
                     CarrierPositionData.CachePosition(jump.SystemName, jump.Position);
+
+                    MaybeCacheViaArchivist(_data);
+
                 }
                 btnClearRoute.Enabled = true;
-                btnOpenSpansh.Enabled = !string.IsNullOrWhiteSpace(_data.Route.JobID);
             }
             else
             {
                 btnClearRoute.Enabled = false;
-                btnOpenSpansh.Enabled = false;
             }
         }
 
@@ -317,40 +364,43 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             try
             {
-                ICarrierRouteCreator creatorForm = theUI as ICarrierRouteCreator;
-                if (creatorForm == null)
+                if (theUI is not ICarrierRouteCreator creatorForm)
                 {
                     theUI.Dispose();
                     return;
                 }
 
-                _core.RegisterControl(theUI);
+                _c.Core.RegisterControl(theUI);
 
                 DialogResult result = theUI.ShowDialog();
 
                 if (result == DialogResult.OK)
                 {
-                    // The result is stored on the CarrierData for the selected Commander (indicated on the "SelectedCommander" property).
-                    CarrierData data = _manager.GetByCommander(creatorForm.SelectedCommander);
+                    // The result is stored on the CarrierData for the selected CarrierId (indicated on the "SelectedCarrierId" property).
+                    CarrierData data = creatorForm.CarrierDataForSelectedId;
                     if (data != null)
                     {
                         // Freshen the contents of the cache for next run of the application.
-                        _commanderPlugin.SerializeDataCache();
+                        _c.SerializeDataCacheV2();
 
                         // Pre-cache the positions of systems in the route.
+                        int tritiumUsage = 0;
                         foreach (var jump in data.Route.Jumps)
                         {
                             CarrierPositionData.CachePosition(jump.SystemName, jump.Position);
+                            tritiumUsage += jump.FuelUsed;
                         }
+
+                        MaybeCacheViaArchivist(data);
 
                         // Stuff the first waypoint in the route into the clipboard.
                         var firstJump = data.Route.GetNextJump(data.Position?.SystemName ?? "");
-                        if (firstJump != null)
+                        if (firstJump is not null)
                         {
-                            Clipboard.SetText(firstJump.SystemName);
+                            Misc.SetTextToClipboard(firstJump.SystemName);
 
                             // Spit out an update to the grid indicating a route is set.
-                            SetMessage($"Route {purpose} via Spansh. Next jump system name ({firstJump.SystemName}) is in the clipboard.");
+                            SetMessage($"Route {purpose} via Spansh. Next jump system name ({firstJump.SystemName}) is in the clipboard. Estimated tritium required is {tritiumUsage} T.");
                         }
 
                         PopulateRoute();
@@ -358,26 +408,38 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 }
                 else if (result == DialogResult.Abort) // Cleared route.
                 {
-                    creatorForm.CarrierDataForSelectedCommander.Route = null;
-                    _commanderPlugin.SerializeDataCache();
+                    creatorForm.CarrierDataForSelectedId.Route = null;
+                    _c.SerializeDataCacheV2();
 
                     ClearRoute("Route cleared.");
                 }
 
-                _core.UnregisterControl(theUI);
+                _c.Core.UnregisterControl(theUI);
                 theUI.Dispose();
             }
             catch (Exception ex)
             {
-                _core.GetPluginErrorLogger(_commanderPlugin).Invoke(ex, $"CreateCarrierRoute-{purpose}");
+                _c.Core.GetPluginErrorLogger(_c.Worker).Invoke(ex, $"CreateCarrierRoute-{purpose}");
             }
+        }
+
+        private void MaybeCacheViaArchivist(CarrierData data)
+        {
+            if (!_c.PluginTracker.IsActive(PluginType.fredjk_Archivist)) return;
+
+            // We're running Archivist: Batch cache these addresses.
+            List<ArchivistPositionCacheItem> toCache =
+                [.. data.Route.Jumps.Select(j => ArchivistPositionCacheItem.New(j.SystemName, j.Id64, j.Position))];
+
+            var msg = ArchivistPositionCacheBatch.NewAddToCache(toCache);
+
+            _c.Dispatcher.SendMessage(msg, PluginType.fredjk_Archivist);
         }
 
         private void ClearRoute(string msg = "")
         {
             clbRoute.Items.Clear();
             btnClearRoute.Enabled = false;
-            btnOpenSpansh.Enabled = false;
 
             SetMessage(msg);
         }
@@ -408,13 +470,13 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         {
             if (_timerForm == null) return;
 
-            _commanderPlugin.settings.CountdownWindowX = _timerForm.Location.X;
-            _commanderPlugin.settings.CountdownWindowY = _timerForm.Location.Y;
+            _c.Settings.CountdownWindowX = _timerForm.Location.X;
+            _c.Settings.CountdownWindowY = _timerForm.Location.Y;
 
-            _commanderPlugin.settings.CountdownWindowWidth = _timerForm.Width;
-            _commanderPlugin.settings.CountdownWindowHeight = _timerForm.Height;
+            _c.Settings.CountdownWindowWidth = _timerForm.Width;
+            _c.Settings.CountdownWindowHeight = _timerForm.Height;
 
-            _core.SaveSettings(_commanderPlugin);
+            _c.Core.SaveSettings(_c.Worker);
         }
         #endregion
 
@@ -422,13 +484,13 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         private void Label_DoubleClickToCopy(object sender, EventArgs e)
         {
-            var label = sender as System.Windows.Forms.Label;
-            if (label == null || string.IsNullOrWhiteSpace(label.Text)) return;
+            if (sender is not Label label || string.IsNullOrWhiteSpace(label.Text)) return;
 
-            Clipboard.SetText(label.Text);
+            Misc.SetTextToClipboard(label.Text);
+
         }
 
-        private void ctxRouteMenu_SetCurrentPosition_Click(object sender, EventArgs e)
+        private void CtxRouteMenu_SetCurrentPosition_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(_selectedSystemName) || !_data.HasRoute) return;
 
@@ -448,16 +510,16 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
         }
 
-        private void ctxRouteMenu_CopySystemName_Click(object sender, EventArgs e)
+        private void CtxRouteMenu_CopySystemName_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(_selectedSystemName)) return;
 
-            Clipboard.SetText(_selectedSystemName);
+            Misc.SetTextToClipboard(_selectedSystemName);
 
             SetMessage($"Copied `{_selectedSystemName}` to clipboard.");
         }
 
-        private void clbRoute_MouseDown(object sender, MouseEventArgs e)
+        private void ClbRoute_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Right)
             {
@@ -478,62 +540,62 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             }
         }
 
-        private void btnClearRoute_Click(object sender, EventArgs e)
+        private void BtnClearRoute_Click(object sender, EventArgs e)
         {
             _data.Route = null;
-            _commanderPlugin.SerializeDataCache();
+            _c.SerializeDataCacheV2();
 
             ClearRoute("Route cleared.");
         }
 
-        private void btnNewRoute_Click(object sender, EventArgs e)
+        private void BtnNewRoute_Click(object sender, EventArgs e)
         {
-            SpanshCarrierRouterForm dlgSpanshCreate = new(_core, _commanderPlugin, _data.OwningCommander, _manager);
+            SpanshCarrierRouterForm dlgSpanshCreate = new(_c, _data.Owner);
 
             CreateCarrierRoute(dlgSpanshCreate, "plotted");
         }
 
-        private void btnOpenFromSpansh_Click(object sender, EventArgs e)
-        {
-            SpanshImportCarrierRouteForm dlgSpanshImport = new(_core, _commanderPlugin, _data.OwningCommander, _manager);
-
-            CreateCarrierRoute(dlgSpanshImport, "imported");
-        }
-
         private void Countdown_Tick(object sender, ElapsedEventArgs e)
         {
-            _core.ExecuteOnUIThread(() =>
+            _c.Core.ExecuteOnUIThread(() =>
             {
                 UpdateCountdown();
             });
         }
 
-        #endregion
-
-        private void btnPopOutTimer_Click(object sender, EventArgs e)
+        private void BtnPopOutTimer_Click(object sender, EventArgs e)
         {
-            if (_timerForm != null) return;
-
-            _timerForm = new CountdownTimerForm(_core, _data);
-            _core.RegisterControl(_timerForm);
-
-            if (_commanderPlugin.settings.CountdownWindowWidth > 0 && _commanderPlugin.settings.CountdownWindowHeight > 0)
+            if (_timerForm != null)
             {
-                _timerForm.Width = _commanderPlugin.settings.CountdownWindowWidth;
-                _timerForm.Height = _commanderPlugin.settings.CountdownWindowHeight;
+                _timerForm.Close();
+                return;
+            }
+
+            _timerForm = new CountdownTimerForm(_c.Core, _data);
+            _c.Core.RegisterControl(_timerForm);
+
+            if (_c.Settings.CountdownWindowWidth > 0 && _c.Settings.CountdownWindowHeight > 0)
+            {
+                _timerForm.Width = _c.Settings.CountdownWindowWidth;
+                _timerForm.Height = _c.Settings.CountdownWindowHeight;
             }
             _timerForm.Show();
-            if (_commanderPlugin.settings.CountdownWindowX != 0 && _commanderPlugin.settings.CountdownWindowY != 0) // "default", use start-up position
+            if (_c.Settings.CountdownWindowX != 0 && _c.Settings.CountdownWindowY != 0) // "default", use start-up position
             {
-                // TODO: Ensure the form is in bound?
-                var location = new Point(_commanderPlugin.settings.CountdownWindowX, _commanderPlugin.settings.CountdownWindowY);
-
-                _timerForm.Location = location;
+                var location = new Point(_c.Settings.CountdownWindowX, _c.Settings.CountdownWindowY);
+                var inboundScreen = Screen.AllScreens.Where(s => s.WorkingArea.Contains(location)).FirstOrDefault();
+                if (inboundScreen != null)
+                {
+                    // Should be safe...?
+                    _timerForm.Location = location;
+                }
             }
 
             _timerForm.FormClosed += TimerFormClosed;
             _timerForm.Move += TimerFormMove;
             _timerForm.ResizeEnd += TimerFormResized;
+            btnPopOutTimer.SetOriginalImage(Images.CloseImage);
+            ttipCarrierUI.SetToolTip(btnPopOutTimer, "Close pop-out timer window for this carrier");
         }
 
         private void TimerFormResized(object sender, EventArgs e)
@@ -548,18 +610,38 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
 
         private void TimerFormClosed(object sender, FormClosedEventArgs e)
         {
-            _core.UnregisterControl(_timerForm);
+            _c.Core.UnregisterControl(_timerForm);
             _timerForm = null;
+            btnPopOutTimer.SetOriginalImage(Images.OpenInNewImage);
+            ttipCarrierUI.SetToolTip(btnPopOutTimer, "Open Timer in pop-out window");
         }
 
-        private void btnOpenSpansh_Click(object sender, EventArgs e)
+        private void BtnOpenInventory_Click(object sender, EventArgs e)
         {
-            if (!_data.HasRoute || string.IsNullOrWhiteSpace(_data.Route.JobID)) return;
+            if (InventoryForm is not null && !InventoryForm.IsDisposed)
+            {
+                InventoryForm.Activate();
+                return;
+            }
+            
+            InventoryForm = new (_c, _data);
+            InventoryForm.FormClosed += InventoryForm_FormClosed;
+            _c.Core.RegisterControl(InventoryForm);
 
-            var url = $"https://spansh.co.uk/fleet-carrier/results/{_data.Route.JobID}";
-
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            InventoryForm.Show();
         }
+
+        private void InventoryForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            try
+            {
+                _c.Core.UnregisterControl(InventoryForm);
+                InventoryForm?.Dispose();
+                InventoryForm = null;
+            }
+            catch { }
+        }
+        #endregion
 
     }
 }

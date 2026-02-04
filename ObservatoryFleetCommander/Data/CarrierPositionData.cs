@@ -1,61 +1,55 @@
-﻿using Observatory.Framework.Files.Converters;
+﻿using com.github.fredjk_gh.PluginCommon.Data.Spansh.CommonGeneric;
+using Observatory.Framework.Files.Converters;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 {
     public class CarrierPositionData
     {
         // A global cache of system positions to improve availability of these values and reduce the need to request.
-        private static Dictionary<string, StarPosition> _knownSystemPositions = new();
+        private readonly static Dictionary<string, StarPosition> _knownSystemPositions = [];
 
-        private bool _deserialized = false;
         private string _body = "";
 
         public static void CachePosition(string systemName, StarPosition coords)
         {
-            if (!_knownSystemPositions.ContainsKey(systemName))
-                _knownSystemPositions[systemName] = coords;
+            _knownSystemPositions.TryAdd(systemName, coords);
         }
 
         // Used only for deserialization.
-        public CarrierPositionData()
-        {
-            _deserialized = true;
-        }
+        public CarrierPositionData() { }
 
-        public CarrierPositionData(Location location) : this(location.StarSystem, location.SystemAddress, location.Body)
+        public CarrierPositionData(Location location) : this(location.StarSystem, location.SystemAddress, location.StarPos, location.Body)
         {
-            StarPos = location.StarPos;
             BodyID = location.BodyID;
         }
 
-        public CarrierPositionData(CarrierJump carrierJump) : this(carrierJump.StarSystem, carrierJump.SystemAddress, carrierJump.Body)
+        public CarrierPositionData(CarrierLocation location) : this(location.StarSystem, location.SystemAddress)
         {
-            StarPos = carrierJump.StarPos;
+            BodyID = location.BodyID;
+        }
+
+        public CarrierPositionData(CarrierJump carrierJump) : this(carrierJump.StarSystem, carrierJump.SystemAddress, carrierJump.StarPos, carrierJump.Body)
+        {
             BodyID = carrierJump.BodyID;
         }
 
-        public CarrierPositionData(CarrierJumpRequest jumpRequest) : this(jumpRequest.SystemName, jumpRequest.SystemAddress, jumpRequest.Body)
+        public CarrierPositionData(CarrierJumpRequest jumpRequest) : this(jumpRequest.SystemName, jumpRequest.SystemAddress, /*starPos=*/ null, jumpRequest.Body)
         {
             BodyID = jumpRequest.BodyID;
         }
 
-        public CarrierPositionData(JumpInfo jumpInfo) : this(jumpInfo.SystemName, jumpInfo.SystemAddress)
-        {
-            StarPos = jumpInfo.Position;
-        }
+        public CarrierPositionData(JumpInfo jumpInfo) : this(jumpInfo.SystemName, jumpInfo.SystemAddress, jumpInfo.Position) { }
 
-        public CarrierPositionData(string carrierSystem, ulong systemAddress, string carrierBody = "")
+        public CarrierPositionData(FleetCarrierRouteJobResult.Jump jumpInfo) : this(jumpInfo.SystemName, jumpInfo.Id64, jumpInfo.Position) { }
+
+        public CarrierPositionData(string carrierSystem, ulong systemAddress, StarPosition pos = null, string carrierBody = "")
         {
             SystemName = carrierSystem;
             SystemAddress = systemAddress;
+            StarPos = pos;
             _body = string.IsNullOrEmpty(carrierBody) ? carrierSystem : carrierBody;
         }
 
@@ -66,17 +60,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         [JsonConverter(typeof(StarPosConverter))]
         public StarPosition StarPos
         {
-            get
-            {
-                if (_knownSystemPositions.ContainsKey(SystemName))
-                    return _knownSystemPositions[SystemName];
-                return null;
-            }
+            get => _knownSystemPositions.GetValueOrDefault(SystemName, null);
             set
             {
                 // If it's a non-null system position; cache it!
-                if (value != null && !_knownSystemPositions.ContainsKey(SystemName))
-                    _knownSystemPositions[SystemName] = value;
+                if (value is not null)
+                    _knownSystemPositions.TryAdd(SystemName, value);
             }
         }
 
@@ -92,7 +81,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         {
             if (other == null) return false;
 
-            return SystemName == other.SystemName && BodyName == other.BodyName;
+            return SystemName == other.SystemName && BodyName.Equals(other.BodyName);
         }
     }
 }
