@@ -18,9 +18,9 @@ After adjusting settings, I recommend running `Read All` after installation.
 
 **NOTE:** 2026/2/3: Changelogs aren't up-to-date with latest major beta release. I'll be doing that over the next week or two as I work out the bugs and prepare stable releases.
 
-## AutoUpdater - Deprecated
+## AutoUpdater - Deprecated (NEW)
 
-**As of v1.4.0.26035, this plugin is no longer necessary. Please delete it. Auto-update functionality is built into every plugin now.**
+**After v1.4.0.26035, this plugin will no longer be necessary. You can use the existing version of AutoUpdater to install new versions of the other plugins (as it won't detect they are installed), restart to activate them and then delete the AutoUpdater plugin from your installation. Auto-update functionality is built into every plugin now.**
 
 This plugin keeps all plugins listed here (including itself) up-to-date after installation. After a release of an installed plugin is posted to GitHub, it will download the updated versions so it can be used after ObservatoryCore is restarted. You can also install other plugins using the new UI (Beta).
 
