@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs.CSVListBuilder;
+﻿using static com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs.CSVListBuilder;
 
 namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
 {
@@ -18,8 +13,9 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
         internal static DictBuilderOptions<long, Bundles> ByIdOptions = new(
             CSV.CSVBundles,
             "id,name,sku",
-            (string[] parts) => Convert.ToInt64(parts[1]),
-            (string[] parts) => {
+            parts => Convert.ToInt64(parts[1]),
+            parts =>
+            {
                 return new()
                 {
                     Id = Convert.ToInt64(parts[0]),

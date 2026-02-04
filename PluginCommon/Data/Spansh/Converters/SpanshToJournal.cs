@@ -2,19 +2,13 @@
 using com.github.fredjk_gh.PluginCommon.Data.Spansh.CommonGeneric;
 using com.github.fredjk_gh.PluginCommon.Data.Spansh.System;
 using Observatory.Framework.Files.ParameterTypes;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
 {
-    public class SpanshToJournal
+    public partial class SpanshToJournal
     {
         public static StarPosition ConvertSystemCoords(SystemCoords source)
         {
@@ -30,7 +24,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
         {
             if (parents == null) return null;
 
-            List<Parent> jParents = new();
+            List<Parent> jParents = [];
             foreach (var parent in parents)
             {
                 switch (parent.ParentType)
@@ -56,17 +50,17 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
 
                 }
             }
-            return jParents.ToImmutableList();
+            return [.. jParents];
         }
 
         public static ImmutableList<MaterialComposition> ConvertMaterialComposition(List<CompositionItem> composition, bool convertCase = false)
         {
             if (composition == null) return null;
-            return composition.OrderByDescending(c => c.Percent).Select(c => new MaterialComposition()
+            return [.. composition.OrderByDescending(c => c.Percent).Select(c => new MaterialComposition()
             {
                 Name = (convertCase ? c.Material.ToLower() : c.Material),
                 Percent = (float)c.Percent,
-            }).ToImmutableList();
+            })];
         }
 
         public static Composition ConvertComposition(List<CompositionItem> composition)
@@ -82,46 +76,48 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
 
         public static ImmutableList<Ring> ConvertRings(List<Asteroids> rings)
         {
-            if (rings == null) return ImmutableList<Ring>.Empty;
+            if (rings == null) return [];
 
-            return rings.Select(r => new Ring()
+            return [.. rings.Select(r => new Ring()
             {
                 Name = r.Name,
                 InnerRad = r.InnerRadius,
                 OuterRad = r.OuterRadius,
                 MassMT = r.Mass,
                 RingClass = ConvertRingType(r.Type),
-            }).ToImmutableList();
+            })];
         }
 
         public static ImmutableList<Signal> ConvertBodySAASignals(List<NameIntItem> signals)
         {
             if (signals == null) return null;
-            return signals.Select(s => new Signal() {
-                Type = ConvertBodySAASignal(s.Name),
-                Type_Localised = s.Name,
+            return [.. signals.Select(s => new Signal()
+            {
+                Type = s.Name,
+                Type_Localised = ConvertBodySAASignal(s.Name),
                 Count = s.Value,
-            }).ToImmutableList();
+            })];
         }
 
         public static ImmutableList<Signal> ConvertRingCommoditySignals(List<NameIntItem> signals)
         {
             if (signals == null) return null;
-            return signals.Select(s => new Signal()
+            return [.. signals.Select(s => new Signal()
             {
                 Type = s.Name,
                 Type_Localised = FDevIDs.CommodityBySymbol.GetValueOrDefault(s.Name, null)?.Name ?? "",
                 Count = s.Value,
-            }).ToImmutableList();
+            })];
         }
 
         public static ImmutableList<GenusType> ConvertGenuses(List<string> genuses)
         {
             if (genuses == null) return null;
-            return genuses.Select(s => new GenusType() {
+            return [.. genuses.Select(s => new GenusType()
+            {
                 Genus = ConvertGenus(s),
                 Genus_Localised = s,
-            }).ToImmutableList();
+            })];
         }
 
         public static string ConvertEconomy(string spanshValue)
@@ -173,7 +169,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
             return IdFromName(FDevIDs.BodiesById, spanshValue);
         }
 
-        private static readonly Regex _spectralClassRE = new Regex(@".*(\d)$");
+        private static readonly Regex _spectralClassRE = SpectralClassRegex();
         public static int ConvertSpectralClass(string spanshValue)
         {
             if (string.IsNullOrWhiteSpace(spanshValue)) return -1;
@@ -194,6 +190,9 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
                 Debug.WriteLine($"Coudn't map input '{name}' to an ID.");
             return value;
         }
+
+        [GeneratedRegex(@".*(\d)$")]
+        private static partial Regex SpectralClassRegex();
         #endregion
     }
 }

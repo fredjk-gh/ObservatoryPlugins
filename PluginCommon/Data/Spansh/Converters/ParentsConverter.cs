@@ -9,7 +9,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
     {
         public override List<ParentBody> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            List<ParentBody> parsed = new();
+            List<ParentBody> parsed = [];
 
             var node = JsonNode.Parse(ref reader);
             foreach (var item in node.AsArray())
@@ -28,10 +28,10 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
 
         public override void Write(Utf8JsonWriter writer, List<ParentBody> value, JsonSerializerOptions options)
         {
-            JsonArray array = new JsonArray();
+            JsonArray array = [];
             foreach (var item in value)
             {
-                JsonObject jsonObject = new JsonObject();
+                JsonObject jsonObject = [];
                 jsonObject[item.ParentType] = item.ParentBodyId;
                 array.Add(jsonObject);
             }

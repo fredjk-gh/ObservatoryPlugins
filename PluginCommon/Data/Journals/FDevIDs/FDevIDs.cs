@@ -1,13 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
+﻿namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
 {
     public static class FDevIDs
     {
+        public const string V_CODEX_CATEGORY_BIO_GEO = "regionCodexBiologicalGeological";
+        public const string V_CODEX_CATEGORY_XENO = "regionCodexXenological";
+        public const string V_CODEX_CATEGORY_ASTRO = "regionCodexAstronomicalBodies";
+
+        public static readonly Dictionary<string, string> CodexCategoriesByJournalId = new()
+        {
+            { "$Codex_Category_Biology;", V_CODEX_CATEGORY_BIO_GEO },
+            { "$Codex_Category_Civilisations;", V_CODEX_CATEGORY_XENO },
+            { "$Codex_Category_StellarBodies;", V_CODEX_CATEGORY_ASTRO },
+        };
+
         #region Career Ranks
         private static Dictionary<int, Rank> _CQCRankByNumber = null;
         public static Dictionary<int, Rank> CQCRankByNumber
@@ -55,16 +60,24 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
             get => (_CommodityBySymbol ??= CSVListBuilder.DictFromCSV(CommodityResource.CommoditiesBySymbolOptions));
         }
 
+        private static Dictionary<string, CommodityResource> _RareCommoditiesBySymbol = null;
+        public static Dictionary<string, CommodityResource> RareCommodityBySymbol
+        {
+            get => (_RareCommoditiesBySymbol ??= CSVListBuilder.DictFromCSV(CommodityResource.RareCommoditiesBySymbolOptions));
+        }
+
+        private static Dictionary<string, CommodityResource> _AllCommoditiesBySymbol = null;
+        public static Dictionary<string, CommodityResource> AllCommoditiesBySymbol
+        {
+            get => (_AllCommoditiesBySymbol ??= CommodityBySymbol.Values
+                .Union(RareCommodityBySymbol.Values)
+                .ToDictionary(c => c.Symbol, c => c));
+        }
+
         private static Dictionary<string, CommodityResource> _MicroResourcesBySymbol = null;
         public static Dictionary<string, CommodityResource> MicroResourcesBySymbol
         {
             get => (_MicroResourcesBySymbol ??= CSVListBuilder.DictFromCSV(CommodityResource.MicroResourcesBySymbolOptions));
-        }
-
-        private static Dictionary<string, CommodityResource> _RareCommoditiesBySymbol = null;
-        public static Dictionary<string, CommodityResource> RareCommoditiesBySymbol
-        {
-            get => (_RareCommoditiesBySymbol ??= CSVListBuilder.DictFromCSV(CommodityResource.RareCommoditiesBySymbolOptions));
         }
 
         private static Dictionary<string, Material> _MaterialsBySymbol = null;
@@ -79,10 +92,10 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
             get => (_OutfittingBySymbol ??= CSVListBuilder.DictFromCSV(Outfitting.BySymbolOptions));
         }
 
-        private static Dictionary<string, Outfitting> _ShipyardBySymbol = null;
-        public static Dictionary<string, Outfitting> ShipyardBySymbol
+        private static Dictionary<string, Shipyard> _ShipyardBySymbol = null;
+        public static Dictionary<string, Shipyard> ShipyardBySymbol
         {
-            get => (_ShipyardBySymbol ??= CSVListBuilder.DictFromCSV(Outfitting.BySymbolOptions));
+            get => (_ShipyardBySymbol ??= CSVListBuilder.DictFromCSV(Shipyard.BySymbolOptions));
         }
 
         #endregion
@@ -105,7 +118,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
         {
             get => (_FactionsById ??= CSVListBuilder.DictFromCSV(IdName.FactionsByIdOptions));
         }
-        
+
         private static Dictionary<string, IdName> _FactionStatesById = null;
         public static Dictionary<string, IdName> FactionStatesById
         {

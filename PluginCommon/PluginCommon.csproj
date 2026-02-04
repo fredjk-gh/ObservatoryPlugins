@@ -5,17 +5,24 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
 		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+		<CopyLocalLockFileAssemblies>True</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 	
 	<PropertyGroup>
-		<VersionPrefix>1.0.4.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
+		<VersionPrefix>1.4.0.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
 		<VersionSuffix></VersionSuffix>
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\ObservatoryCore\ObservatoryCore\$(OutDir)..\net8.0-windows7.0\plugins\deps\&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryAggregator\$(OutDir)&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryArchivist\$(OutDir)&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryFleetCommander\$(OutDir)&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryHelm\$(OutDir)&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryPluginAutoUpdater\$(OutDir)&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryProspectorBasic\$(OutDir)&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryStatScanner\$(OutDir)&quot; /y" />
 	</Target>
 
 	<ItemGroup>
@@ -27,10 +34,10 @@
 	    <Generator>ResXFileCodeGenerator</Generator>
 	    <LastGenOutput>CSV.Designer.cs</LastGenOutput>
 	  </EmbeddedResource>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Resources\" />
+	  <EmbeddedResource Update="Images.resx">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Images.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -38,6 +45,29 @@
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>CSV.resx</DependentUpon>
+	  </Compile>
+	  <Compile Update="Images.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Images.resx</DependentUpon>
+	  </Compile>
+	  <Compile Update="UI\CollapsibleGroupBoxContent.cs">
+	    <SubType>UserControl</SubType>
+	  </Compile>
+	  <Compile Update="UI\CollapsibleGroupBox.cs">
+	    <SubType>UserControl</SubType>
+	  </Compile>
+	  <Compile Update="UI\ScalableImageButton.cs">
+	    <SubType>Component</SubType>
+	  </Compile>
+	  <Compile Update="UI\ScalableLabel.cs">
+	    <SubType>Component</SubType>
+	  </Compile>
+	  <Compile Update="UI\ThemeableImageLabel.cs">
+	    <SubType>UserControl</SubType>
+	  </Compile>
+	  <Compile Update="UI\ThemeableImageButton.cs">
+	    <SubType>Component</SubType>
 	  </Compile>
 	</ItemGroup>
 

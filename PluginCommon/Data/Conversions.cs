@@ -1,28 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Observatory.Framework.Files.ParameterTypes;
 
 namespace com.github.fredjk_gh.PluginCommon.Data
 {
     public class Conversions
     {
-        public const float CONV_MperS2_TO_G_DIVISOR = 9.81f;
+        public const float CONV_MperS2_TO_G_DIVISOR = 9.81f; // 9.797759f from journal for Earth
         public const float CONV_M_TO_SOLAR_RAD_DIVISOR = 695500000.0f;
+        public const float CONV_M_TO_MM_DIVISOR = 1000000.0f;
         public const float CONV_M_TO_KM_DIVISOR = 1000.0f;
         public const float CONV_M_TO_LS_DIVISOR = 299792458.0f;
         public const float CONV_M_TO_AU_DIVISOR = 149597870691;
         public const float CONV_S_TO_DAYS_DIVISOR = 86400.0f;
         public const float CONV_S_TO_HOURS_DIVISOR = 3600.0f;
-        public const float CONV_PA_TO_ATM_DIVISOR = 101325.0f;
-        
+        public const float CONV_PA_TO_ATM_DIVISOR = 101325.0f; // 101231.656250f from journal for Earth
+
         // Distances / lengths:
         // - m <-> Ls
         // - m <-> km
+        // - m <-> Mm
+        public static float MetersToMm(float meters)
+        {
+            return meters / CONV_M_TO_MM_DIVISOR;
+        }
+
         public static float MetersToKm(float meters)
         {
             return meters / CONV_M_TO_KM_DIVISOR;
+        }
+
+        public static float MmToMeters(float mm)
+        {
+            return mm * CONV_M_TO_MM_DIVISOR;
         }
 
         public static float KmToMeters(float km)
@@ -91,6 +99,17 @@ namespace com.github.fredjk_gh.PluginCommon.Data
 
         // Angles:
         // - rad <-> deg
+        public static float RadToDegrees(float rad)
+        {
+            return rad * 180.0f / (float)Math.PI;
+        }
 
+        // Mass / inner radius / outer radius to density
+        // Assumes ring thickness of 1 km.
+        public static double RingDensity(float massMT, float innerRadM, float outerRadM)
+        {
+            return massMT /
+                    ((Math.PI * Math.Pow(MetersToKm(outerRadM), 2.0)) - (Math.PI * Math.Pow(MetersToKm(innerRadM), 2.0)));
+        }
     }
 }

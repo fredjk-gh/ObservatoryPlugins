@@ -1,13 +1,6 @@
-﻿using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
-using com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters;
+﻿using com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters;
 using com.github.fredjk_gh.PluginCommon.Data.Spansh.System;
 using Observatory.Framework.Files.Journal;
-using Observatory.Framework.Files.ParameterTypes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.PluginCommon.Data.Journals
 {
@@ -24,12 +17,12 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
             // - FSSAllBodiesFound
             // - SAA scans and FSSBodySignals
             //
-            List<JournalBase> converted = new();
-            List<JournalBase> convertedPostFSS = new();
+            List<JournalBase> converted = [];
+            List<JournalBase> convertedPostFSS = [];
             JournalDateGenerator dateGenerator = new(journalVisitDate);
 
             SystemBody mainStar = spansh.Bodies.Where(b => b.MainStar).First();
-            Location loc = new Location()
+            Location loc = new()
             {
                 Timestamp = dateGenerator.NextFormatted(),
                 Event = "Location",
@@ -56,7 +49,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
             };
             converted.Add(loc);
 
-            FSSDiscoveryScan honk = new FSSDiscoveryScan()
+            FSSDiscoveryScan honk = new()
             {
                 Timestamp = dateGenerator.NextFormatted(),
                 Event = "FSSDiscoveryScan",
@@ -70,7 +63,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
 
             // NOTE: No Asteroid clusters will be generated.
             // Prepare Barycenters  as they are emitted before the first body or barycentre below it.
-            Dictionary<int, ScanBaryCentre> bcByBodyId = new();
+            Dictionary<int, ScanBaryCentre> bcByBodyId = [];
             foreach (var body in spansh.Bodies.Where(b => b.Type == "Barycentre"))
             {
                 ScanBaryCentre bc = new()
@@ -96,7 +89,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
             {
                 MaybeAddBarycentre(converted, bcByBodyId, body);
 
-                Scan starScan = new Scan()
+                Scan starScan = new()
                 {
                     Timestamp = dateGenerator.NextFormatted(),
                     Event = "Scan",
@@ -147,7 +140,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
                     };
                     converted.Add(fssBS);
 
-                    if ((body.Signals?.Genuses?.Count ?? 0 ) > 0)
+                    if ((body.Signals?.Genuses?.Count ?? 0) > 0)
                     {
                         SAAScanComplete saaScan = new()
                         {
@@ -206,7 +199,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
                 }
 
                 MaybeAddBarycentre(converted, bcByBodyId, body);
-                Scan bodyScan = new Scan()
+                Scan bodyScan = new()
                 {
                     Timestamp = dateGenerator.NextFormatted(),
                     Event = "Scan",
@@ -261,16 +254,16 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
             converted.AddRange(convertedPostFSS);
             return converted;
         }
-        
+
         private static void MaybeAddBarycentre(List<JournalBase> converted, Dictionary<int, ScanBaryCentre> bcByBodyId, SystemBody body)
         {
             if (body.Parents == null) return;
             foreach (var p in body.Parents)
             {
-                if ("Null".Equals(p.ParentType) && bcByBodyId.ContainsKey(p.ParentBodyId))
+                if ("Null".Equals(p.ParentType) && bcByBodyId.TryGetValue(p.ParentBodyId, out ScanBaryCentre bc))
                 {
                     // Add the barycentre to converted output, remove it from list of outstanding barycentres.
-                    converted.Add(bcByBodyId[p.ParentBodyId]);
+                    converted.Add(bc);
                     bcByBodyId.Remove(p.ParentBodyId);
                     // Don't break, there may be multiple barycentres to emit.
                 }

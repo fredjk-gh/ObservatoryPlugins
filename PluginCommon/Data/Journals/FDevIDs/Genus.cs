@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs.CSVListBuilder;
+﻿using static com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs.CSVListBuilder;
 
 namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
 {
@@ -15,7 +10,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs
 
         #region CSV Parsing
         private const string IDNAME_HEADERS = "id,name,colony_range";
-        
+
         internal static DictBuilderOptions<string, Genus> ByIdOptions =
             new(CSV.CSVGenuses, IDNAME_HEADERS, KeyFactory, ItemFactory);
 

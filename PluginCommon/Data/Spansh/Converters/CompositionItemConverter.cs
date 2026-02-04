@@ -1,12 +1,7 @@
 ﻿using com.github.fredjk_gh.PluginCommon.Data.Spansh.CommonGeneric;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
 {
@@ -14,7 +9,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
     {
         public override List<CompositionItem> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            List<CompositionItem> parsed = new();
+            List<CompositionItem> parsed = [];
 
             var node = JsonNode.Parse(ref reader);
             foreach (var property in node.AsObject())
@@ -32,7 +27,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.Converters
         {
             if (value == null || value.Count == 0) return;
 
-            JsonObject jsonObject = new JsonObject();
+            JsonObject jsonObject = [];
             foreach (var item in value)
             {
                 jsonObject[item.Material] = item.Percent;

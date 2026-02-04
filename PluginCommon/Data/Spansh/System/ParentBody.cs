@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.System
+﻿namespace com.github.fredjk_gh.PluginCommon.Data.Spansh.System
 {
     public class ParentBody : GenericJsonBase
     {
