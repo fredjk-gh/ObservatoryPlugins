@@ -1,52 +1,69 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Net.Http.Headers;
+﻿using com.github.fredjk_gh.ObservatoryAggregator.UI;
+using com.github.fredjk_gh.PluginCommon.AutoUpdates;
+using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
 using Observatory.Framework;
 using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
-using Observatory.Framework.Sorters;
 using Observatory.Framework.Interfaces;
-using com.github.fredjk_gh.ObservatoryAggregator.UI;
 
 namespace com.github.fredjk_gh.ObservatoryAggregator
 {
     public class Aggregator : IObservatoryNotifier, IObservatoryWorker
     {
-        private static string AGGREGATOR_WIKI_URL = "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator";
-
-        private IObservatoryCore Core;
-        private AggregatorSettings settings = AggregatorSettings.DEFAULT;
-        private PluginUI _pluginUI;
-        private TrackedData _data = new();
-        private AggregatorUIPanel _ui;
-        private AboutInfo _aboutInfo = new()
+        private static readonly Guid PLUGIN_GUID = new("b4654977-434b-424f-a9fd-b2ac5be9915a");
+        private static readonly AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
+        private static readonly AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator");
+        private static readonly AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/aggregator");
+        private static readonly AboutInfo ABOUT_INFO = new()
         {
             FullName = $"Notification {Constants.PLUGIN_SHORT_NAME}",
             ShortName = Constants.PLUGIN_SHORT_NAME,
             Description = "The Aggregator plugin is a notification log -- collecting notifications from all other plugins into one place to reduce the number of times you need to switch between plugins.",
             AuthorName = "fredjk-gh",
-            Links = new()
-            {
-                new AboutLink("github", "https://github.com/fredjk-gh/ObservatoryPlugins"),
-                new AboutLink("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator"),
-                new AboutLink("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/aggregator"),
-            }
+            Links =
+            [
+                GH_LINK,
+                GH_RELEASE_NOTES_LINK,
+                DOC_LINK,
+            ]
         };
 
-        public AboutInfo AboutInfo => _aboutInfo;
+        private readonly AggregatorContext _c = new();
+        private AggregatorSettings settings = new();
+        private PluginUI _pluginUI;
+        private AggregatorUIPanel _ui;
+        private bool _replayMode = false;
+
+        public static Guid Guid => PLUGIN_GUID;
+        public AboutInfo AboutInfo => ABOUT_INFO;
         public string Version => typeof(Aggregator).Assembly.GetName().Version.ToString();
         public PluginUI PluginUI => _pluginUI;
         public bool OverrideAcceptNotificationsDuringBatch { get => true; }
 
+        internal bool ReplayMode
+        {
+            get => _replayMode;
+            set
+            {
+                _replayMode = value;
+            }
+        }
+
+        public bool SuppressUIUpdates
+        {
+            get => ReplayMode || _c.Core.IsLogMonitorBatchReading;
+        }
+
         public object Settings
         {
             get => settings;
-            set {
+            set
+            {
                 settings = (AggregatorSettings)value;
 
                 MaybeFixUnsetSettings();
-                _data.ApplySettings(settings);
+                _c.ApplySettings(settings);
             }
         }
 
@@ -60,10 +77,25 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public void Load(IObservatoryCore observatoryCore)
         {
-            Core = observatoryCore;
-            _data.Load(Core, this, settings);
-            _ui = new AggregatorUIPanel(_data);
-            _pluginUI = new PluginUI(PluginUI.UIType.Panel, _ui);
+            _c.Load(observatoryCore, this, settings);
+            _ui = new(_c);
+            _pluginUI = new(PluginUI.UIType.Panel, _ui);
+
+            _c.Dispatcher.RegisterHandler<GenericPluginReadyMessage>(HandleReadyMessage);
+            _c.Dispatcher.RegisterHandler<ArchivistNotificationsMessage>(HandleArchivistNotifications);
+            _c.Dispatcher.RegisterHandler<ArchivistJournalsMessage>(HandleArchivistScansMessage);
+        }
+
+        public PluginUpdateInfo CheckForPluginUpdate()
+        {
+            AutoUpdateHelper.Init(_c.Core);
+            return AutoUpdateHelper.CheckForPluginUpdate(
+                this, GH_RELEASE_NOTES_LINK.Url, settings.EnableAutoUpdates, settings.EnableBetaUpdates);
+        }
+
+        public void ObservatoryReady()
+        {
+            _c.Dispatcher.SendMessage(GenericPluginReadyMessage.New());
         }
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args)
@@ -76,12 +108,17 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             // ReadAll -> *
             else if ((args.PreviousState & LogMonitorState.Batch) != 0)
             {
-                RedrawGrid();
+                RedrawGrid(true);
             }
             // PreRead -> *
             // -> Realtime
             else if ((args.PreviousState & LogMonitorState.PreRead) != 0 || (args.NewState & LogMonitorState.Realtime) != 0)
             {
+                if (_c.LoadTimeNotifications.Count > 0)
+                {
+                    _c.LoadTimeNotifications.ForEach(n => _c.AddNotification(n));
+                    _c.LoadTimeNotifications.Clear();
+                }
                 RedrawGrid();
             }
         }
@@ -91,8 +128,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             switch (journal)
             {
                 case FSDJump fsdJump: // and CarrierJump
-                    CarrierJump carrierJump = fsdJump as CarrierJump;
-                    if (carrierJump != null)
+                    if (fsdJump is CarrierJump carrierJump)
                     {
                         if (carrierJump.Docked || carrierJump.OnFoot)
                         {
@@ -108,50 +144,50 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     MaybeChangeSystem(location.StarSystem, location.SystemAddress);
                     break;
                 case LoadGame loadGame:
-                    _data.CurrentCommander = loadGame.Commander;
-                    _data.ChangeShip(loadGame.ShipID, loadGame.ShipName);
+                    _c.CurrentCommander = loadGame.Commander;
+                    _c.ChangeShip(loadGame.ShipID, loadGame.ShipName);
                     break;
                 case Loadout loadout:
-                    _data.ChangeShip(loadout.ShipID, loadout.ShipName);
+                    _c.ChangeShip(loadout.ShipID, loadout.ShipName);
                     RedrawGrid();
                     break;
                 case StoredShips ships:
                     foreach (var ship in ships.ShipsHere.Concat(ships.ShipsRemote))
                     {
-                        _data.AddKnownShip(ship.ShipID, ship.Name);
+                        _c.AddKnownShip(ship.ShipID, ship.Name);
                     }
                     break;
                 case ShipyardSwap swapShip:
-                    _data.ChangeShip(swapShip.ShipID);
+                    _c.ChangeShip(swapShip.ShipID);
                     RedrawGrid();
                     break;
                 case SetUserShipName shipNameChange:
-                    _data.UpdateShip(shipNameChange.ShipID, shipNameChange.UserShipName);
+                    _c.UpdateShip(shipNameChange.ShipID, shipNameChange.UserShipName);
                     RedrawGrid();
                     break;
                 case FSSDiscoveryScan dScan:
-                    _data.AddDiscoveryScan(dScan);
+                    _c.AddDiscoveryScan(dScan);
                     RedrawGrid();
                     break;
                 case FSSAllBodiesFound allFound:
-                    _data.AddAllBodiesFound(allFound);
+                    _c.AddAllBodiesFound(allFound);
                     RedrawGrid();
                     break;
                 case FSSBodySignals bodySignals:
-                    _data.AddBodySignals(bodySignals);
+                    _c.AddBodySignals(bodySignals);
                     // No redraw -- no body info yet, typically.
                     break;
                 case Scan scan:
                     if (!scan.BodyName.Contains("belt", StringComparison.OrdinalIgnoreCase))
                     {
-                        _data.AddScan(scan);
-                        if (_data.CurrentSystem != null
+                        _c.AddScan(scan);
+                        if (_c.CurrentSystem != null
                             && scan.DistanceFromArrivalLS == 0
                             && scan.ScanType != "NavBeaconDetail"
                             && scan.PlanetClass != "Barycentre"
                             && !scan.WasDiscovered)
                         {
-                            _data.CurrentSystem.IsUndiscovered = true;
+                            _c.CurrentSystem.IsUndiscovered = true;
                         }
 
                         // This generates a ton of flicker. Maybe this can be handled by Core (suppressing re-paints?)
@@ -160,12 +196,17 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     }
                     break;
                 case ScanBaryCentre scanBarycentre:
-                    _data.AddScanBarycentre(scanBarycentre);
+                    _c.AddScanBarycentre(scanBarycentre);
                     RedrawGrid();
                     break;
                 case SAAScanComplete scanComplete:
-                    _data.AddScanComplete(scanComplete);
-                    _data.MarkVisited(scanComplete.BodyID);
+                    _c.AddScanComplete(scanComplete);
+                    _c.MarkVisited(scanComplete.BodyID);
+                    RedrawGrid();
+                    break;
+                case SAASignalsFound scanSignals:
+                    _c.AddScanSignals(scanSignals);
+                    _c.MarkVisited(scanSignals.BodyID);
                     RedrawGrid();
                     break;
                 //case ApproachBody approachBody:
@@ -173,78 +214,103 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 //    RedrawGrid();
                 //    break;
                 case Touchdown touchdown:
-                    _data.MarkVisited(touchdown.BodyID);
+                    _c.MarkVisited(touchdown.BodyID);
                     RedrawGrid();
                     break;
             }
         }
 
+
         public void StatusChange(Status status)
         {
             if (status.Destination != null)
-                _data.MaybeChangeDestinationBody(status.Destination);
+                _c.MaybeChangeDestinationBody(status.Destination);
         }
 
         public void OnNotificationEvent(NotificationArgs args)
         {
-            NotificationData nd = new(_data, _data.CurrentSystem.Name, args);
+            NotificationData nd = new(_c, _c.CurrentSystem.Name, args);
             if (ShouldShow(nd))
             {
-                _data.AddNotification(nd);
+                _c.AddNotification(nd);
                 RedrawGrid();
             }
         }
 
-        public void HandlePluginMessage(string sourceName, string sourceVersion, object messageArgs)
+        public void HandlePluginMessage(MessageSender sender, PluginMessage messageArgs)
         {
-            switch (sourceName)
-            {
-                case "Observatory Archivist":
-                    HandleArchivistMsg(sourceVersion, messageArgs);
-                    break;
+            _c.Dispatcher.MaybeHandlePluginMessage(sender, messageArgs, out _);
+        }
 
-                // Observatory Evaluator?
-                case "Observatory BioInsights":
-                    // Maybe receive notification of interest and/or visitation?
-                    break;
+        private void HandleReadyMessage(GenericPluginReadyMessage readyMsg)
+        {
+            _c.Dispatcher.HandleReadyMessage(readyMsg);
+
+            string displayName = readyMsg.Sender.FullName;
+            NotificationData n = new(_c, "", readyMsg.Sender.ShortName, readyMsg.Type,
+                $"{displayName} v{readyMsg.Sender.Version} reported ready!", "(via v2 message)", CoalescingIDs.DEFAULT_COALESCING_ID);
+            _c.LoadTimeNotifications.Add(n);
+        }
+
+        public void HandleArchivistScansMessage(ArchivistJournalsMessage m)
+        {
+            // Make sure metadata matches the current situation.
+            // TODO: Reconsider non-matching commander names?
+            if (_c.CurrentSystem?.SystemAddress != m.Id64
+                || (!m.IsGeneratedFromSpansh && _c.CurrentCommander != m.SourceCommanderName)) return;
+
+            ReplayMode = true;
+
+            try
+            {
+                foreach (var entry in m.SystemJournalEntries)
+                {
+                    JournalEvent(entry);
+                }
+
+                if (_c.CurrentCommander == m.SourceCommanderName && m.CommanderVisitCount > 1)
+                {
+                    NotificationArgs args = new()
+                    {
+                        CoalescingId = CoalescingIDs.SYSTEM_COALESCING_ID,
+                        Guid = new(),
+                        Title = "Visit count",
+                        Detail = $"You have visited this system {m.CommanderVisitCount} times",
+                        Rendering = NotificationRendering.PluginNotifier,
+                        Sender = ABOUT_INFO.ShortName,
+                    };
+                    OnNotificationEvent(args);
+                }
+            }
+            finally
+            {
+                ReplayMode = false;
+                RedrawGrid();
             }
         }
 
-        public void HandleArchivistMsg(string version, object messageArgs)
+        private void HandleArchivistNotifications(ArchivistNotificationsMessage notifications)
         {
-            // We get values in the form of Tuple<string, object> from Archivist.
-            //
-            // Known messages:
-            // - archivist_known_system_journal_json
-            //
-            Tuple<string, object> msgTuple = messageArgs as Tuple<string, object>;
+            if (notifications == null || notifications.Notifications.Count == 0 || _c.Core.IsLogMonitorBatchReading) return;
 
-            if (msgTuple == null) return; // Unrecognized msg from Archivist!
+            if (notifications.Id64 != _c.CurrentSystem.SystemAddress
+                || notifications.SourceCommanderName != _c.CurrentCommander) return;
 
-            //switch (msgTuple.Item1)
-            //{
-            //    case "archivist_known_system_journal_json":
-            //        // In this event, the value is an tuple of data.
-            //        var value = ((string Commander, string SystemName, int VisitCount, List<string> SystemJournalEntries))msgTuple.Item2;
-
-            //        // Deserialize and pump into data for current system.
-            //        foreach (var line in value.SystemJournalEntries)
-            //        {
-            //            var eventType = JournalUtilities.GetEventType(line);
-
-            //            // TODO rehydrate object from this JSON.
-            //        }
-            //        break;
-            //}
+            ReplayMode = true;
+            foreach(var n in notifications.Notifications)
+            {
+                OnNotificationEvent(n);
+            }
+            ReplayMode = false;
+            RedrawGrid();
         }
 
-        private void RedrawGrid()
+        private void RedrawGrid(bool force = false)
         {
-            // Check for Pre-read too?
-            if (Core.IsLogMonitorBatchReading) return;
+            if (SuppressUIUpdates) return;
 
-            var gridItems = _data.ToGrid();
-            _ui.SetGridItems(gridItems);
+            var gridItems = _c.ToGrid();
+            _ui.SetGridItems(gridItems, force);
         }
 
         private bool ShouldShow(NotificationData nData)
@@ -267,24 +333,14 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         private void MaybeChangeSystem(string newSystem, ulong systemAddress)
         {
-            if ((_data.CurrentSystem?.Name ?? "") != newSystem)
+            if ((_c.CurrentSystem?.Name ?? "") != newSystem)
             {
-                _data.ChangeSystem(newSystem, systemAddress);
-                if ((Core.CurrentLogMonitorState & LogMonitorState.Batch) == 0)
+                _c.ChangeSystem(newSystem, systemAddress);
+                if ((_c.Core.CurrentLogMonitorState & LogMonitorState.Batch) == 0)
                 {
                     RedrawGrid();
                 }
             }
-        }
-
-        private void OpenWikiUrl()
-        {
-            OpenUrl(AGGREGATOR_WIKI_URL);
-        }
-
-        private void OpenUrl(string url)
-        {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }
 }

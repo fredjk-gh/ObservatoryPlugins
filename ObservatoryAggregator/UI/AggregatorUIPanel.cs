@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading.Tasks;
+﻿using com.github.fredjk_gh.PluginCommon;
+using com.github.fredjk_gh.PluginCommon.UI;
+using com.github.fredjk_gh.PluginCommon.UI.Shared;
+using System.Diagnostics;
 using static com.github.fredjk_gh.ObservatoryAggregator.AggregatorSettings;
 
 namespace com.github.fredjk_gh.ObservatoryAggregator.UI
@@ -18,7 +15,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
         private const string COL_FLAGS = "colFlags";
         private const string COL_SENDER = "colSender";
 
-        private Dictionary<string, (bool IsSizeable, int Width, int MinWidth, int FillWeight, DataGridViewAutoSizeColumnMode AutoSizeMode)> _colSizingInfo = new()
+        private readonly Dictionary<string, (bool IsSizeable, int Width, int MinWidth, int FillWeight, DataGridViewAutoSizeColumnMode AutoSizeMode)> _colSizingInfo = new()
         {
             { COL_TITLE, ( true, 300, 100, 200, DataGridViewAutoSizeColumnMode.NotSet ) },
             { COL_TRACKING, ( true, 40, 30, 0, DataGridViewAutoSizeColumnMode.None ) },
@@ -29,14 +26,21 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
         };
 
         private bool _isLoadingOrApplyingSettings = true;
-        private TrackedData _data;
-        private List<AggregatorGrid> _readAllGridItems = new();
-        private List<AggregatorGrid> gridItems = new();
+        private readonly AggregatorContext _data;
+        private readonly List<AggregatorGrid> gridItems = [];
 
-        private ToolStrip _tools;
-        private DataGridView _dgvGrid;
+        #region Controls
+        private readonly ToolStrip _tools;
+        private readonly ToolStripButton _tsbInfo;
+        private readonly ToolStripButton _tsbVisbility;
+        private readonly ToolStripButton _tsbTextSmaller;
+        private readonly ToolStripButton _tsbTextLarger;
+        private readonly ToolStripButton _tsbSettings;
+        private readonly DataGridView _dgvGrid;
 
-        public AggregatorUIPanel(TrackedData data)
+        #endregion
+
+        public AggregatorUIPanel(AggregatorContext data)
         {
             _data = data;
             _data.Settings.PropertyChanged += Settings_PropertyChanged;
@@ -56,7 +60,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 Dock = DockStyle.Fill,
                 EnableHeadersVisualStyles = false,
                 Location = new Point(0, 0),
-                RowHeadersWidth = 25,
+                RowHeadersWidth = 10,
                 Font = new Font(this.Font.FontFamily, this.Font.Size + (float)_data.Settings.FontSizeAdjustment)
             };
             _dgvGrid.SuspendLayout();
@@ -70,49 +74,53 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             _dgvGrid.DefaultCellStyle.Alignment = DataGridViewContentAlignment.TopLeft;
 
             // Set up columns.
-            int titleColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
+            var colTitle = new DGVImageLabelColumn()
             {
                 HeaderText = "Title",
                 Name = COL_TITLE,
                 ReadOnly = true,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-            });
-            _dgvGrid.Columns[titleColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
-            _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
+            };
+            colTitle.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+
+            var colInspect = new DGVImageLabelColumn()
             {
                 Tag = Constants.TAG_INSPECT,
-                FlatStyle = FlatStyle.Flat,
-                HeaderText = "✅",
+                HeaderText = "Interest",
                 Name = COL_TRACKING,
                 ReadOnly = true,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
                 ToolTipText = "Interest and completion tracking",
-            });
-            int detailsColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
+            };
+
+            var colDetails = new DGVImageLabelColumn()
             {
                 HeaderText = "Details",
                 Name = COL_DETAILS,
                 ReadOnly = true,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-            });
-            _dgvGrid.Columns[detailsColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
-            int extDetailsColIndex = _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
+            };
+            colDetails.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+
+            var colExtDetails = new DGVImageLabelColumn()
             {
                 HeaderText = "Extended Details",
                 Name = COL_EXT_DETAILS,
                 ReadOnly = true,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
-            });
-            _dgvGrid.Columns[extDetailsColIndex].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
-            _dgvGrid.Columns.Add(new DataGridViewTextBoxColumn()
+            };
+            colExtDetails.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+
+            var colFlags = new DGVImageLabelColumn()
             {
                 HeaderText = "Flags",
                 Name = COL_FLAGS,
                 ReadOnly = true,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
                 ToolTipText = "Icons indicating other states (hover an icon for more help)",
-            });
-            _dgvGrid.Columns.Add(new DataGridViewButtonColumn()
+            };
+
+            var colSender = new DataGridViewButtonColumn()
             {
                 Tag = Constants.TAG_SENDER,
                 HeaderText = "Sender",
@@ -120,7 +128,14 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 ReadOnly = true,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
                 ToolTipText = "Click the name to navigate to the sending plugin",
-            });
+            };
+
+            _dgvGrid.Columns.Add(colTitle);
+            _dgvGrid.Columns.Add(colInspect);
+            _dgvGrid.Columns.Add(colDetails);
+            _dgvGrid.Columns.Add(colExtDetails);
+            _dgvGrid.Columns.Add(colFlags);
+            _dgvGrid.Columns.Add(colSender);
 
             ApplyResizeMode(true);
             ApplyColumnOrder();
@@ -134,29 +149,66 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
 
             Controls.Add(_dgvGrid);
 
-            _tools = new ToolStrip();
-            _tools.Name = "_tools";
-            _tools.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            _tools.Dock = DockStyle.Top;
-
-            var tsbInfo = new ToolStripButton()
+            _tools = new()
             {
-                DisplayStyle = ToolStripItemDisplayStyle.Text,
-                Text = "ℹ️",
+                Name = "_tools",
+                Anchor = AnchorStyles.Top | AnchorStyles.Left,
+                Dock = DockStyle.Top
+            };
+
+            _tsbInfo = new()
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Image,
+                Image = Images.InfoBubbleImage,
+                ToolTipText = "About Aggregator",
                 Name = "tsbInfo",
             };
-            tsbInfo.Click += tsbInfo_Click;
-            _tools.Items.Add(tsbInfo);
-            var tsbSettings = new ToolStripButton()
+            _tsbInfo.Click += TsbInfo_Click;
+            _tools.Items.Add(_tsbInfo);
+            _tsbTextSmaller = new()
             {
-                DisplayStyle = ToolStripItemDisplayStyle.Text,
-                Text = "⚙️",
+                DisplayStyle = ToolStripItemDisplayStyle.Image,
+                Image = Images.TextSizeSmallerImage,
+                ToolTipText = "Decrease text size.",
+                Name = "tsbTextSmaller",
+            };
+            _tsbTextSmaller.Click += TsbTextSizeSmaller_Click;
+            _tools.Items.Add(_tsbTextSmaller);
+            _tsbTextLarger = new()
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Image,
+                Image = Images.TextSizeLargerImage,
+                ToolTipText = "Increase text size.",
+                Name = "tsbTextLarger",
+            };
+            _tsbTextLarger.Click += TsbTextSizeLarger_Click;
+            _tools.Items.Add(_tsbTextLarger);
+
+            var visibilityImage = Images.VisibilityShowImage;
+            if (_data.Settings.ShowAllBodySummaries)
+                visibilityImage = Images.VisibilityOffImage;
+            _tsbVisbility = new()
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Image,
+                Image = visibilityImage,
+                ToolTipText = "Toggle visibility of body summaries with no notifications.",
+                Name = "tsbVisbility",
+            };
+            _tsbVisbility.Click += TsbVisbility_Click;
+            _tools.Items.Add(_tsbVisbility);
+            _tsbSettings = new()
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Image,
+                Image = Images.SettingsCogImage,
+                ToolTipText = "Open settings...",
                 Name = "tsbSettings",
             };
-            tsbSettings.Click += tsbSettings_Click;
-            _tools.Items.Add(tsbSettings);
+            _tsbSettings.Click += TsbSettings_Click;
+            _tools.Items.Add(_tsbSettings);
 
             Controls.Add(_tools);
+
+            ForeColorChanged += ApplyThemeForeColor;
 
             _dgvGrid.ResumeLayout(false);
             ResumeLayout(false);
@@ -180,9 +232,9 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                     col.Resizable = DataGridViewTriState.True;
                     col.AutoSizeMode = sizingMode == GridSizingMode.Manual ? DataGridViewAutoSizeColumnMode.None : _colSizingInfo[col.Name].AutoSizeMode;
                     if (initializing)
-                        col.Width = sizingMode == GridSizingMode.Manual && colSizes.ContainsKey(col.Name)
-                            ? colSizes[col.Name]
-                            : _colSizingInfo[col.Name].Width;
+                        col.Width = (sizingMode == GridSizingMode.Manual && colSizes.TryGetValue(col.Name, out int size)
+                            ? size
+                            : _colSizingInfo[col.Name].Width);
                     col.MinimumWidth = Math.Max(2, _colSizingInfo[col.Name].MinWidth);
                     col.FillWeight = Math.Max(1, _colSizingInfo[col.Name].FillWeight);
                 }
@@ -190,7 +242,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 {
                     col.Resizable = DataGridViewTriState.False;
                     col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-                    col.Width = colSizes.ContainsKey(col.Name) ? colSizes[col.Name] : _colSizingInfo[col.Name].Width;
+                    col.Width = colSizes.TryGetValue(col.Name, out int size) ? size : _colSizingInfo[col.Name].Width;
                     col.MinimumWidth = 2; // minimum valid value
                     col.FillWeight = 1; // minimum valid value
                 }
@@ -215,10 +267,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             _isLoadingOrApplyingSettings = true;
             foreach (DataGridViewColumn c in _dgvGrid.Columns)
             {
-                if (_data.Settings.ColumnOrder.ContainsKey(c.Name))
-                {
-                    c.DisplayIndex = _data.Settings.ColumnOrder[c.Name];
-                }
+                if (_data.Settings.ColumnOrder.TryGetValue(c.Name, out int index))
+                    c.DisplayIndex = index;
             }
             _isLoadingOrApplyingSettings = false;
         }
@@ -254,14 +304,33 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             SaveGridColumnWidths();
         }
 
-        private void tsbSettings_Click(object sender, EventArgs e)
+        private void TsbSettings_Click(object sender, EventArgs e)
         {
             _data.Core.OpenSettings(_data.Worker);
         }
 
-        private void tsbInfo_Click(object sender, EventArgs e)
+        private void TsbInfo_Click(object sender, EventArgs e)
         {
             _data.Core.OpenAbout(_data.Worker);
+        }
+
+        private void TsbTextSizeLarger_Click(object sender, EventArgs e)
+        {
+            // The property changed event takes care of enacting the change.
+            _data.Settings.FontSizeAdjustment++;
+        }
+
+        private void TsbTextSizeSmaller_Click(object sender, EventArgs e)
+        {
+            // The property changed event takes care of enacting the change.
+            _data.Settings.FontSizeAdjustment--;
+        }
+
+        private void TsbVisbility_Click(object sender, EventArgs e)
+        {
+            // The property changed event takes care of enacting the change.
+            _data.Settings.ShowAllBodySummaries = !_data.Settings.ShowAllBodySummaries;
+            UpdateVisibilityImage();
         }
 
         private void Settings_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -270,15 +339,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             {
                 case "FontSizeAdjustment":
                     _dgvGrid.Font = new Font(this.Font.FontFamily, this.Font.Size + (float)_data.Settings.FontSizeAdjustment);
-                    RepaintAll();
                     break;
                 case "ShowAllBodySummaries":
                     SetGridItems(_data.ToGrid());
-                    RepaintAll();
+                    UpdateVisibilityImage();
                     break;
                 case "GridSizingMode":
                     ApplyResizeMode();
-                    RepaintAll();
+                    // Invalidate instead?
+                    //RepaintAll();
                     break;
             }
         }
@@ -290,10 +359,29 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             // We also need to clear and re-draw the grid as many row styles depend on BG Color.
             RepaintAll();
         }
+
         private void Grid_ForeColorChanged(object sender, EventArgs e)
         {
             _dgvGrid.ColumnHeadersDefaultCellStyle.ForeColor = _dgvGrid.ForeColor;
             _dgvGrid.RowHeadersDefaultCellStyle.ForeColor = _dgvGrid.ForeColor;
+        }
+
+        private void ApplyThemeForeColor(object sender, EventArgs e)
+        {
+            // Propagate to the toolbar image buttons.
+            _tsbInfo.Image = ImageCommon.RecolorAndSizeImage(Images.InfoBubbleImage, ForeColor);
+            _tsbTextSmaller.Image = ImageCommon.RecolorAndSizeImage(Images.TextSizeSmallerImage, ForeColor);
+            _tsbTextLarger.Image = ImageCommon.RecolorAndSizeImage(Images.TextSizeLargerImage, ForeColor);
+            _tsbSettings.Image = ImageCommon.RecolorAndSizeImage(Images.SettingsCogImage, ForeColor);
+            UpdateVisibilityImage();
+        }
+
+        private void UpdateVisibilityImage()
+        {
+            if (!_data.Settings.ShowAllBodySummaries)
+                _tsbVisbility.Image = ImageCommon.RecolorAndSizeImage(Images.VisibilityShowImage, ForeColor);
+            else
+                _tsbVisbility.Image = ImageCommon.RecolorAndSizeImage(Images.VisibilityOffImage, ForeColor);
         }
 
         public void Clear()
@@ -304,30 +392,68 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
             });
         }
 
-        public void SetGridItems(List<AggregatorGrid> items)
+        private bool _repaintQueued = false;
+
+        public void SetGridItems(List<AggregatorGrid> items, bool directPaint = false)
         {
             // Naive add everything as a row, stateless.
-            gridItems = items;
-            RepaintAll();
+            // Don't re-assign to avoid changing the object a waiting thread references.
+            lock(gridItems)
+            {
+                gridItems.Clear();
+                gridItems.AddRange(items);
+            }
+
+            if (directPaint) // Use sparingly -- this impacts performance
+            {
+                RepaintAll();
+                return;
+            }
+            // Throttle redraws. Option: Throw this in a task for greater reliability?
+            if (!_repaintQueued)
+            {
+                _repaintQueued = true; // Do this immediately to prevent multiple starts.
+                try
+                {
+                    Task.Run(() =>
+                    {
+                        Task.Delay(300);
+                        RepaintAll();
+                    });
+                }
+                catch
+                {
+                    _repaintQueued = false;
+                }
+            }
+            else
+            {
+                Debug.WriteLine("Repaint skipped due to queued task.");
+            }
         }
 
         private void RepaintAll()
         {
             _data.Core.ExecuteOnUIThread(() =>
             {
-                Clear();
-                foreach (AggregatorGrid item in gridItems)
+                lock(gridItems)
                 {
-                    item.ToRow(_dgvGrid);
+                    Clear();
+                    _dgvGrid.SuspendLayout();
+                    foreach (AggregatorGrid item in gridItems)
+                    {
+                        item.ToRow(_dgvGrid);
+                    }
+                    _dgvGrid.ResumeLayout();
                 }
+
+                _repaintQueued = false;
             });
         }
 
         private void Grid_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-
-            DataGridView? dataGridView = sender as DataGridView;
-            if (dataGridView == null) return;
+            if (sender is not DataGridView dataGridView) return;
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return; // Clicked a header; Ignore
 
             string colTag = (dataGridView.Columns[e.ColumnIndex].Tag ?? "").ToString();
@@ -337,12 +463,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 if (colTag == Constants.TAG_INSPECT) // Inspect column
                 {
                     // Inspect Column. Cycle to the next state.
-                    var inspectCell = row.Cells[e.ColumnIndex];
-
-                    AggregatorGrid data = row.Tag as AggregatorGrid;
-                    if (data != null && data.State != VisitedState.None)
+                    if (row.Tag is AggregatorGrid data && data.State != VisitedState.None)
                     {
-                        VisitedState currentState = data.State;
                         switch (data.State)
                         {
                             case VisitedState.MarkForVisit:
@@ -369,10 +491,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 if (colTag == Constants.TAG_INSPECT) // Inspect column
                 {
                     // Inspect Column. Reset to initial state.
-                    var inspectCell = row.Cells[e.ColumnIndex];
-
-                    AggregatorGrid data = row.Tag as AggregatorGrid;
-                    if (data != null && data.State != VisitedState.None)
+                    if (row.Tag is AggregatorGrid data && data.State != VisitedState.None)
                     {
                         _data.ResetMark(data.CoalescingId);
                     }
@@ -383,23 +502,20 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
         const int BORDER_PEN_WIDTH = 4;
         private void Grid_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            DataGridView dgv = sender as DataGridView;
-            if (dgv == null) return;
+            if (sender is not DataGridView dgv) return;
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return; // Header cells or last row.
 
             var row = dgv.Rows[e.RowIndex];
             AggregatorGrid rowData = row.Tag as AggregatorGrid;
-            if (rowData != null && rowData.RowStyle == AggregatorRowStyle.H2)
+            if (rowData is not null && rowData.RowStyle == AggregatorRowStyle.H2)
             {
                 // Body summary row.
                 e.Paint(e.CellBounds, DataGridViewPaintParts.All & ~DataGridViewPaintParts.Border);
-                using (Brush brush = new SolidBrush(dgv.ForeColor))
-                using (Pen pen = new Pen(brush, BORDER_PEN_WIDTH))
-                {
-                    var r = e.CellBounds;
-                    e.Graphics.DrawLine(pen, r.Left, r.Top + 2, r.Right, r.Top + 2);
-                    e.Handled = true;
-                }
+                using Brush brush = new SolidBrush(dgv.ForeColor);
+                using Pen pen = new(brush, BORDER_PEN_WIDTH);
+                var r = e.CellBounds;
+                e.Graphics.DrawLine(pen, r.Left, r.Top + 2, r.Right, r.Top + 2);
+                e.Handled = true;
             }
         }
     }
