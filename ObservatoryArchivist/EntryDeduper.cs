@@ -1,26 +1,40 @@
-﻿using System.Diagnostics;
+﻿using com.github.fredjk_gh.ObservatoryArchivist.DB;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist
 {
+    // TODO: Consider moving this to PluginCommon?
     internal class EntryDeduper
     {
         // This class is scoped to a particular system -- we don't have to worry about collisions between body IDs.
-        private HashSet<int> _saaSignalsFoundBodies = new();
-        private HashSet<int> _scannedBodyIDs = new();
-        private HashSet<int> _mappedBodyIDs = new();
-        private HashSet<long> _codexEntries = new();
-        private HashSet<string> _singletons = new();
+        private readonly HashSet<int> _saaSignalsFoundBodies = [];
+        private readonly HashSet<int> _scannedBodyIDs = [];
+        private readonly HashSet<int> _mappedBodyIDs = [];
+        private readonly HashSet<long> _codexEntries = [];
+        private readonly HashSet<string> _singletons = [];
+        private readonly HashSet<int> _notifHashCode = [];
 
-        public EntryDeduper(List<string> systemJournalEntries = null)
+        public EntryDeduper(List<string> systemJournalEntries = null, List<NotificationInfo> notifications = null)
         {
-            if (systemJournalEntries != null && systemJournalEntries.Count > 0)
+            if (systemJournalEntries is not null && systemJournalEntries.Count > 0)
+            {
                 Initialize(systemJournalEntries);
+            }
+            if (notifications is not null && notifications.Count > 0)
+            {
+                InitializeNotifications(notifications);
+            }
         }
 
         public bool IsThisADuplicate(string jsonStr)
         {
             return !CheckIsUnique(jsonStr);
+        }
+        
+        public bool IsThisADuplicate(NotificationInfo n)
+        {
+            return !CheckIsUnique(n);
         }
 
         private bool CheckIsUnique(string jsonStr)
@@ -73,6 +87,12 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             return isUnique;
         }
 
+        private bool CheckIsUnique(NotificationInfo n)
+        {
+            // string.GetHashCode() is good enough because the value is not persisted.
+            return _notifHashCode.Add(n.ToString().GetHashCode());
+        }
+
         private void Initialize(List<string> systemJournalEntries)
         {
             foreach (string jsonStr in systemJournalEntries)
@@ -80,7 +100,19 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                 // Just re-run it through CheckIsUnique which, ignoring the result, which will re-hydrate the indices
                 // as a side-effect. This avoids duplicating the logic above.
                 if (!CheckIsUnique(jsonStr))
-                    Debug.WriteLine($"EntryDeduper.Initialize: found a stored duplicate: {jsonStr}");
+                    Debug.WriteLine($"EntryDeduper.Initialize[Journal]: found a stored duplicate: {jsonStr}");
+            }
+        }
+
+        private void InitializeNotifications(List<NotificationInfo> notifs)
+        {
+            foreach (var n in notifs)
+            {
+                if (!CheckIsUnique(n))
+                {
+                    if (n.SystemName == "Abrocmii")
+                        Debug.WriteLine($"EntryDeduper.Initialize[Notification]: found a stored duplicate: {n}");
+                }
             }
         }
     }

@@ -1,10 +1,5 @@
 ﻿using Observatory.Framework.Files.Journal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist
 {
@@ -20,10 +15,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public Statistics Statistics { get; set; }
 
         [JsonIgnore]
-        public List<string> PreambleJournalEntries {
-            get 
+        public List<string> PreambleJournalEntries
+        {
+            get
             {
-                List<string> entries = new();
+                List<string> entries = [];
                 if (FileHeader != null) entries.Add(FileHeader.Json);
                 if (LoadGame != null) entries.Add(LoadGame.Json);
                 if (Statistics != null) entries.Add(Statistics.Json);

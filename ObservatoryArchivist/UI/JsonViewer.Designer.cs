@@ -1,4 +1,6 @@
-﻿namespace com.github.fredjk_gh.ObservatoryArchivist.UI
+﻿using com.github.fredjk_gh.PluginCommon.UI;
+
+namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 {
     partial class JsonViewer
     {
@@ -33,7 +35,7 @@
             txtJson = new TextBox();
             btnClose = new Button();
             flowLayoutPanel1 = new FlowLayoutPanel();
-            btnFontSizeIcon = new PluginCommon.UI.ThemeableIconButton();
+            btnFontSizeIcon = new PluginCommon.UI.ThemeableImageButton();
             tbFontSize = new TrackBar();
             ttip = new ToolTip(components);
             tableLayoutPanel1.SuspendLayout();
@@ -84,7 +86,7 @@
             btnClose.TabIndex = 1;
             btnClose.Text = "Close";
             btnClose.UseVisualStyleBackColor = true;
-            btnClose.Click += btnClose_Click;
+            btnClose.Click += BtnClose_Click;
             // 
             // flowLayoutPanel1
             // 
@@ -117,7 +119,7 @@
             tbFontSize.Size = new Size(356, 27);
             tbFontSize.TabIndex = 1;
             tbFontSize.Value = 9;
-            tbFontSize.Scroll += tbFontSize_Scroll;
+            tbFontSize.Scroll += TbFontSize_Scroll;
             // 
             // JsonViewer
             // 
@@ -144,7 +146,7 @@
         private TextBox txtJson;
         private Button btnClose;
         private FlowLayoutPanel flowLayoutPanel1;
-        private PluginCommon.UI.ThemeableIconButton btnFontSizeIcon;
+        private ThemeableImageButton btnFontSizeIcon;
         private TrackBar tbFontSize;
         private ToolTip ttip;
     }

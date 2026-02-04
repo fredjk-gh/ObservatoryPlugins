@@ -1,20 +1,15 @@
 ﻿using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist
 {
     internal class ArchivistData
     {
+        private readonly HashSet<ulong> _navBeaconSystemId64s = [];
         private string _currentCommander = "";
-        private Dictionary<string, ArchivistCommanderData> _knownCommanders = new();
-        private VisitedSystem _lastSearchResult = null;
-        private List<string> _recentSystems = new();
+        private Dictionary<string, ArchivistCommanderData> _knownCommanders = [];
+        private List<string> _recentSystems = [];
 
         public Dictionary<string, ArchivistCommanderData> KnownCommanders
         {
@@ -25,12 +20,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         [JsonIgnore]
         public FileHeader LastFileHeader { get; set; }
 
-        [JsonIgnore]
-        public VisitedSystem LastSearchResult { get; set; }
-
-        public string CurrentCommander {
+        public string CurrentCommander
+        {
             get => _currentCommander;
-            set {
+            set
+            {
                 if (string.IsNullOrWhiteSpace(value)) return;
 
                 // Initialize new Cmdr entry if needed.
@@ -47,15 +41,14 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         {
             var commander = string.IsNullOrWhiteSpace(cmdrName) ? CurrentCommander : cmdrName;
 
-            if (!_knownCommanders.ContainsKey(commander)) return null;
+            if (!_knownCommanders.TryGetValue(commander, out ArchivistCommanderData cmdrData)) return null;
 
-            return _knownCommanders[commander];
+            return cmdrData;
         }
 
         public void ResetForReadAll()
         {
             _knownCommanders.Clear();
-            _lastSearchResult = null;
             _recentSystems.Clear();
         }
 
@@ -79,13 +72,13 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             }
         }
 
-        public static bool IsSystemScanComplete(List<JournalBase> preamble, List<JournalBase> systemJournals)
+        public static bool IsSystemScanComplete(List<JournalBase> systemJournals)
         {
             // Santy check the System Journal Entries:
             // - Do we have have either a NavBeacon or discovery scan with body count? If not, bail.
             // - Do we have a scan for the correct # all of the bodies? If not, bail.
             int numBodies = -1;
-            HashSet<int> uniqueBodies = new();
+            HashSet<int> uniqueBodies = [];
             foreach (JournalBase j in systemJournals)
             {
                 switch (j)
@@ -113,15 +106,25 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             return true;
         }
 
+        public void TrackSystemNavBeacon(ulong systemAddr)
+        {
+            _navBeaconSystemId64s.Add(systemAddr);
+        }
+
+        public bool SystemHasNavBeacon(ulong systemAddr)
+        {
+            return _navBeaconSystemId64s.Contains(systemAddr);
+        }
+
+
         public static List<JournalBase> ToJournalObj(IObservatoryCore core, List<string> journalEntries)
         {
-            List<JournalBase> journalObj = new();
+            List<JournalBase> journalObj = [];
 
             foreach (string journalEntry in journalEntries)
             {
                 var args = core.DeserializeEvent(journalEntry);
-                var entry = args.journalEvent as JournalBase;
-                if (entry != null)
+                if (args.journalEvent is JournalBase entry)
                 {
                     journalObj.Add(entry);
                 }

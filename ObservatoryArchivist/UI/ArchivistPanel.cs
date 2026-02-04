@@ -1,18 +1,10 @@
-﻿using Observatory.Framework.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Formats.Asn1.AsnWriter;
-
-namespace com.github.fredjk_gh.ObservatoryArchivist.UI
+﻿namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 {
     internal class ArchivistPanel : Panel
     {
-        private ArchivistContext _context;
-        private TableLayoutPanel _tablePanel;
-        private ToolTip _ttip = new ToolTip();
+        private readonly ArchivistContext _context;
+        private readonly TableLayoutPanel _tablePanel;
+        private readonly ToolTip _ttip = new();
 
         public ArchivistPanel(ArchivistContext context)
         {

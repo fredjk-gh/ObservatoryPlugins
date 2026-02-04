@@ -1,11 +1,5 @@
 ﻿using LiteDB;
 using Observatory.Framework.Files.ParameterTypes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Permissions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist.DB
 {

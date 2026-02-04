@@ -1,9 +1,4 @@
 ﻿using Observatory.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist
 {
@@ -13,6 +8,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         {
             // Defaults go here.
             ShareSystemData = true;
+            AutoFetchWellKnownSystemsFromSpansh = false;
             JsonViewerFontSize = -1;
             EnableAutoUpdates = true;
         }
@@ -20,6 +16,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         [SettingNewGroup("Plugin Interop")]
         [SettingDisplayName("Share data for known systems")]
         public bool ShareSystemData { get; set; }
+
+        [SettingDisplayName("Auto-fetch data for \"well-known\" bubble systems from Spansh")]
+        public bool AutoFetchWellKnownSystemsFromSpansh { get; set; }
 
         [SettingNewGroup("UI")]
         [SettingDisplayName("Json viewer default font size")]
