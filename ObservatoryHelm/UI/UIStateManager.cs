@@ -64,8 +64,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
         }
 
         internal UIStateData Realtime { get => _d[UIMode.Realtime]; }
-        internal UIStateData Detatched { get => _d[UIMode.Detached]; }
-        internal UIMode Mode 
+        internal UIStateData Detached { get => _d[UIMode.Detached]; }
+        internal UIMode Mode
         { 
             get => _mode;
             set

@@ -53,6 +53,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             cboSystem = new ComboBox();
             label1 = new Label();
             lblSystemBodyCount = new Label();
+            colStarAge = new ColumnHeader();
             SuspendLayout();
             // 
             // btnSystemCoordsCopy
@@ -130,7 +131,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             // lvStars
             // 
             lvStars.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            lvStars.Columns.AddRange(new ColumnHeader[] { colFuelAndType, colName, colDistance });
+            lvStars.Columns.AddRange(new ColumnHeader[] { colFuelAndType, colName, colDistance, colStarAge });
             lvStars.FullRowSelect = true;
             lvStars.GridLines = true;
             lvStars.Location = new Point(8, 140);
@@ -261,6 +262,11 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             lblSystemBodyCount.TabIndex = 86;
             lblSystemBodyCount.Text = "<bodies>";
             // 
+            // colStarAge
+            // 
+            colStarAge.Text = "Age";
+            colStarAge.Width = 100;
+            // 
             // SystemContent
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -310,5 +316,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         private Label label1;
         private Label lblSystemBodyCount;
         private ImageList imgListForListView24;
+        private ColumnHeader colStarAge;
     }
 }

@@ -159,10 +159,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         {
             _currCommander ??= _c.Data.For(_state.CommanderKey);
 
-            if (_displayedSystem is not null
-                && _displayedBody is not null
-                && _displayedSystem.SystemId64 == _state.SystemId64
-                && _displayedBody.BodyId == _state.BodyId)
+            if (_displayedSystem?.SystemId64 == _state.SystemId64
+                && _displayedBody?.BodyId == _state.BodyId)
             {
                 // Something ping, but the currently displayed body hasn't actually changed.
                 // Just refresh the body list and flags.
@@ -186,7 +184,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             }
 
             if ((systemChanged || _displayedBody?.BodyId != _state.BodyId)
-                    && !_displayedSystem.Planets.TryGetValue(_state.BodyId, out this._displayedBody))
+                    && !_displayedSystem.Planets.TryGetValue(_state.BodyId, out _displayedBody))
                 return;
 
             SuspendLayout();

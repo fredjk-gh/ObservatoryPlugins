@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using com.github.fredjk_gh.ObservatoryHelm.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using Observatory.Framework.Files.Journal;
 using static com.github.fredjk_gh.ObservatoryHelm.UI.UIStateManager;
 
@@ -12,7 +13,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
     {
         private readonly UIMode _forMode;
         private CommanderKey _commanderKey = null;
-        private SystemBasicData _refSystem;
+        private SystemNamePosition _refSystem;
         private UInt64? _id64 = null;
         private int _bodyId = -1;
         private SurfacePosition _surfacePos = null;
@@ -49,7 +50,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             }
         }
 
-        public SystemBasicData RefSystem
+        public SystemNamePosition RefSystem
         {
             get => _refSystem;
             set

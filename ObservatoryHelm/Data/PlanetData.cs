@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
+using com.github.fredjk_gh.PluginCommon.UI;
 using Observatory.Framework.Files.Journal;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.Data
@@ -73,7 +74,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
                 {
                     return Scan.BodyName;
                 }
-                return $"Body {Scan.BodyName.Replace(_system.SystemName, "").Trim()}";
+                return UIFormatter.BodyLabelDisplay(Scan.BodyName.Replace(_system.SystemName, "").Trim());
             }
         }
 

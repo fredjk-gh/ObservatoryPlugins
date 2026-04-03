@@ -226,7 +226,10 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             tlblZones.SetVisibility(ICON_ZONE_IN_SUPPRESSION.Guid, _displayedSys.IsInSuppressionZone ?? false);
             tlblZones.SetTooltip(ICON_ZONE_IN_SUPPRESSION.Guid, _displayedSys.SuppressionZoneDetails);
             tlblZones.SetVisibility(ICON_ZONE_IN_HESUPPRESSION.Guid, _displayedSys.IsInHeSuppressionBubble ?? false);
-            tlblCoordinates.Text = UIFormatter.Coordinates(_displayedSys.Position.x, _displayedSys.Position.y, _displayedSys.Position.z);
+            if (_displayedSys.Position is not null)
+                tlblCoordinates.Text = UIFormatter.Coordinates(_displayedSys.Position.x, _displayedSys.Position.y, _displayedSys.Position.z);
+            else
+                tlblCoordinates.Text = "(unknown)";
 
             UpdateFlags();
             UpdateRefDistance();
@@ -272,10 +275,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             lblRefSystem.Text = _state.RefSystem.SystemName;
             lblRefDistance.Text = string.Empty;
 
-            if (_displayedSys != null)
+            if (_displayedSys is not null && _displayedSys.Position is not null)
             {
                 lblRefDistance.Text = UIFormatter.DistanceLy(Id64CoordHelper.Distance(_displayedSys.Position, _state.RefSystem.Position), 2);
             }
+            else
+                lblRefDistance.Text = "(System position unknown)";
         }
 
         private void UpdateStars(bool forceForFilterChange = false)
@@ -295,6 +300,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 });
                 item.SubItems.Add(s.ShortName);
                 item.SubItems.Add(UIFormatter.DistanceLs(s.Scan.DistanceFromArrivalLS, 1));
+                item.SubItems.Add(UIFormatter.StarAge(s.Scan.Age_MY));
             }
         }
 
@@ -326,15 +332,22 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             // Nothing to do if the system is already in the system droplist.
             if (_displayedCmdr.RecentSystems.Count > 0 && !forDiffCmdr)
             {
-                SystemData mostRecentSys = _displayedCmdr.RecentSystems[_displayedCmdr.RecentSystemIds.Last()];
-                if (cboSystem.Items.Contains(mostRecentSys))
+
+                SystemData mostRecentSys;
+                if (_state.SystemId64.HasValue
+                    && _displayedCmdr.RecentSystems.TryGetValue(_state.SystemId64.Value, out mostRecentSys)
+                    && cboSystem.Items.Contains(mostRecentSys))
                 {
+                    _suppressEvents = true;
+                    cboSystem.SelectedItem = mostRecentSys;
+                    _suppressEvents = false;
                     return;
                 }
             }
 
             _suppressEvents = true;
-            if (cboSystem.SelectedIndex > 0 && !forDiffCmdr) selectedValue = (SystemData)cboSystem.SelectedItem;
+            if (cboSystem.SelectedIndex > 0 && !forDiffCmdr && _c.UIMgr.Mode != UIMode.Realtime)
+                selectedValue = (SystemData)cboSystem.SelectedItem;
 
             cboSystem.DisplayMember = "SystemName";
             cboSystem.ValueMember = "SystemId64";
@@ -453,7 +466,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 if (_c.UIMgr.Mode == UIMode.Realtime)
                 {
                     // Use current realtime data as starting point.
-                    var detached = _c.UIMgr.Detatched.CopyFrom(_c.UIMgr.Realtime);
+                    var detached = _c.UIMgr.Detached.CopyFrom(_c.UIMgr.Realtime);
                     detached.SwitchSystem(sys.SystemId64);
                     _c.UIMgr.Mode = UIMode.Detached;
                 }

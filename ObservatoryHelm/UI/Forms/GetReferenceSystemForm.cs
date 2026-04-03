@@ -1,4 +1,5 @@
 ﻿using com.github.fredjk_gh.ObservatoryHelm.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
 using static com.github.fredjk_gh.PluginCommon.PluginInterop.PluginTracker;
 
@@ -30,7 +31,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 && !string.IsNullOrWhiteSpace(txtZ.Text) && Double.TryParse(txtZ.Text, out _);
         }
 
-        internal SystemBasicData ReferenceSystem { get; private set; }
+        internal SystemNamePosition ReferenceSystem { get; private set; }
 
         private void TextBox_TextChanged(object sender, EventArgs e)
         {
@@ -49,7 +50,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         {
             try
             {
-                ReferenceSystem = new(Convert.ToUInt64(txtId64.Text), txtSystemName.Text, new()
+                ReferenceSystem = new(txtSystemName.Text, new()
                 {
                     x = Convert.ToDouble(txtX.Text),
                     y = Convert.ToDouble(txtY.Text),

@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json.Serialization;
 using com.github.fredjk_gh.PluginCommon.Data.Id64;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
 
@@ -125,7 +126,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         {
             get
             {
-                if (!IsInSuppressionZone ?? false) return string.Empty;
+                if (!IsInSuppressionZone ?? false || Position is null) return string.Empty;
                 bool hasResults = false;
                 StringBuilder sb = new();
                 sb.AppendLine("This system may be in a star-type suppression zone. Potentially affected star types:");

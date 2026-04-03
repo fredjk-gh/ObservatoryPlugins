@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using Observatory.Framework.Files;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.Data

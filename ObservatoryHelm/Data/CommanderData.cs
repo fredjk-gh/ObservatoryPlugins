@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json.Serialization;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
@@ -74,7 +75,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         public long DockedCarrierJumpsCompleted { get; set; }
         public Status LastStatus { get; set; }
         public StartJump LastStartJumpEvent { get; set; }
-        [JsonIgnore] // Until missing Faction serializer is fixed.
         public FSDJump LastJumpEvent { get; set; }
         public NavRouteFile LastNavRoute
         {
@@ -103,7 +103,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         public bool AllBodiesFound { get; set; }
         public bool UndiscoveredSystem { get; set; }
         public ShipsData Ships { get; set; /* for deserialization */ }
-        public SystemBasicData ReferenceSystem { get; set; }
+        public SystemNamePosition ReferenceSystem { get; set; }
 
         public void SystemInit()
         {

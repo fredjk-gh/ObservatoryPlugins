@@ -99,7 +99,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             foreach (var item in inventory)
             {
                 string key = CargoHelper.GetCargoKey(item.Name, item.Name_Localised);
-                _cargo.Add(key, item.Count);
+                // You may get multiple items with the same key if you're transporting mission-specific cargo.
+                // Therefore, the key may already exist.
+                if (!_cargo.ContainsKey(key))
+                    _cargo.Add(key, item.Count);
+                else
+                    _cargo[key] += item.Count;
             }
         }
         

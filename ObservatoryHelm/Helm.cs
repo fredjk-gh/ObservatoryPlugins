@@ -277,14 +277,6 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                             break;
                         }
 
-                        // This is noisy and now represented in the UI. Consider removing here altogether.
-                        //string suppressionZoneDetail = (_c.Data.CommanderData.CurrentSystemData.IsInSuppressionZone ?? false
-                        //    ? _c.Data.CommanderData.CurrentSystemData.SuppressionZoneDetails
-                        //    : string.Empty);
-                        //if (_c.Data.CommanderData.CurrentSystemData.IsInBubble ?? false)
-                        //{
-                        //    suppressionZoneDetail = $"This system is in the bubble (< {_settings.BubbleRadiusLy} Ly from Sol).";
-                        //}
                         _c.UI.ChangeSystem(jump.SystemAddress);
                         _c.UI.ChangeFuelLevel(jump.FuelLevel);
                         string arrivalStarScoopableStr = (_c.Data.CommanderData.LastStartJumpEvent != null && !JournalConstants.Scoopables.Contains(_c.Data.CommanderData.LastStartJumpEvent.StarClass))
@@ -710,7 +702,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     Sender = AboutInfo.ShortName,
                     ExtendedDetails = $"Destination: {_c.Data.CommanderData.Destination}",
                     Rendering = NotificationRendering.PluginNotifier,
-                    CoalescingId = Constants.COALESCING_ID_HEADER,
+                    CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                 });
             }
         }

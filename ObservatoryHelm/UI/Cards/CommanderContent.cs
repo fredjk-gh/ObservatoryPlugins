@@ -108,7 +108,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             else
             {
                 // Either the commander switch or the mode switch triggers re-draw via property changed event.
-                _c.UIMgr.Detatched.SwitchCommander(data.Key);
+                _c.UIMgr.Detached.SwitchCommander(data.Key);
                 _c.UIMgr.Mode = UIMode.Detached;
             }
             _suppressEvents = false;
