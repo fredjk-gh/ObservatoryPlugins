@@ -74,6 +74,14 @@
                 .ToDictionary(c => c.Symbol, c => c));
         }
 
+        private static Dictionary<string, CommodityResource> _AllCommoditiesAndResourcesBySymbol = null;
+        public static Dictionary<string, CommodityResource> AllCommoditiesAndResourcesBySymbol
+        {
+            get => (_AllCommoditiesAndResourcesBySymbol ??= CommodityBySymbol.Values
+                .Union(RareCommodityBySymbol.Values)
+                .Union(MicroResourcesBySymbol.Values)
+                .ToDictionary(c => c.Symbol, c => c));
+        }
         private static Dictionary<string, CommodityResource> _MicroResourcesBySymbol = null;
         public static Dictionary<string, CommodityResource> MicroResourcesBySymbol
         {

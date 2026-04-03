@@ -14,7 +14,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
             //   For simplicity, Location is going to be the main star in the system.
             // - FSSDiscoveryScan event
             // - Various Scan events (along with any associated FSSBodySignals for bios and geos OR ring signals)
-            // - FSSAllBodiesFound
+            // - FSSAllBodiesFound (if all found)
             // - SAA scans and FSSBodySignals
             //
             List<JournalBase> converted = [];
@@ -55,7 +55,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
                 Event = "FSSDiscoveryScan",
                 Progress = 100.0f,
                 BodyCount = spansh.BodyCount,
-                NonBodyCount = spansh.Bodies.Count - spansh.BodyCount, // Bodies includes Barycentres, BodyCount does not.
+                NonBodyCount = spansh.BodyCount > 0 ? spansh.Bodies.Count - spansh.BodyCount : 0, // Bodies includes Barycentres, BodyCount does not.
                 SystemName = spansh.Name,
                 SystemAddress = spansh.Id64,
             };
@@ -241,16 +241,19 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
                 converted.Add(bodyScan);
             }
 
-            FSSAllBodiesFound fssAllBodies = new()
+            if (spansh.BodyCount > 0)
             {
-                Timestamp = dateGenerator.NextFormatted(),
-                Event = "FSSAllBodiesFound",
-                SystemName = spansh.Name,
-                SystemAddress = spansh.Id64,
-                Count = spansh.BodyCount,
-            };
+                FSSAllBodiesFound fssAllBodies = new()
+                {
+                    Timestamp = dateGenerator.NextFormatted(),
+                    Event = "FSSAllBodiesFound",
+                    SystemName = spansh.Name,
+                    SystemAddress = spansh.Id64,
+                    Count = spansh.BodyCount,
+                };
+                converted.Add(fssAllBodies);
+            }
 
-            converted.Add(fssAllBodies);
             converted.AddRange(convertedPostFSS);
             return converted;
         }

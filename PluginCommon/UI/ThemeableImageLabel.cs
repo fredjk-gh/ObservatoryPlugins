@@ -49,15 +49,15 @@ namespace com.github.fredjk_gh.PluginCommon.UI
 
                 lblText.ForeColor = value;
 
-                if (ImageColor != Color.Transparent)
+                if (ImageColor == Color.Transparent)
                 {
                     // Use this color for the images also, unless explicitly specified.
-                    SetDefaultImageColor(value);
+                    ColorizeImages(value);
                 }
             }
         }
 
-        [Description("Overrides the default image color (if not explicitly provided by way of ImageSpec). If null, ForeColor is used.")]
+        [Description("Overrides the default image color (if not explicitly provided by way of ImageSpec). If set to Color.Transparent (the default), ForeColor is used.")]
         [Category("Appearance")]
         [Browsable(true)]
         public Color ImageColor
@@ -68,7 +68,7 @@ namespace com.github.fredjk_gh.PluginCommon.UI
                 _imgDefaultColor = value;
 
                 // Default back to ForeColor if unset (null)
-                SetDefaultImageColor(value == Color.Transparent ? ForeColor : value);
+                ColorizeImages(value == Color.Transparent ? ForeColor : value);
             }
         }
 
@@ -170,7 +170,7 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             ResumeLayout(true);
         }
 
-        private void SetDefaultImageColor(Color value)
+        private void ColorizeImages(Color value)
         {
             foreach (var (Spec, PB) in _imgs.Values)
             {

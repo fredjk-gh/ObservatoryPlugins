@@ -1,7 +1,6 @@
 ﻿using com.github.fredjk_gh.PluginCommon.Data;
 using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
-using static System.Windows.Forms.AxHost;
 
 namespace com.github.fredjk_gh.PluginCommon.UI
 {
@@ -150,6 +149,14 @@ namespace com.github.fredjk_gh.PluginCommon.UI
         public static string Density(double valueDensity)
         {
             return $"{valueDensity:n4} MT/km^3";
+        }
+
+        public static string StarAge(int age_MY)
+        {
+            if (age_MY > 1000)
+                return $"{(age_MY / 1000):n1} Gyr";
+            else
+                return $"{age_MY:n1} Myr";
         }
     }
 }

@@ -72,7 +72,7 @@ namespace com.github.fredjk_gh.PluginCommon.UI
         public new int Value
         {
             get { return base.Value; }
-            set { base.Value = value; Invalidate(); }    // Remember to invalidate.
+            set { base.Value = Math.Min(value, Maximum); Invalidate(); }    // Remember to invalidate.
         }
     }
 }

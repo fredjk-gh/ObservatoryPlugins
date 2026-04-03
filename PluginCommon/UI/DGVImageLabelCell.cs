@@ -44,6 +44,11 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             set => _scaleFactor = value;
         }
 
+        protected ImageLabelSpec TypedValue
+        {
+            get => Value as ImageLabelSpec;
+        }
+
         protected override void OnDataGridViewChanged()
         {
             if (DataGridView is null)
@@ -53,6 +58,11 @@ namespace com.github.fredjk_gh.PluginCommon.UI
 
             _initialDgvFont = DataGridView.Font;
             DataGridView.FontChanged += DataGridView_FontChanged;
+        }
+
+        protected override object GetClipboardContent(int rowIndex, bool firstCell, bool lastCell, bool inFirstRow, bool inLastRow, string format)
+        {
+            return $"{TypedValue?.Label ?? ""}{(lastCell ? Environment.NewLine : "\t")}";
         }
 
         private void DataGridView_FontChanged(object sender, EventArgs e)

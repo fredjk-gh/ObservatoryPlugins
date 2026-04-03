@@ -38,7 +38,6 @@ namespace com.github.fredjk_gh.PluginCommon.Data
             return km * CONV_M_TO_KM_DIVISOR;
         }
 
-        // - m <-> AU
         // - m <-> Sol Radius (SR)
         public static float MetersToSr(float meters)
         {
@@ -50,7 +49,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data
             return sr * CONV_M_TO_SOLAR_RAD_DIVISOR;
         }
 
-        // - AU <-> Ls
+        // - AU <-> m
         public static float MetersToAu(float meters)
         {
             return meters / CONV_M_TO_AU_DIVISOR;
