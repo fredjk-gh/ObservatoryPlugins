@@ -67,6 +67,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string V_ECCENTRICITY = "orbitalEccentricity";
         public const string V_ORBITAL_PERIOD = "orbitalPeriod";
         public const string V_ROTATIONAL_PERIOD = "rotationalPeriod";
+        public const string V_SEMI_MAJOR_AXIS = "semiMajorAxis";
 
         public const string V_RING_OUTER_RADIUS = "outerRadius";
         public const string V_RING_WIDTH = "width";

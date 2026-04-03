@@ -40,6 +40,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             EnableOrbitalEccentricityRecord = true;
             EnableOrbitalPeriodRecord = true;
             EnableRotationalPeriodRecord = true;
+            EnableSemiMajorAxisRecord = true;
             EnableSolarMassesRecord = true;
             EnableSolarRadiusRecord = true;
             EnableRingOuterRadiusRecord = true;
@@ -125,6 +126,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
         [SettingDisplayName("Check Rotational Period records")]
         public bool EnableRotationalPeriodRecord { get; set; }
+
+        [SettingDisplayName("Check Semi-Major Axis records")]
+        public bool EnableSemiMajorAxisRecord { get; set; }
 
         // Per Body records
         // Planets

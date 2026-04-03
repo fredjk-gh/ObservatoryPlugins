@@ -32,6 +32,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 case Constants.V_ECCENTRICITY:
                 case Constants.V_ORBITAL_PERIOD:
                 case Constants.V_ROTATIONAL_PERIOD:
+                case Constants.V_SEMI_MAJOR_AXIS:
 
                 // Rings
                 case Constants.V_RING_OUTER_RADIUS:
@@ -66,7 +67,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             {
                 // Stars
                 case Constants.V_SOLAR_MASSES:
-                    typeToCreate = typeof(SolarMassesRecord);
+                    typeToCreate = typeof(SolarMassRecord);
                     break;
                 case Constants.V_SOLAR_RADIUS:
                     typeToCreate = typeof(SolarRadiusRecord);
@@ -74,7 +75,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
                 // Planets
                 case Constants.V_EARTH_MASSES:
-                    typeToCreate = typeof(EarthMassesRecord);
+                    typeToCreate = typeof(PlanetaryMassRecord);
                     break;
                 case Constants.V_PLANETARY_RADIUS:
                     typeToCreate = typeof(PlanetaryRadiusRecord);
@@ -107,6 +108,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                     break;
                 case Constants.V_ROTATIONAL_PERIOD:
                     typeToCreate = typeof(RotationalPeriodRecord);
+                    break;
+                case Constants.V_SEMI_MAJOR_AXIS:
+                    typeToCreate = typeof(SMARecord);
                     break;
                 case Constants.V_BODY_TYPE_COUNT:
                     typeToCreate = typeof(BodyTypeTally);

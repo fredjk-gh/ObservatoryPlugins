@@ -499,7 +499,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                     results.AddRange(record.CheckCodexEntry(codexEntry));
             }
-            foreach (var record in recordBook.GetRecords(RecordTable.Regions, region.Name))
+            foreach (var record in recordBook.GetRecords(RecordTable.Codex, region.Name))
             {
                 if (!record.DisallowedLogMonitorStates.Any(s => (readMode & s) != 0))
                     results.AddRange(record.CheckCodexEntry(codexEntry));
@@ -531,7 +531,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 {
                     var r = pbs.First();
                     var title = "";
-                    if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION)
+                    if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM
+                        || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION
+                        || r.ResultItem.Details == Constants.UI_CODEX_CONFIRMATION)
                         title = r.ResultItem.ObjectClass;
                     else
                         title = SharedLogic.GetBodyDisplayName(SharedLogic.GetBodyShortName(r.ResultItem.BodyOrItem, _c.CurrentSystem));
@@ -558,7 +560,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                         firstDiscoveryStatus = $" ({r.ResultItem.DiscoveryStatus})";
                     }
                     string title = "";
-                    if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION)
+                    if (r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_SYSTEM
+                        || r.ResultItem.ObjectClass == Constants.OBJECT_TYPE_REGION
+                        || r.ResultItem.Details == Constants.UI_CODEX_CONFIRMATION)
                         title = r.ResultItem.ObjectClass;
                     else
                         title = SharedLogic.GetBodyDisplayName(SharedLogic.GetBodyShortName(r.ResultItem.BodyOrItem, _c.CurrentSystem));
