@@ -107,7 +107,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
                 _allData.Core.ExecuteOnUIThread(() =>
                 {
-                    if (_myRow.Cells["colTracking"] is not DGVImageLabelCell cell) return;
+                    if (_myRow?.Cells["colTracking"] is not DGVImageLabelCell cell) return;
                     if (cell.Value is not ImageLabelSpec til) return;
 
                     string asString = value.ToString();
@@ -207,6 +207,13 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             }
             else if (bodySummary.Scan?.PlanetClass != null)
             {
+                if (bodySummary.IsUndiscovered)
+                    images.Add(new(Images.NewDiscoveryImage)
+                    {
+                        ToolTip = "Body appears to be undiscovered",
+                        Size = _h2IconSize,
+                        Visible = bodySummary.IsUndiscovered,
+                    });
                 if (bodySummary.IsValuable)
                     images.Add(new(Images.BodyValuableImage)
                     {

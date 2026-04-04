@@ -159,6 +159,22 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             }
         }
 
+        public bool IsUndiscovered
+        {
+            get
+            {
+                if (Scan is null
+                    || Scan.ScanType.Equals("NavBeaconDetail", StringComparison.OrdinalIgnoreCase)
+                    || IsBarycentre
+                    || Scan.WasDiscovered
+                    || Scan.WasMapped
+                    || Scan.WasFootfalled)
+                    return false;
+
+                return true;
+            }
+        }
+
         public bool IsMapped
         {
             get => ScanComplete != null;
@@ -227,7 +243,12 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             }
             else if (Scan?.StarType is not null)
             {
-                return UIFormatter.DistanceLs(Scan.DistanceFromArrivalLS);
+                StringBuilder sb = new();
+                sb.Append(UIFormatter.DistanceLs(Scan.DistanceFromArrivalLS))
+                    .Append(Constants.DETAIL_SEP)
+                    .Append(UIFormatter.StarAge(Scan.Age_MY));
+
+                return sb.ToString();
             }
             else if (ScanBarycentre is not null)
                 return string.Empty;
@@ -285,7 +306,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 return Scan.StarType;
             else if (!string.IsNullOrWhiteSpace(Scan?.PlanetClass))
             {
-                return UIFormatter.PlanetLabelWithTerraformState(Scan.StarType, Scan.TerraformState);
+                return UIFormatter.PlanetLabelWithTerraformState(Scan.PlanetClass, Scan.TerraformState);
             }
 
             return string.Empty;

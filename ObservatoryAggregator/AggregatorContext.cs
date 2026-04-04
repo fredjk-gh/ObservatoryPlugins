@@ -333,7 +333,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                         n.VisitedState = VisitedState.Visited;
                 });
 
-            var msg = EvaluatorBodyRoutingMessage.NewSetBodyVisitedMessage(CurrentSystem.SystemAddress, bodyId);
+            var msg = EvaluatorBodyRoutingMessage.NewSetBodyVisitedMessage(CurrentSystem.SystemAddress, bodyId, true);
             Dispatcher.SendMessage(msg, PluginType.mattg_Evaluator);
         }
 

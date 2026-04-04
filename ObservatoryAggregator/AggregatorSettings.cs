@@ -1,7 +1,6 @@
 ﻿using Observatory.Framework;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using static com.github.fredjk_gh.ObservatoryAggregator.AggregatorSettings;
 
 [assembly: InternalsVisibleTo("ObservatoryPlugins.Tests")]
 namespace com.github.fredjk_gh.ObservatoryAggregator
@@ -20,10 +19,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             { "Manual", GridSizingMode.Manual },
         };
 
-        public static readonly AggregatorSettings DEFAULT = new()
-        {
-
-        };
+        public static readonly AggregatorSettings DEFAULT = new();
 
         private string _filterSpec = "";
         private List<String> _filters = [];
@@ -36,7 +32,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public AggregatorSettings()
         {
-            // Defaults go here (unless there's a backing variable above, which suffices).
+            // Defaults go here (unless there's a backing variable above, which also suffices).
             GridSizingModeEnum = GridSizingMode.AutoFit;
             EnableAutoUpdates = true;
         }
