@@ -79,6 +79,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             // - Do we have a scan for the correct # all of the bodies? If not, bail.
             int numBodies = -1;
             HashSet<int> uniqueBodies = [];
+            bool hasFSSAllBodiesFound = false;
             foreach (JournalBase j in systemJournals)
             {
                 switch (j)
@@ -96,14 +97,15 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                             uniqueBodies.Add(scan.BodyID);
                         }
                         break;
+                    case FSSAllBodiesFound allBodies:
+                        hasFSSAllBodiesFound = true; // This is not generated if the spansh body count == 0 and is a strong indicator.
+                        break;
                 }
             }
 
             if (numBodies <= 0) return false;
             if (uniqueBodies.Count < numBodies) return false;
-
-            // Ok, seems complete enough...
-            return true;
+            return hasFSSAllBodiesFound; // The final word...
         }
 
         public void TrackSystemNavBeacon(ulong systemAddr)

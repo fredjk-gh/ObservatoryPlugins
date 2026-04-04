@@ -301,8 +301,6 @@ May use data from Spansh, EDGIS and/or EDAstro.",
 
             // Initialize the current system during pre-read in case we find/do more stuff or haven't flushed it yet.
             // Duplicate entries should be filtered out by AddSystemJournalJson.
-            //if (newSystemName == "Subra" || newSystemName == "Tiangchi")
-            //    Debug.Fail("Debug loading code here");
             _c.Data.ForCommander().CurrentSystem =
                 LoadOrInitVisitedSystemInfo(_c.Data.ForCommander().FileHeaderInfo, newSystemName, newSystemAddress, timestamp);
             _c.Data.MaybeAddToRecentSystems(newSystemName);

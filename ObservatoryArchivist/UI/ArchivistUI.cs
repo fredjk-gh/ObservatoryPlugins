@@ -34,6 +34,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
         private readonly ThemeableImageButton btnOpenId64;
         private readonly ThemeableImageButton btnLookup;
         private readonly ThemeableImageButton btnCacheValue;
+        private readonly ThemeableImageButton btnLoadFromSpanshFromLookup;
         private readonly ThemeableImageButton btnCopyCoordinates;
         private readonly ThemeableImageLabel tlblLookupCoords;
         private readonly ThemeableImageLabel tlblCoordinates;
@@ -112,6 +113,9 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             ttipArchivistUI.SetToolTip(btnCacheValue, "Save the lookup results to the cache");
             flpAddrCacheTools.Controls.Add(btnCacheValue);
 
+            btnLoadFromSpanshFromLookup = ThemeableImageButton.New(Images.SpanshImage, BtnLoadFromSpanshFromLookup_Click);
+            ttipArchivistUI.SetToolTip(btnLoadFromSpanshFromLookup, "Fetch and cache data from Spansh and synthesize journals for this system");
+            flpAddrCacheTools.Controls.Add(btnLoadFromSpanshFromLookup);
 
             btnCopyCoordinates = ThemeableImageButton.New(Images.CopyImage, BtnCopyCoordinates_Click);
             btnCopyCoordinates.Location = new Point(
@@ -124,7 +128,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             {
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                ImageColor = Color.Blue, // Transparent
+                ImageColor = Color.Transparent,
                 LabelPosition = LabelPositionType.Right,
                 ToolTipManager = ttipArchivistUI,
                 Location = new Point(
@@ -375,7 +379,6 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
         public void ClearSearch()
         {
-            _c.UI.ClearMessage();
             _c.Search.Clear();
 
             btnSearchAll.Enabled = _c.Search.MaySearch;
@@ -403,6 +406,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             else
             {
                 _viewer.ViewJson(contents);
+                _viewer.Activate();
             }
         }
 
@@ -581,7 +585,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                     {
                         // It's OK to block here.
                         _c.Search.AugmentedJournals = result.Result;
-                        _c.UI.SetMessage($"Conversion complete; {_c.Search.AugmentedJournals.SystemJournalEntries.Count} journal entries displayed");
+                        _c.UI.SetMessage($"Conversion complete; {result.Result.SystemJournalEntries.Count} journal entries displayed");
                         _c.Core.ExecuteOnUIThread(() =>
                         {
                             PopulateJournalSearchResults();
@@ -849,6 +853,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             btnLookup.Enabled = (_c.Search.PositionCache is null
                 && (_c.Search.MaySearch || _c.Search.CollectedJournals is not null));
             btnCacheValue.Enabled = (_c.Search.PositionCacheLookup is not null);
+            btnLoadFromSpanshFromLookup.Enabled = (_c.Search.PositionCache is not null || _c.Search.PositionCacheLookup is not null);
 
             if (_c.Search.PositionCache is null) return;
 
@@ -867,6 +872,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             pLookupResult.Visible = false;
 
             btnCacheValue.Enabled = (_c.Search.PositionCacheLookup is not null);
+            btnLoadFromSpanshFromLookup.Enabled = (_c.Search.PositionCache is not null || _c.Search.PositionCacheLookup is not null);
 
             if (_c.Search.PositionCacheLookup is null) return;
 
@@ -926,6 +932,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                     {
                         PopulateOnlineLookupResult();
                         btnCacheValue.Enabled = (_c.Search.PositionCacheLookup is not null);
+                        btnLoadFromSpanshFromLookup.Enabled = (_c.Search.PositionCache is not null || _c.Search.PositionCacheLookup is not null);
                     });
                 }
                 catch (Exception ex)
@@ -953,6 +960,81 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
             PopulatePositionCacheDetails();
             PopulateOnlineLookupResult();
+        }
+
+        private void BtnLoadFromSpanshFromLookup_Click(object sender, EventArgs e)
+        {
+            VisitedSystem searchContext = _c.Search.CollectedJournals;
+            if ((searchContext is null && _c.Search.PositionCacheLookup is null && _c.Search.PositionCache is null)) return;
+
+            if (searchContext is null)
+            {
+                if (_c.Search.PositionCacheLookup is not null)
+                {
+                    searchContext = new()
+                    {
+                        Commander = "Synthetic",
+                        SystemName = _c.Search.PositionCacheLookup.SystemName,
+                        SystemId64 = _c.Search.PositionCacheLookup.SystemId64,
+                        FirstVisitDateTime = DateTime.MinValue,
+                        LastVisitDateTime = DateTime.MinValue,
+                        VisitCount = 0,
+                        // No preamble journal entries.
+                    };
+                }
+                else if (_c.Search.PositionCache is not null)
+                {
+                    searchContext = new()
+                    {
+                        Commander = "Synthetic",
+                        SystemName = _c.Search.PositionCache.CommonName,
+                        SystemId64 = _c.Search.PositionCache.Id64,
+                        FirstVisitDateTime = DateTime.MinValue,
+                        LastVisitDateTime = DateTime.MinValue,
+                        VisitCount = 0,
+                        // No preamble journal entries.
+                    };
+                }
+                else return; // How did we get here?
+            }
+
+            CancellationTokenSource cts = new(10000);
+            btnLoadFromSpanshFromLookup.Enabled = false;
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    SetMessage($"Fetching data for '{searchContext.SystemName}' from Spansh...");
+                    var result = SpanshAugmenter.FetchAndCacheFromSpansh(_c, searchContext, cts.Token);
+                    if (result is not null && result.Result is not null)
+                    {
+                        // It's OK to block here.
+                        _c.Search.AugmentedJournals = result.Result;
+                        _c.UI.SetMessage($"Conversion complete; {result.Result.SystemJournalEntries.Count} journal entries displayed");
+                        _c.Core.ExecuteOnUIThread(() =>
+                        {
+                            PopulateJournalSearchResults();
+                        });
+                    }
+                    else
+                    {
+                        _c.UI.SetMessage("No result returned from Spansh");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _c.UI.SetMessage($"Failed to load data from Spansh: {ex.Message}");
+                    _c.Core.GetPluginErrorLogger(_c.Worker)(ex, "> LoadFromSpanshFromLookup");
+                }
+                finally
+                {
+                    _c.Core.ExecuteOnUIThread(() =>
+                    {
+                        btnLoadFromSpanshFromLookup.Enabled = true;
+                    });
+                }
+            }, cts.Token);
         }
 
         private void BtnCopyCoordinates_Click(object sender, EventArgs e)
@@ -1011,12 +1093,22 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
         private void ViaCoreJournalEventsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (ctxResultsMenu.SourceControl is not ListBox lb) return;
+            if (ctxResultsMenu.SourceControl is not ListBox lb || !_c.Search.HasResult) return;
+
+            VisitedSystem searchResult = null;
+
+            if (lb == lbJournals)
+                searchResult = _c.Search.CollectedJournals;
+            else if (lb == lbAugmented)
+                searchResult = _c.Search.AugmentedJournals;
+
+            if (searchResult == null) return;
 
             _c.SetResendAll(true);
-            foreach (var item in lb.Items)
+            foreach (var item in searchResult.SystemJournalEntries)
             {
                 string json = item.ToString();
+                Debug.WriteLine($"Sharing journal via Core: {json}");
                 _c.Core.DeserializeEvent(json, true);
             }
             _c.SetResendAll(false);
