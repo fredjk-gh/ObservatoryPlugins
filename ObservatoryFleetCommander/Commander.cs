@@ -666,12 +666,11 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                 {
                     var nextJumpInfo = c.Route.GetNextJump(c.Position?.SystemName);
                     string departureTime = "";
-                    if (c.LastCarrierJumpRequest != null && !string.IsNullOrWhiteSpace(c.LastCarrierJumpRequest.DepartureTime))
+                    if (!string.IsNullOrWhiteSpace(c.LastCarrierJumpRequest?.DepartureTime))
                     {
                         departureTime = $"@ {c.LastCarrierJumpRequest.DepartureTimeDateTime}";
                     }
-                    nextJumpDetail = $"{nextJumpInfo.SystemName}{departureTime}";
-
+                    nextJumpDetail = $"{nextJumpInfo?.SystemName}{departureTime}";
                 }
 
                 content.AppendLine(

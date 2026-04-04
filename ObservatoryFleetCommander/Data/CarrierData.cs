@@ -154,6 +154,10 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                 {
                     itemName = FDevIDs.RareCommodityBySymbol[itemId].Name;
                 }
+                else if (FDevIDs.MicroResourcesBySymbol.ContainsKey(itemId.ToLower()))
+                {
+                    itemName = FDevIDs.MicroResourcesBySymbol[itemId].Name;
+                }
                 else
                 {
                     //Debug.Fail($"Cannot find commodity in FDevIDs: {itemId}");
@@ -193,11 +197,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             }
             else if (!to.CancelTrade)
             {
-                var c = FDevIDs.AllCommoditiesBySymbol[key];
+                // NOTE: trade orders for micro resources via the bartender also use the same trade events.
+                FDevIDs.AllCommoditiesAndResourcesBySymbol.TryGetValue(key, out CommodityResource c);
                 td = new()
                 {
                     ItemID = key,
-                    ItemName = c.Name,
+                    ItemName = c?.Name ?? $"{key} (unrecognized!)",
                     Price = to.Price,
                     IsBlackMarket = to.BlackMarket,
                     Quantity = (to.PurchaseOrder > 0 ? to.PurchaseOrder : to.SaleOrder),
@@ -215,7 +220,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             get => _lastStats;
             set
             {
-                if (CarrierId == 0 && _deserialized || CarrierId == value.CarrierID)
+                if (value is not null && ((CarrierId == 0 && _deserialized) || CarrierId == value.CarrierID))
                 {
                     CarrierName = value.Name;
                     CarrierBalance = value.Finance.CarrierBalance;
