@@ -49,11 +49,8 @@ namespace com.github.fredjk_gh.PluginCommon.UI
 
                 lblText.ForeColor = value;
 
-                if (ImageColor == Color.Transparent)
-                {
-                    // Use this color for the images also, unless explicitly specified.
-                    ColorizeImages(value);
-                }
+                // Use this color for the images also, unless explicitly specified.
+                ColorizeImages(ImageColor == Color.Transparent ? value : ImageColor);
             }
         }
 
@@ -143,6 +140,7 @@ namespace com.github.fredjk_gh.PluginCommon.UI
                 Margin = new(0),
             };
             pb.Click += ClickFowarder;
+            pb.SizeChanged += PBSizeChanged;
 
             var labelIndex = flpContent.Controls.IndexOf(lblText);
             flpContent.Controls.Add(pb);
@@ -154,7 +152,6 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             _imgs.Add(spec.Guid, (spec, pb));
             SetTooltipInternal(pb, spec.ToolTip);
         }
-
 
         public void ClearImages()
         {
@@ -174,12 +171,22 @@ namespace com.github.fredjk_gh.PluginCommon.UI
         {
             foreach (var (Spec, PB) in _imgs.Values)
             {
-                // Don't change the color of any of the images with an explicit color set.
-                if (Spec.Color.HasValue) continue;
-
-                PB.Image = ImageCommon.RecolorAndSizeImage(Spec.Image, value, Spec.Size ?? Spec.Image.Size);
-                PB.Invalidate();
+                ColorAndSizeImageToPB(PB, Spec, Spec.Color ?? value);
             }
+        }
+
+        private void ColorAndSizeImageToPB(PictureBox pb, ImageSpec spec, Color c)
+        {
+            // So the PB may not preserve its original aspect ratio. Find the scale factor to preserve the
+            // aspect ratio and resize.
+            var imgSize = spec.Size ?? spec.Image.Size;
+            float widthScale = (float)pb.Size.Width / imgSize.Width;
+            float heightScale = (float)pb.Size.Height / imgSize.Height;
+            float minScale = Math.Min(widthScale, heightScale);
+            Size newSize = new(Convert.ToInt32(imgSize.Width * minScale), Convert.ToInt32(imgSize.Height * minScale));
+
+            pb.Image = ImageCommon.RecolorAndSizeImage(spec.Image, spec.Color ?? c, newSize);
+            pb.Invalidate();
         }
 
         public void SetVisibility(Guid id, bool newIsVisible)
@@ -204,6 +211,16 @@ namespace com.github.fredjk_gh.PluginCommon.UI
         private void ClickFowarder(object sender, EventArgs e)
         {
             this.OnClick(e);
+        }
+
+        private void PBSizeChanged(object sender, EventArgs e)
+        {
+            var matches = _imgs.Where(e => e.Value.PB == sender).ToList();
+
+            if (matches.Count == 0) return;
+            var img = matches[0];
+
+            ColorAndSizeImageToPB(img.Value.PB, img.Value.Spec, ImageColor == Color.Transparent ? ForeColor : ImageColor);
         }
     }
 }

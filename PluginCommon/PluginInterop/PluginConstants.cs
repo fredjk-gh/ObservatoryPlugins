@@ -57,7 +57,7 @@ namespace com.github.fredjk_gh.PluginCommon.PluginInterop
 
         public static readonly Dictionary<Guid, PluginType> PluginTypeByGuid = new()
         {
-            //{ new(""), PluginType.mcmuttons_GeoPredictor },
+            { new("e361861d-0e91-458a-bc22-9b3f1039d074"), PluginType.mcmuttons_GeoPredictor },
             { new("4d617474-4704-4153-5452-4f414e414c59"), PluginType.mattg_AstroAnalytica },
             //{ new(""), PluginType.mattg_BoxelStats },
             { new("4d617474-4701-4249-4f49-4e5349474854"), PluginType.mattg_BioInsights },

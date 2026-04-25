@@ -1,6 +1,9 @@
 ﻿using com.github.fredjk_gh.PluginCommon.Data;
 using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
+using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Files.ParameterTypes;
+using System.Text;
 
 namespace com.github.fredjk_gh.PluginCommon.UI
 {
@@ -70,6 +73,11 @@ namespace com.github.fredjk_gh.PluginCommon.UI
         public static string PressureAtm(float valuePa)
         {
             return $"{Conversions.PaToAtm(valuePa):n2} atm";
+        }
+
+        public static string BodyShortName(string bodyName, string parentPrefix)
+        {
+            return bodyName.Replace(parentPrefix, "").Trim();
         }
 
         public static string BodyLabelDisplay(string bodyShortName, string typePrefix = UIConstants.BODY)
@@ -157,6 +165,19 @@ namespace com.github.fredjk_gh.PluginCommon.UI
                 return $"{(age_MY / 1000):n1} Gyr";
             else
                 return $"{age_MY:n1} Myr";
+        }
+
+        public static string BodyRingsTooltip(Scan scan)
+        {
+            if (scan.Rings is null || scan.Rings.Count == 0) return "Ring count";
+            StringBuilder sb = new();
+            foreach (Ring r in scan.Rings)
+            {
+                if (!r.Name.Contains(" Ring")) continue;
+                sb.AppendLine($"{BodyShortName(r.Name, scan.BodyName)}: {RingTypeLabel(r.RingClass)}");
+            }
+
+            return sb.ToString();
         }
     }
 }
