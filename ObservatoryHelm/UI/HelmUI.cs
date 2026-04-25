@@ -12,7 +12,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
         private HelmContext _c;
         private Dictionary<HelmContext.Card, CollapsibleGroupBox> _cards = new();
         private int _cardWidth;
-        private float _originalFontSize;
+        private readonly float _originalFontSize;
         private bool _isLoading = true;
 
         internal HelmUI(HelmContext context)
@@ -203,11 +203,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
 
             foreach (var ctrl in flpCardPanel.Controls)
             {
-                HelmContext.Card cardType;
-                CollapsibleGroupBox cardCtrl = ctrl as CollapsibleGroupBox;
 
-                if (cardCtrl == null) continue;
-                if (!Enum.TryParse<HelmContext.Card>(cardCtrl.ContentControl.Name, out cardType)) continue;
+                if (ctrl is not CollapsibleGroupBox cardCtrl) continue;
+                if (!Enum.TryParse<HelmContext.Card>(cardCtrl.ContentControl.Name, out var cardType)) continue;
 
                 order.Add(cardType);
             }

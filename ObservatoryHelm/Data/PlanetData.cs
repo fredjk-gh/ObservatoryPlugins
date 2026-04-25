@@ -63,8 +63,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         [JsonIgnore]
         public string ShortName
         {
-            get => Scan.BodyName.Replace(_system.SystemName, "").Trim();
+            get => UIFormatter.BodyShortName(Scan.BodyName, _system.SystemName);
         }
+
         [JsonIgnore]
         public string DisplayName
         {
@@ -74,7 +75,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
                 {
                     return Scan.BodyName;
                 }
-                return UIFormatter.BodyLabelDisplay(Scan.BodyName.Replace(_system.SystemName, "").Trim());
+                return UIFormatter.BodyLabelDisplay(ShortName);
             }
         }
 

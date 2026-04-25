@@ -596,7 +596,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                 });
             }
 
-            if (_c.Data.CommanderData.LastStatus != null
+            if (_c.Data.CommanderData.LastStatus is not null
                 && status.Destination?.System == _c.UIMgr.Realtime.SystemId64
                 && status.Destination?.Body >= 0
                 && status.Destination?.Body != _c.Data.CommanderData.LastStatus.Destination?.Body

@@ -173,7 +173,10 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             if (systemChanged &&
                 (_currCommander is null || !_state.SystemId64.HasValue
                     || !_currCommander.RecentSystems.TryGetValue(_state.SystemId64.Value, out _displayedSystem)))
+            {
+                InternalClear();
                 return;
+            }
 
             if (_displayedSystem.Planets.Count > 0 && _displayedSystem.Planets.Count != cboBody.Items.Count)
                 UpdateBodyDropList();
@@ -185,12 +188,16 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 
             if ((systemChanged || _displayedBody?.BodyId != _state.BodyId)
                     && !_displayedSystem.Planets.TryGetValue(_state.BodyId, out _displayedBody))
+            {
+                InternalClear();
                 return;
+            }
 
             SuspendLayout();
 
 
             _suppressEvents = true;
+            cboBody.SelectedItem = _displayedBody;
             lblBodyType.Text = _displayedBody.TypeDescription;
             lblRadiusValue.Text = UIFormatter.DistanceBelowLs(_displayedBody.Scan.Radius);
             tlblGravityValue.Text = UIFormatter.GravityG(_displayedBody.Scan.SurfaceGravity);
@@ -210,6 +217,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             tlblGeoSignals.Text = $"{_displayedBody.SignalCountByType(PlanetData.SignalType.Geological)}";
             tlblBioSignals.Text = $"{_displayedBody.SignalCountByType(PlanetData.SignalType.Biological)}";
             tlblBodyRings.Text = $"{_displayedBody.Scan.Rings?.Count ?? 0}";
+            tlblBodyRings.SetTooltip(ICON_BODY_RINGS.Guid, UIFormatter.BodyRingsTooltip(_displayedBody.Scan));
 
             lblBodyDistance.Text = UIFormatter.DistanceLs(_displayedBody.Scan.DistanceFromArrivalLS, 1);
 
@@ -320,6 +328,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             tlblGeoSignals.Text = string.Empty;
             tlblBioSignals.Text = string.Empty;
             tlblBodyRings.Text = string.Empty;
+            tlblBodyRings.SetTooltip(ICON_BODY_RINGS.Guid, "Ring count");
             lblBodyDistance.Text = string.Empty;
 
             lblBodyAltitude.Text = string.Empty;
