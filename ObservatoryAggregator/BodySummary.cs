@@ -147,7 +147,11 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 if (IsBarycentre && BarycentreChildren.Count >= 1)
                 {
                     var childIds = BarycentreChildren.Select(bc => bc.BodyID).ToHashSet();
-                    shortName = $"({string.Join("-", _allData.BodyData.Where(e => childIds.Contains(e.Key)).Select(e => e.Value.BodyShortName))})";
+                    shortName = $"({string.Join("-", _allData.BodyData
+                        .Where(e => childIds.Contains(e.Key) && e.Value.Scan?.Parents.Count > 0 && (e.Value.Scan?.Parents[0].Null.HasValue ?? false) && e.Value.Scan?.Parents[0].Null.Value == BodyID)
+                        .OrderBy(e => e.Key)
+                        .Take(2) // TODO: this isn't perfect...
+                        .Select(e => e.Value.BodyShortName))})";
                 }
                 else if (!IsBarycentre)
                 {
@@ -262,17 +266,22 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 {
                     bodySignals = ScanSignals.Signals.Select(s => s.Count).Sum();
                     sb.Append(Constants.DETAIL_SEP)
-                        .Append("{bodySignals} Hotspots");
+                        .Append($"{bodySignals} Hotspots");
                 }
                 return sb.ToString();
             }
             return (Scan == null ? "" : UIFormatter.DistanceLs(Scan.DistanceFromArrivalLS));
         }
 
-        public string RingHotspotDetails()
+        public string RingDetails()
         {
-            if (ScanSignals is null) return string.Empty;
-            return string.Join(Environment.NewLine, ScanSignals.Signals
+            if (_ringData?.Ring is null) return string.Empty;
+
+            string details = UIFormatter.RingTypeLabel(_ringData.Ring.RingClass);
+            if (ScanSignals is null) return details;
+
+            return string.Concat(details, Environment.NewLine,
+                string.Join(Environment.NewLine, ScanSignals.Signals
                 .OrderByDescending(s => s.Count)
                 .Select(s =>
                 {
@@ -282,7 +291,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                         type = commodity.Name;
 
                     return $"- {type}: {s.Count}";
-                }));
+                })));
         }
 
         public string GetBodyTypeLabel()
@@ -305,9 +314,10 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             if (!string.IsNullOrWhiteSpace(Scan?.StarType))
                 return Scan.StarType;
             else if (!string.IsNullOrWhiteSpace(Scan?.PlanetClass))
-            {
                 return UIFormatter.PlanetLabelWithTerraformState(Scan.PlanetClass, Scan.TerraformState);
-            }
+            else if (IsRing && _ringData is not null)
+                // Ring Details: Show ring type.
+                return UIFormatter.RingTypeLabel(_ringData.Ring.RingClass);
 
             return string.Empty;
         }

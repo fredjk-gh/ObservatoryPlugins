@@ -178,7 +178,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             var bodyType = _bodySummary.GetBodyType();
             var detailTooltip = string.Empty;
             if (_bodySummary.IsRing)
-                detailTooltip = _bodySummary.RingHotspotDetails();
+                detailTooltip = _bodySummary.RingDetails();
 
             List<ImageSpec> bodyTypeImages = GetImageForBodyType(bodyType, _bodySummary.GetBodyTypeDetail());
             List<ImageSpec> bodyFlagImages = GetImagesForBodyFlags(_bodySummary);
