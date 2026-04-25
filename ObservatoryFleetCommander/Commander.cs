@@ -86,6 +86,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             // ReadAll -> *
             else if (args.PreviousState.HasFlag(LogMonitorState.Batch))
             {
+                _c.Manager.PostReadAllInventorySwap();
                 _c.SerializeDataCacheV2();
 
                 _c.DoUIAction(() =>

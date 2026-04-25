@@ -12,6 +12,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         private readonly Dictionary<string, CommanderData> _commandersByName = [];
         private readonly Dictionary<ulong, string> _carrierOwnerNameByCarrierId = [];
         private readonly Dictionary<string, SquadronData> _knownSquadronsByName = [];
+        private readonly Dictionary<ulong, Dictionary<string, InventoryItem>> _inventoryByCarrierId = [];
 
         internal void Rehydrate(FleetCommanderDataCache cache)
         {
@@ -297,9 +298,26 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 
         public void Clear()
         {
+            _inventoryByCarrierId.Clear();
+            foreach (var c in Carriers)
+            {
+                _inventoryByCarrierId[c.CarrierId] = c.Inventory;
+            }
+
             _commandersByName.Clear();
             _knownSquadronsByName.Clear();
             _carrierOwnerNameByCarrierId.Clear();
+        }
+
+        public void PostReadAllInventorySwap()
+        {
+            if (_inventoryByCarrierId.Count == 0) return;
+
+            foreach (var c in Carriers)
+            {
+                c.Inventory = _inventoryByCarrierId[c.CarrierId];
+            }
+            _inventoryByCarrierId.Clear();
         }
 
         public List<CarrierData> Carriers

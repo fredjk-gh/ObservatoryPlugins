@@ -20,7 +20,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             Size = new(24, 24),
             Visible = false,
             Tag = "warning",
-            ToolTip = "Tracked inventory and carrier cargo numbers from statistics disagree.",
+            ToolTip = @"Tracked inventory and carrier cargo numbers from statistics disagree.
+Note that values are based on CarrierStats journal data. However, Cargo usage values are not provided for Squadron carriers.",
             Color = Color.Yellow,
         };
 
@@ -30,6 +31,16 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             Visible = false,
             Tag = "info",
             ToolTip = "Please open the Carrier Admin panel for fresh data.",
+        };
+
+        private static readonly ImageSpec HELP_ICON = new(Images.HelpImage)
+        {
+            Size = new(24, 24),
+            Visible = true,
+            Tag = "help",
+            ToolTip = @"You can edit the quantities of existing inventory below; these inventory values are preserved if you run read-all.
+Click the row header button to select a row and press the 'Delete' button to remove it.
+When adding a new row, edit mode is locked until the row content is valid. Press Escape to cancel. Partial changes will be lost."
         };
 
         internal InventoryForm(CommanderContext ctx, CarrierData carrierData)
@@ -45,7 +56,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             dgvTradeOrders.ForeColorChanged += DataGridView_AColorChanged;
 
             _allCommodities.AddRange([.. FDevIDs.AllCommoditiesBySymbol.Values.OrderBy(c => c.Name)]);
-            
+
             _dgvItems = [.. _carrierData.Inventory.Values.OrderByDescending(i => i.Quantity)];
 
             Text = $"{_carrierData.CarrierName}: Inventory (Beta)";
@@ -53,6 +64,9 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             tlblCargo.ToolTipManager = tTips;
             tlblCargo.AddImage(MISMATCH_WARNING_ICON);
             tlblCargo.AddImage(NEED_CARRIER_STATS_INFO_ICON);
+
+            tlblInventory.ToolTipManager = tTips;
+            tlblInventory.AddImage(HELP_ICON);
 
             dgvInventory.DataError += DgvInventory_DataError;
             dgvInventory.RowsAdded += DgvInventory_RowsAdded;
@@ -221,6 +235,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 
             return isValid;
         }
+
         private void DgvInventory_RowValidating(object sender, DataGridViewCellCancelEventArgs e)
         {
             e.Cancel = !ValidateInventoryRow(e.RowIndex);
@@ -279,7 +294,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             var existing = _dgvItems.Where(i => i.ItemId == changed.ItemId).FirstOrDefault();
             if (existing is not null)
             {
-                if(changed.Quantity == 0)
+                if (changed.Quantity == 0)
                 {
                     _dgvItems.Remove(existing);
                 }

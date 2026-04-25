@@ -42,6 +42,7 @@
             colTradeItemName = new DataGridViewTextBoxColumn();
             colBlkMarket = new DataGridViewCheckBoxColumn();
             panel1 = new Panel();
+            tlblInventory = new com.github.fredjk_gh.PluginCommon.UI.ThemeableImageLabel();
             lblKnownCargoUsageValue = new Label();
             tlblCargo = new com.github.fredjk_gh.PluginCommon.UI.ThemeableImageLabel();
             lblCapacityFreeValue = new Label();
@@ -50,7 +51,6 @@
             lblLastUpdatedValue = new Label();
             label5 = new Label();
             label4 = new Label();
-            label3 = new Label();
             lblDockingAccessValue = new Label();
             label1 = new Label();
             tTips = new ToolTip(components);
@@ -74,7 +74,7 @@
             tableLayoutPanel1.Location = new Point(0, 0);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 2;
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 85F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanel1.Size = new Size(800, 446);
             tableLayoutPanel1.TabIndex = 0;
@@ -82,7 +82,7 @@
             // invSplitter
             // 
             invSplitter.Dock = DockStyle.Fill;
-            invSplitter.Location = new Point(3, 83);
+            invSplitter.Location = new Point(3, 88);
             invSplitter.Name = "invSplitter";
             // 
             // invSplitter.Panel1
@@ -92,8 +92,8 @@
             // invSplitter.Panel2
             // 
             invSplitter.Panel2.Controls.Add(dgvTradeOrders);
-            invSplitter.Size = new Size(794, 360);
-            invSplitter.SplitterDistance = 375;
+            invSplitter.Size = new Size(794, 355);
+            invSplitter.SplitterDistance = 378;
             invSplitter.TabIndex = 0;
             // 
             // dgvInventory
@@ -105,7 +105,7 @@
             dgvInventory.Location = new Point(0, 0);
             dgvInventory.Name = "dgvInventory";
             dgvInventory.RowHeadersWidth = 35;
-            dgvInventory.Size = new Size(375, 360);
+            dgvInventory.Size = new Size(378, 355);
             dgvInventory.TabIndex = 0;
             // 
             // colQty
@@ -138,7 +138,7 @@
             dgvTradeOrders.Name = "dgvTradeOrders";
             dgvTradeOrders.ReadOnly = true;
             dgvTradeOrders.RowHeadersWidth = 10;
-            dgvTradeOrders.Size = new Size(415, 360);
+            dgvTradeOrders.Size = new Size(412, 355);
             dgvTradeOrders.TabIndex = 0;
             // 
             // colTradeType
@@ -180,6 +180,7 @@
             // 
             // panel1
             // 
+            panel1.Controls.Add(tlblInventory);
             panel1.Controls.Add(lblKnownCargoUsageValue);
             panel1.Controls.Add(tlblCargo);
             panel1.Controls.Add(lblCapacityFreeValue);
@@ -188,19 +189,30 @@
             panel1.Controls.Add(lblLastUpdatedValue);
             panel1.Controls.Add(label5);
             panel1.Controls.Add(label4);
-            panel1.Controls.Add(label3);
             panel1.Controls.Add(lblDockingAccessValue);
             panel1.Controls.Add(label1);
             panel1.Dock = DockStyle.Fill;
             panel1.Location = new Point(3, 3);
             panel1.Name = "panel1";
-            panel1.Size = new Size(794, 74);
+            panel1.Size = new Size(794, 79);
             panel1.TabIndex = 1;
+            // 
+            // tlblInventory
+            // 
+            tlblInventory.AutoSize = true;
+            tlblInventory.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            tlblInventory.ImageColor = Color.Transparent;
+            tlblInventory.LabelPosition = PluginCommon.UI.Shared.LabelPositionType.Left;
+            tlblInventory.Location = new Point(8, 56);
+            tlblInventory.Name = "tlblInventory";
+            tlblInventory.Size = new Size(113, 15);
+            tlblInventory.TabIndex = 11;
+            tlblInventory.Text = "Inventory (editable):";
             // 
             // lblKnownCargoUsageValue
             // 
             lblKnownCargoUsageValue.AutoSize = true;
-            lblKnownCargoUsageValue.Location = new Point(144, 56);
+            lblKnownCargoUsageValue.Location = new Point(160, 56);
             lblKnownCargoUsageValue.Name = "lblKnownCargoUsageValue";
             lblKnownCargoUsageValue.Size = new Size(135, 15);
             lblKnownCargoUsageValue.TabIndex = 10;
@@ -213,12 +225,11 @@
             tlblCargo.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             tlblCargo.ImageColor = Color.Transparent;
             tlblCargo.LabelPosition = PluginCommon.UI.Shared.LabelPositionType.Right;
-            tlblCargo.Location = new Point(144, 32);
+            tlblCargo.Location = new Point(160, 32);
             tlblCargo.Name = "tlblCargo";
             tlblCargo.Size = new Size(62, 15);
             tlblCargo.TabIndex = 9;
             tlblCargo.Text = "<cargo> T";
-            tTips.SetToolTip(tlblCargo, "Values are based on CarrierStats data.");
             // 
             // lblCapacityFreeValue
             // 
@@ -276,20 +287,10 @@
             label4.Text = "Trade Orders";
             tTips.SetToolTip(label4, "To remove a Sell order when sold out, convert to a buy order, then cancel the buy order.");
             // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new Point(8, 56);
-            label3.Name = "label3";
-            label3.Size = new Size(113, 15);
-            label3.TabIndex = 2;
-            label3.Text = "Inventory (editable):";
-            tTips.SetToolTip(label3, "The game provides no Carrier inventory event to reconcile against, nor are purchases or sales by other commanders included in the journals. Make manual edits below to help keep things on track.");
-            // 
             // lblDockingAccessValue
             // 
             lblDockingAccessValue.AutoSize = true;
-            lblDockingAccessValue.Location = new Point(144, 8);
+            lblDockingAccessValue.Location = new Point(160, 8);
             lblDockingAccessValue.Name = "lblDockingAccessValue";
             lblDockingAccessValue.Size = new Size(102, 15);
             lblDockingAccessValue.TabIndex = 1;
@@ -336,7 +337,6 @@
         private Label lblDockingAccessValue;
         private Label label1;
         private Label label4;
-        private Label label3;
         private Label lblLastUpdatedValue;
         private Label label5;
         private Label label6;
@@ -351,5 +351,6 @@
         private DataGridViewTextBoxColumn colTradeQty;
         private DataGridViewTextBoxColumn colTradeItemName;
         private DataGridViewCheckBoxColumn colBlkMarket;
+        private PluginCommon.UI.ThemeableImageLabel tlblInventory;
     }
 }
