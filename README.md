@@ -12,7 +12,7 @@ The download is an `.eop` file.
 
 After copying in .eop file(s) or installing any plugin(s), always close and re-launch Observatory Core.
 
-After adjusting settings, I recommend running `Read All` after installation.
+After checking and adjusting settings, I recommend running `Read All`.
 
 # Plugins
 
