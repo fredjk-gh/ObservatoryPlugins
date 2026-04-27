@@ -117,7 +117,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
                     MeanAnomaly = (float)body.MeanAnomaly,
                     RotationPeriod = Conversions.DaysToSeconds((float)body.RotationalPeriod),
                     AxialTilt = (float)body.AxialTilt,
-                    Rings = SpanshToJournal.ConvertRings(body.Rings),
+                    Rings = SpanshToJournal.ConvertRings(body.Belts),
                     WasDiscovered = true, // If I'm getting it from Spansh, yes.
                     WasMapped = false, // Can't map stars.
                 };
