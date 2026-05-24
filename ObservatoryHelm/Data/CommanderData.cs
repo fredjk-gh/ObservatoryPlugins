@@ -25,6 +25,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             Key = key;
             Ships = new();
         }
+
         public CommanderKey Key { get; init; }
         [JsonIgnore]
         public string Name { get => Key.Name; }
@@ -100,8 +101,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         public string NeutronPrimarySystemNotified { get; set; }
         public string FuelWarningNotifiedSystem { get; set; }
         public bool IsDockedOnCarrier { get; set; }
-        public bool AllBodiesFound { get; set; }
-        public bool UndiscoveredSystem { get; set; }
         public ShipsData Ships { get; set; /* for deserialization */ }
         public SystemNamePosition ReferenceSystem { get; set; }
 
@@ -132,8 +131,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
                 Debug.Assert(_recentSystems.Count == _recentSystemIds.Count, "Recent system lists are desynced!");
             }
             _currentSystemAddr = address;
-            AllBodiesFound = false;
-            UndiscoveredSystem = false;
             IsDockedOnCarrier = false;
         }
 

@@ -43,7 +43,14 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         [JsonIgnore]
         public int BodyCount { get => Honk?.BodyCount ?? AllBodiesFound?.Count ?? -1; }
         [JsonIgnore]
-        public bool IsFullyDiscovered { get => AllBodiesFound != null; }
+        public bool IsFullyDiscovered
+        {
+            get
+            {
+                return BodyCount > 0 && Stars.Count + Planets.Count == BodyCount;
+                // return AllBodiesFound != null;
+            }
+        }
         [JsonIgnore]
         public bool IsFirstDiscovery
         {
@@ -53,6 +60,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
                 return (entryStar != null && entryStar.IsFirstDiscovery);
             }
         }
+
         public bool AddScan(ScanBaryCentre scanObj) // return true if it's a type of scan we find useful.
         {
             if (scanObj.SystemAddress != SystemId64) return false;

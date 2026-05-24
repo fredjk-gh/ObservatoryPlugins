@@ -213,7 +213,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
 
             _id64 = cmdrData.CurrentSystemAddress;
             _bodyId = cmdrData.CurrentSystemData?.Planets.Keys.Order().FirstOrDefault() ?? -1;
-            _allFound = cmdrData.AllBodiesFound;
+            _allFound = cmdrData.CurrentSystemData?.IsFullyDiscovered ?? false;
 
             if (cmdrData.Ships.CurrentShipID.HasValue)
             {

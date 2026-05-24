@@ -2,11 +2,12 @@
 
 namespace com.github.fredjk_gh.ObservatoryHelm.Data
 {
+    // Do not rely on FID. It is not present in older journals.
     public class CommanderKey
     {
         public static CommanderKey FromLoadGame(LoadGame loadGame)
         {
-            return new(loadGame.FID, loadGame.Commander);
+            return new(loadGame.Commander, loadGame.FID);
         }
 
         public static bool TryParse(string serialized, out CommanderKey key)
@@ -19,8 +20,13 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
                 string[] parts = serialized.Split('|');
                 if (parts.Length > 1)
                 {
-                    key = new(parts[0], parts[1]);
+                    key = new(/*Name*/ parts[1], /*FID*/ parts[0]);
                     return true;
+                }
+                // No delimiter, Name only.
+                else if (parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]))
+                {
+                    key = new(parts[0]);
                 }
             }
             catch (Exception)
@@ -30,35 +36,38 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             return false;
         }
 
-
-        public CommanderKey(string fid, string name)
+        public CommanderKey(string name, string fid = null)
         {
-            if (string.IsNullOrWhiteSpace(fid) || string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentException("FID or Name is null/empty!");
+                throw new ArgumentException("Commander Name is null/empty!");
             }
-            FID = fid;
             Name = name;
+            FID = fid;
         }
 
-        public string FID { get; init; }
+        /// <summary>
+        /// This may be empty or null in older jounals. Don't rely on it.
+        /// </summary>
+        public string FID { get; set; }
+
         public string Name { get; init; }
 
         public override string ToString()
         {
-            return $"{FID}|{Name}";
+            return $"{Name}";
         }
 
         public override bool Equals(object obj)
         {
             if (obj is not CommanderKey key) return false;
 
-            return FID == key.FID && Name == key.Name;
+            return Name == key.Name;
         }
 
         public override int GetHashCode()
         {
-            return ToString().GetHashCode();
+            return Name.GetHashCode();
         }
     }
 }

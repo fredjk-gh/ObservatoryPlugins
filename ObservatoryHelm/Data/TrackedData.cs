@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using com.github.fredjk_gh.PluginCommon.Data;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
@@ -13,7 +12,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         private const string STATE_CACHE_FILENAME = "helm_state_cache_001.json";
         private CommanderKey _currentCommander = null;
         private readonly Dictionary<CommanderKey, CommanderData> _commanders = [];
-        private readonly Regex _fidRegex = FidRegex();
 
         public bool IsOdyssey { get; set; }
 
@@ -172,18 +170,19 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
                 return false;
             }
 
-            // This is to avoid breaking compatibility with the current "production" destinations.json file which
+            // This is to avoid breaking compatibility with the previous versions of destinations.json file which
             // only stores the commander name. We should know all commander keys but maybe not, so until that is
             // persisted, we will actually lose that.
             //
             // Also, I had a bug which initilized the key backwards -- which added duplicate items to the
             // destinations list... *sigh*. Keep the one with the correct order and discard the other.
             // It will be slightly lossy.
+            //
+            // The plot thickens: Commander FID is not present in older journals, we we can't rely on it. Back to
+            // using Commander Name only.
             Dictionary<string, CommanderKey> nameToKeymap = [];
             foreach (var key in _commanders.Keys)
             {
-                if (!_fidRegex.Match(key.FID).Success) continue;
-
                 // If we still managed to have a duplicate, this approach will not barf if the key already exists.
                 nameToKeymap[key.Name] = key;
             }
@@ -195,7 +194,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
                     Debug.WriteLine($"No CommanderKey for CMDR ${item.Key}; Destination of {item.Value} may be lost!");
                     continue;
                 }
-                if (!_fidRegex.Match(cmdrKey.FID).Success) continue;
                 var data = GetOrCreateCommanderData(cmdrKey);
                 data.Destination = item.Value;
             }
@@ -212,8 +210,5 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             }
             return cmdrData;
         }
-
-        [GeneratedRegex("^F[0-9]+$")]
-        private static partial Regex FidRegex();
     }
 }

@@ -127,7 +127,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             {
                 case LoadGame loadGame:
                     bool commanderChanged = _c.Data.HasCurrentCommander
-                        && loadGame.FID != _c.Data.CurrentCommander.FID;
+                        && loadGame.Commander != _c.Data.CurrentCommander.Name;
 
                     _c.Data.SessionReset(loadGame);
                     _c.Data.CommanderData.LastActive = loadGame.TimestampDateTime;
@@ -225,6 +225,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     }
                     break;
                 case Location location:
+                    if (location.SystemAddress == 0) break; // Really old journals do not have SystemAddress. :'( Ignore them.
                     if (!_c.Data.HasCurrentCommander) break;
 
                     _c.Data.SystemReset(location.SystemAddress, location.StarSystem, location.StarPos);
@@ -234,6 +235,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     UpdateCache();
                     break;
                 case FSDJump jump:
+                    if (jump.SystemAddress == 0) break; // Really old journals do not have SystemAddress. :'( Ignore them.
                     if (!_c.Data.HasCurrentCommander) break;
 
                     incompleteSystemsNotified.Clear();
@@ -369,8 +371,8 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     UpdateCache();
                     break;
                 case Scan scan:
+                    if (scan.SystemAddress == 0) break; // Really old journals do not have SystemAddress. :'( Ignore them
                     OnScan(scan);
-
                     UpdateCache();
                     break;
                 case FSSDiscoveryScan honk:
@@ -397,7 +399,10 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
                     }
-                    if (!_c.Data.CommanderData.AllBodiesFound && !_c.UIMgr.ReplayMode)
+                    // By checking .IsFullyDiscovered here we ensure the system is fully scanned, regardless of false AllBodiesFound events.
+                    if ((_c.Data.CommanderData.CurrentSystemData?.IsFullyDiscovered ?? false)
+                        && _c.Data.CommanderData.CurrentSystemData?.AllBodiesFound is null
+                        && !_c.UIMgr.ReplayMode)
                     {
                         // Two distinct notifications. One has only a title and is vocal only. The other has additional detail and
                         // is plugin only. Alternatively: One notification, but put "All N bodies found" in Extended details which
@@ -419,16 +424,16 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                             Sender = AboutInfo.ShortName,
                             CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
                         });
-                    }
-                    _c.Data.CommanderData.AllBodiesFound = true;
-                    _c.Data.CommanderData.CurrentSystemData.AllBodiesFound = allFound;
-                    _c.UI.ChangeAllBodiesFound(true);
 
-                    if (_c.Data.CommanderData.LastStatus?.Destination?.Body > 0
-                        && _c.Data.CommanderData.LastStatus?.Destination?.System == _c.UIMgr.Realtime.SystemId64
-                        && _c.Data.CommanderData.LastStatus?.Destination?.Body != _c.UIMgr.Realtime.BodyId)
-                    {
-                        _c.UI.ChangeBody(_c.Data.CommanderData.LastStatus.Destination.Body);
+                        _c.Data.CommanderData.CurrentSystemData.AllBodiesFound = allFound;
+                        _c.UI.ChangeAllBodiesFound(true);
+
+                        if (_c.Data.CommanderData.LastStatus?.Destination?.Body > 0
+                            && _c.Data.CommanderData.LastStatus?.Destination?.System == _c.UIMgr.Realtime.SystemId64
+                            && _c.Data.CommanderData.LastStatus?.Destination?.Body != _c.UIMgr.Realtime.BodyId)
+                        {
+                            _c.UI.ChangeBody(_c.Data.CommanderData.LastStatus.Destination.Body);
+                        }
                     }
 
                     UpdateCache();
@@ -505,14 +510,6 @@ May use data from Spansh, EDGIS and/or EDAstro.",
 
             var cmdrData = _c.Data.CommanderData;
             var sysData = cmdrData.CurrentSystemData;
-
-            if (scan.ScanType != "NavBeaconDetail"
-                && scan.PlanetClass != "Barycentre"
-                && !scan.WasDiscovered && scan.DistanceFromArrivalLS == 0)
-            {
-                cmdrData.UndiscoveredSystem = true;
-            }
-
             var scanAlreadySeen = sysData.ContainsScan(scan);
             var usefulScan = sysData.AddScan(scan);
             // When mapping, a second scan fires; don't re-target the UI.
@@ -582,7 +579,8 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             }
 
             if (status.Flags2.HasFlag(StatusFlags2.FsdHyperdriveCharging) && _c.Settings.WarnIncompleteUndiscoveredSystemScan
-                && !_c.Data.CommanderData.AllBodiesFound && _c.Data.CommanderData.UndiscoveredSystem
+                && !(_c.Data.CommanderData.CurrentSystemData?.IsFullyDiscovered ?? false)
+                && (_c.Data.CommanderData.CurrentSystemData?.IsFirstDiscovery ?? false)
                 && !incompleteSystemsNotified.Contains(_c.Data.CommanderData.CurrentSystemName))
             {
                 incompleteSystemsNotified.Add(_c.Data.CommanderData.CurrentSystemName);
