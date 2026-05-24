@@ -240,9 +240,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 
         public CarrierData GetById(ulong carrierOrMarketId)
         {
-            if (!_carrierOwnerNameByCarrierId.TryGetValue(carrierOrMarketId, out string ownerName)) return null;
+            if (_carrierOwnerNameByCarrierId.TryGetValue(carrierOrMarketId, out string ownerName))
+                return GetByOwner(ownerName);
 
-            return GetByOwner(ownerName);
+            // Fallback:
+            return Carriers.Where(c => c.CarrierId == carrierOrMarketId).FirstOrDefault();
         }
 
         public CarrierData GetByTimer(System.Timers.Timer timer)
@@ -315,7 +317,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 
             foreach (var c in Carriers)
             {
-                c.Inventory = _inventoryByCarrierId[c.CarrierId];
+                if (_inventoryByCarrierId.TryGetValue(c.CarrierId, out Dictionary<string, InventoryItem> value))
+                    c.Inventory = value;
             }
             _inventoryByCarrierId.Clear();
         }
