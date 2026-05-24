@@ -8,6 +8,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         private readonly Dictionary<int, Scan> _scans = [];
         private string _currentSystem = "";
 
+        /// <summary>
+        /// Do not rely on this; it's not present in older journals.
+        /// </summary>
         public string FID { get; set; }
         public string Name { get; set; }
         public string CurrentSystem

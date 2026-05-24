@@ -10,7 +10,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         private readonly string _assemblyVersion = typeof(StatScanner).Assembly.GetName().Version.ToString();
 
         private Dictionary<string, CommanderCache> _commanderCache = [];
-        private string _lastSeenFid = string.Empty;
+        private string _lastSeenCommanderName = string.Empty;
         private bool _readAllRequired = true;
         private string _lastUsedVersion = "";
         private bool _isDirty = false;
@@ -30,23 +30,23 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         }
 
         public string ReadAllReason { get; set; }
-        public string LastSeenCommanderFID {
-            get => _lastSeenFid;
+        public string LastSeenCommanderName {
+            get => _lastSeenCommanderName;
             set
             {
-                _lastSeenFid = value;
+                _lastSeenCommanderName = value;
                 _isDirty = true;
             }
         }
 
         [JsonIgnore]
-        public string LastSeenCommanderName
+        public string LastSeenCommanderFID
         {
             get
             {
-                if (KnownCommanders.Count == 0 || !IsCommanderKnown(LastSeenCommanderFID))
+                if (KnownCommanders.Count == 0 || !IsCommanderKnown(LastSeenCommanderName))
                     return "(Unknown commander)";
-                return KnownCommanders[LastSeenCommanderFID].Name;
+                return KnownCommanders[LastSeenCommanderName].FID;
             }
         }
 
@@ -56,66 +56,66 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
             set => _commanderCache = value;
         }
 
-        public bool IsCommanderKnown(string commanderFID = null)
+        public bool IsCommanderKnown(string commanderName = null)
         {
-            return _commanderCache.ContainsKey(commanderFID ?? LastSeenCommanderFID);
+            return _commanderCache.ContainsKey(commanderName ?? LastSeenCommanderName);
         }
 
         [JsonIgnore]
         public CommanderCache? CurrentCommander
         {
-            get => KnownCommanders.GetValueOrDefault(LastSeenCommanderFID, null);
+            get => KnownCommanders.GetValueOrDefault(LastSeenCommanderName, null);
         }
 
-        public void AddCommander(string fid, bool isOdyssey, bool hasReadAll)
+        public void AddCommander(string name, bool isOdyssey, bool hasReadAll, string fid = "")
         {
             var newCmdr = new CommanderCache()
             {
-                FID = fid,
-                Name = fid,
+                Name = name,
                 CurrentSystem = "(unknown location)",
                 IsOdyssey = isOdyssey,
                 ReadAllSinceFirstSeen = hasReadAll,
+                FID = fid,
             };
 
-            _commanderCache[fid] = newCmdr;
+            _commanderCache[name] = newCmdr;
             // Only dirty if we're also flipping the read-all flag.
             if (!hasReadAll) SetReadAllRequired("New commander detected");
         }
 
         public void UpdateCommanderInfo(LoadGame loadGame, bool isOdyssey = false, bool hasReadAll = false)
         {
-            if (!IsCommanderKnown(loadGame.FID)) {
-                AddCommander(loadGame.FID, isOdyssey, hasReadAll);
+            if (!IsCommanderKnown(loadGame.Commander)) {
+                AddCommander(loadGame.Commander, isOdyssey, hasReadAll);
             }
-            var cached = _commanderCache[loadGame.FID];
+            var cached = _commanderCache[loadGame.Commander];
             cached.Name = loadGame.Commander;
             cached.LastLoadGame = loadGame;
             cached.IsOdyssey = isOdyssey;
-            LastSeenCommanderFID = loadGame.FID;
+            LastSeenCommanderName = loadGame.Commander;
         }
 
         public void UpdateCommanderStats(Statistics stats)
         {
-            if (IsCommanderKnown(LastSeenCommanderFID))
+            if (IsCommanderKnown(LastSeenCommanderName))
             {
-                KnownCommanders[LastSeenCommanderFID].LastStatistics = stats;
+                KnownCommanders[LastSeenCommanderName].LastStatistics = stats;
             }
         }
 
         public void UpdateIsOdyssey(bool isOdyssey)
         {
-            if (IsCommanderKnown(LastSeenCommanderFID))
+            if (IsCommanderKnown(LastSeenCommanderName))
             {
-                KnownCommanders[LastSeenCommanderFID].IsOdyssey = isOdyssey;
+                KnownCommanders[LastSeenCommanderName].IsOdyssey = isOdyssey;
             }
         }
 
         public void UpdateCommanderLocation(string systemName)
         {
-            if (IsCommanderKnown(LastSeenCommanderFID) && KnownCommanders[LastSeenCommanderFID].CurrentSystem != systemName)
+            if (IsCommanderKnown(LastSeenCommanderName) && KnownCommanders[LastSeenCommanderName].CurrentSystem != systemName)
             {
-                KnownCommanders[LastSeenCommanderFID].CurrentSystem = systemName;
+                KnownCommanders[LastSeenCommanderName].CurrentSystem = systemName;
                 _isDirty = true;
             }
         }
@@ -124,7 +124,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         {
             ClearReadAllRequired();
             _commanderCache.Clear();
-            LastSeenCommanderFID = null;
+            LastSeenCommanderName = null;
 
             _isDirty = true;
         }

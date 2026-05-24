@@ -53,12 +53,12 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         internal StateCache Cacheable { get => _stateCache; }
         public Action<Exception, string> ErrorLogger { get => _errorLogger; }
 
-        public bool IsCommanderFidKnown
+        public bool IsCommanderKnown
         {
-            get => !string.IsNullOrWhiteSpace(_stateCache.LastSeenCommanderFID) && _stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderFID);
+            get => !string.IsNullOrWhiteSpace(_stateCache.LastSeenCommanderName) && _stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderName);
         }
 
-        public List<string> KnownCommanderFids
+        public List<string> KnownCommanders
         {
             get => [.. _stateCache.KnownCommanders.Keys];
         }
@@ -77,14 +77,14 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         public bool IsOdyssey {
             get
             {
-                if (_stateCache.KnownCommanders.Count == 0 || !_stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderFID))
+                if (_stateCache.KnownCommanders.Count == 0 || !_stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderName))
                     return _lastSeenIsOdyssey;
-                return _stateCache.KnownCommanders[_stateCache.LastSeenCommanderFID].IsOdyssey;
+                return _stateCache.KnownCommanders[_stateCache.LastSeenCommanderName].IsOdyssey;
             }
             set
             {
                 _lastSeenIsOdyssey = value;
-                if (_stateCache.KnownCommanders.Count == 0 || !_stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderFID))
+                if (_stateCache.KnownCommanders.Count == 0 || !_stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderName))
                 {
                     return;
                 }
@@ -96,13 +96,13 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         {
             get
             {
-                if (_stateCache.KnownCommanders.Count == 0 || !_stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderFID))
+                if (_stateCache.KnownCommanders.Count == 0 || !_stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderName))
                     return "(Unknown commander / location)";
-                return _stateCache.KnownCommanders[_stateCache.LastSeenCommanderFID].CurrentSystem;
+                return _stateCache.KnownCommanders[_stateCache.LastSeenCommanderName].CurrentSystem;
             }
             set
             {
-                if (_stateCache.KnownCommanders.Count == 0 || !_stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderFID))
+                if (_stateCache.KnownCommanders.Count == 0 || !_stateCache.IsCommanderKnown(_stateCache.LastSeenCommanderName))
                     return;
                 _stateCache.UpdateCommanderLocation(value);
             }
@@ -153,11 +153,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
         public string GalacticRecordsCsv { get => _storagePath + Constants.LOCAL_GALACTIC_RECORDS_FILE; }
         public string GalacticRecordsPGCsv { get => _storagePath + Constants.LOCAL_GALACTIC_PROCGEN_RECORDS_FILE; }
 
-        public string CommanderFID
-        {
-            get => _stateCache.LastSeenCommanderFID;
-        }
-
         public string CommanderName
         {
             get => _stateCache.LastSeenCommanderName;
@@ -165,34 +160,34 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
 
         public RecordBook GetRecordBook()
         {
-            if (!IsCommanderFidKnown)
+            if (!IsCommanderKnown)
                 throw new InvalidOperationException($"{GetType().Name} is not initialized");
-            return GetRecordBookForFID(CommanderFID);
+            return GetRecordBookForCommander(CommanderName);
         }
 
-        public RecordBook GetRecordBookForFID(string fid, bool deferLoadRecords = false)
+        public RecordBook GetRecordBookForCommander(string commanderName, bool deferLoadRecords = false)
         {
             bool IsReadAll = Core.CurrentLogMonitorState.HasFlag(LogMonitorState.Batch);
-            if (!_stateCache.IsCommanderKnown(fid))
+            if (!_stateCache.IsCommanderKnown(commanderName))
             {
-                _stateCache.AddCommander(fid, _lastSeenIsOdyssey, IsReadAll);
+                _stateCache.AddCommander(commanderName, _lastSeenIsOdyssey, IsReadAll);
             }
-            if (!_managers.TryGetValue(fid, out PersonalBestManager pbMgr))
+            if (!_managers.TryGetValue(commanderName, out PersonalBestManager pbMgr))
             {
-                pbMgr = new(_storagePath, _errorLogger, fid)
+                pbMgr = new(_storagePath, _errorLogger, commanderName)
                 {
                     BatchProcessingMode = IsReadAll
                 };
                 pbMgr.Connect(ConnectionMode.Direct);
-                _managers.Add(fid, pbMgr);
+                _managers.Add(commanderName, pbMgr);
             }
-            if (!_recordBooks.TryGetValue(fid, out RecordBook rb))
+            if (!_recordBooks.TryGetValue(commanderName, out RecordBook rb))
             {
                 rb = new(pbMgr);
-                _recordBooks.Add(fid, rb);
+                _recordBooks.Add(commanderName, rb);
 
                 if (!deferLoadRecords)
-                    LoadRecords([fid]);
+                    LoadRecords([commanderName]);
             }
 
             return rb;
@@ -243,26 +238,26 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
 
         public void ReloadGalacticRecords()
         {
-            foreach (string fid in _stateCache.KnownCommanders.Keys)
+            foreach (string cmdrName in _stateCache.KnownCommanders.Keys)
             {
-                _managers[fid].Clear();
-                _recordBooks[fid] = new(_managers[fid]);
+                _managers[cmdrName].Clear();
+                _recordBooks[cmdrName] = new(_managers[cmdrName]);
             }
             LoadRecords();
         }
 
         #region Record Loading
-        private void LoadRecords(HashSet<string> fids = null)
+        private void LoadRecords(HashSet<string> cmdrNames = null)
         {
             // TODO: Check that nothing is already loaded? Otherwise, this is just a reload...
-            LoadGalacticRecords(fids ?? [.. _stateCache.KnownCommanders.Keys], GalacticRecordsCsv, RecordKind.Galactic);
-            LoadGalacticRecords(fids ?? [.. _stateCache.KnownCommanders.Keys], GalacticRecordsPGCsv, RecordKind.GalacticProcGen);
-            LoadPersonalBestRecords(fids ?? [.. _stateCache.KnownCommanders.Keys]);
+            LoadGalacticRecords(cmdrNames ?? [.. _stateCache.KnownCommanders.Keys], GalacticRecordsCsv, RecordKind.Galactic);
+            LoadGalacticRecords(cmdrNames ?? [.. _stateCache.KnownCommanders.Keys], GalacticRecordsPGCsv, RecordKind.GalacticProcGen);
+            LoadPersonalBestRecords(cmdrNames ?? [.. _stateCache.KnownCommanders.Keys]);
         }
 
-        private void LoadGalacticRecords(HashSet<string> fids, string csvLocalFile, RecordKind recordKind, bool retry = false)
+        private void LoadGalacticRecords(HashSet<string> cmdrNames, string csvLocalFile, RecordKind recordKind, bool retry = false)
         {
-            if (fids.Count == 0) return;
+            if (cmdrNames.Count == 0) return;
 
             try
             {
@@ -308,10 +303,10 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
                         IRecord record;
                         try
                         {
-                            foreach (var fid in fids)
+                            foreach (var cmdrName in cmdrNames)
                             {
                                 // Don't load records for this potentially new record book. This is literally what we're doing here.
-                                RecordBook recordBook = GetRecordBookForFID(fid, true /* deferLoadRecords */ );
+                                RecordBook recordBook = GetRecordBookForCommander(cmdrName, true /* deferLoadRecords */ );
 
                                 record = RecordFactory.CreateRecord(fields, Settings, recordKind);
                                 if (record == null) continue;
@@ -339,7 +334,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
                         }
                     } // while
                 } // using
-                Debug.WriteLine($"Created a total of {recordCount} {recordKind} and {pbRecordCount} {RecordKind.Personal} records in {fids.Count} record books.");
+                Debug.WriteLine($"Created a total of {recordCount} {recordKind} and {pbRecordCount} {RecordKind.Personal} records in {cmdrNames.Count} record books.");
             }
             catch (RecordsCSVFormatChangedException ex)
             {
@@ -352,20 +347,20 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
 
                 // Revert to previous good file and try again.
                 File.Copy(csvLocalFile + Constants.GOOD_BACKUP_EXT, csvLocalFile, /* overwrite */ true);
-                LoadGalacticRecords(fids, csvLocalFile, recordKind, true);
+                LoadGalacticRecords(cmdrNames, csvLocalFile, recordKind, true);
             }
         }
 
-        private void LoadPersonalBestRecords(HashSet<string> fids)
+        private void LoadPersonalBestRecords(HashSet<string> cmdrNames)
         {
             int pbRecordCount = 0;
 
             foreach (var pbData in Constants.GeneratePersonalBestRecords())
             {
-                foreach (string fid in fids)
+                foreach (string cmdrName in cmdrNames)
                 {
                     // Don't load records for this potentially new record book. This is literally what we're doing here.
-                    var recordBook = GetRecordBookForFID(fid, true /* deferLoadRecords */);
+                    var recordBook = GetRecordBookForCommander(cmdrName, true /* deferLoadRecords */);
 
                     var record = RecordFactory.CreateRecord(pbData.Clone(), Settings);
                     if (record == null) continue;
@@ -375,7 +370,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
                 }
             }
 
-            Debug.WriteLine($"Created a total of {pbRecordCount} {RecordKind.Personal} records in {fids.Count} record books.");
+            Debug.WriteLine($"Created a total of {pbRecordCount} {RecordKind.Personal} records in {cmdrNames.Count} record books.");
         }
 
         #endregion
@@ -392,9 +387,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
                 string[] parts = db.Name.Replace(".db", "").Replace("-log", "").Split('_');
 
                 if (parts.Length < 3) continue;
-                string FID = parts[2];
+                string cmdrName = parts[2]; // This breaks if commander name has `_` in it.
 
-                if (_stateCache.IsCommanderKnown(FID)) continue;
+                if (_stateCache.IsCommanderKnown(cmdrName)) continue;
 
                 // Ok so we have extra files for unknown commander. Let's clean them up. It's not 
                 // hard to re-create by re-reading all.

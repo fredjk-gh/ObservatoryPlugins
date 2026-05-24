@@ -247,7 +247,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         {
             if (_c.Core.IsLogMonitorBatchReading || HasHeaderRows) return;
 
-            if (!_c.IsCommanderFidKnown || _c.NeedsReadAll || _c.Cacheable.KnownCommanders.Count == 0)
+            if (!_c.IsCommanderKnown || _c.NeedsReadAll || _c.Cacheable.KnownCommanders.Count == 0)
             {
                 _c.Core.AddGridItems(this, _c.GetPluginStateMessages());
             }
@@ -275,7 +275,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             };
             foreach (var Cmdr in _c.Cacheable.KnownCommanders)
             {
-                var recordBook = _c.GetRecordBookForFID(Cmdr.Key);
+                var recordBook = _c.GetRecordBookForCommander(Cmdr.Key);
 
                 gridItems.Add(new(
                     NotificationClass.None,
@@ -358,7 +358,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         {
             MaybeAddHeaderRows();
 
-            if (!_c.IsCommanderFidKnown || _c.NeedsReadAll) return;
+            if (!_c.IsCommanderKnown || _c.NeedsReadAll) return;
 
             List<RecordTable> tableOrder  =
             [
@@ -373,9 +373,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
 
             var gridItems = new List<Result>();
 #if DEBUG
-            foreach (var fid in _c.KnownCommanderFids)
+            foreach (var cmdr in _c.KnownCommanders)
             {
-                var recordBook = _c.GetRecordBookForFID(fid);
+                var recordBook = _c.GetRecordBookForCommander(cmdr);
                 foreach (var rt in tableOrder)
                 {
                     foreach (var best in recordBook.GetPersonalBests(rt))
