@@ -248,9 +248,9 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                         _data.RawMatInventoryAdd(matCollected.Name, matCollected.Count);
                     break;
                 case MaterialTrade matTrade:
-                    if (matTrade.Paid.Category.Equals("raw", StringComparison.CurrentCultureIgnoreCase))
+                    if (IsRaw(matTrade.TraderType, matTrade.Paid.Category))
                         _data.RawMatInventorySubtract(matTrade.Paid.Material, matTrade.Paid.Quantity);
-                    if (matTrade.Received.Category.Equals("raw", StringComparison.CurrentCultureIgnoreCase))
+                    if (IsRaw(matTrade.TraderType, matTrade.Received.Category))
                         _data.RawMatInventorySubtract(matTrade.Received.Material, matTrade.Received.Quantity);
 
                     break;
@@ -287,6 +287,11 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     Reset("Shutdown", true);
                     break;
             }
+        }
+
+        private bool IsRaw(string traderType, string category = null)
+        {
+            return ((category ?? traderType).Equals("raw", StringComparison.CurrentCultureIgnoreCase));
         }
 
         private void OnCargoEvent(int count, System.Collections.Immutable.ImmutableList<CargoType> inventory)
