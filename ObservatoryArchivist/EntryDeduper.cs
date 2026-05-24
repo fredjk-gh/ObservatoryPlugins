@@ -9,7 +9,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
     {
         // This class is scoped to a particular system -- we don't have to worry about collisions between body IDs.
         private readonly HashSet<int> _saaSignalsFoundBodies = [];
-        private readonly HashSet<int> _scannedBodyIDs = [];
+        private readonly HashSet<string> _scannedBodies = [];
+        private readonly HashSet<int> _scannedBarycentres = [];
         private readonly HashSet<int> _mappedBodyIDs = [];
         private readonly HashSet<long> _codexEntries = [];
         private readonly HashSet<string> _singletons = [];
@@ -55,8 +56,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
                     isUnique = _saaSignalsFoundBodies.Add(entry.GetProperty("BodyID").GetInt32());
                     break;
                 case "Scan":
+                    // WARNING: Old "Scan" records (Prior to the 2018-03 update) do NOT have body ID.
+                    isUnique = _scannedBodies.Add(entry.GetProperty("BodyName").GetString());
+                    break;
                 case "ScanBaryCentre":
-                    isUnique = _scannedBodyIDs.Add(entry.GetProperty("BodyID").GetInt32());
+                    isUnique = _scannedBarycentres.Add(entry.GetProperty("BodyID").GetInt32());
                     break;
                 case "SAAScanComplete":
                     isUnique = _mappedBodyIDs.Add(entry.GetProperty("BodyID").GetInt32());

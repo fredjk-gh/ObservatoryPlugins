@@ -205,6 +205,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     _c.Data.ForCommander().FileHeaderInfo.Statistics = statistics;
                     break;
                 case FSDJump fsdJump:
+                    if (fsdJump.SystemAddress == 0) break; // Older journals do not include SystemAddress; ignore.
                     ProcessNewLocation(
                         fsdJump.StarSystem, 
                         fsdJump.SystemAddress,
@@ -214,6 +215,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     CacheSystemPosition(fsdJump.SystemAddress, fsdJump.StarSystem, fsdJump.StarPos);
                     break;
                 case Location location:
+                    if (location.SystemAddress == 0) break; // Older journals do not include SystemAddress; ignore.
                     ProcessNewLocation(
                         location.StarSystem,
                         location.SystemAddress,
@@ -237,7 +239,9 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                 case SAAScanComplete saaScanComplete:
                 case CodexEntry codexEntry:
                     bool captured = false;
-                    if (_c.Data.ForCommander()?.CurrentSystem != null && (_c.Core.CurrentLogMonitorState & LogMonitorState.PreRead) == 0)
+                    if (_c.Data.ForCommander()?.CurrentSystem != null
+                        && _c.Data.ForCommander()?.CurrentSystem.SystemId64 > 0
+                        && (_c.Core.CurrentLogMonitorState & LogMonitorState.PreRead) == 0)
                     {
                         _c.Data.ForCommander().CurrentSystem.AddSystemJournalJson(journal.Json, journal.TimestampDateTime);
                         _c.FlushIfDirty();
@@ -253,7 +257,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     }
                     break;
                 case FSSSignalDiscovered fssSignals:
-                    if (fssSignals.SignalType == "NavBeacon")
+                    if (fssSignals.SignalType == "NavBeacon" && fssSignals.SystemAddress > 0)
                     {
                         _c.Data.TrackSystemNavBeacon(fssSignals.SystemAddress);
 
@@ -312,7 +316,8 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             if (sys.SystemJournalEntries.Count == 0)
             {
                 isFirstVisit = true;
-                _lastSharedSystemDataId64 = sys.SystemId64; // Suppress further share attempts
+                if (!isCoreSystem)
+                    _lastSharedSystemDataId64 = sys.SystemId64; // Suppress further share attempts
                 sys.AddSystemJournalJson(json, timestamp);
             }
 
@@ -498,6 +503,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
 
             foreach (var r in route.Route)
             {
+                if (r.SystemAddress == 0) continue;
                 SystemInfo i = new(r.SystemAddress, r.StarSystem, r.StarPos);
                 systems.Add(i);
             }
@@ -707,7 +713,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             if (args.Sender == "Commander" && args.Title == "Carrier Status Update")
                 Debug.Fail("Why not filtered?");
 
-            _c.Data.ForCommander().CurrentSystem.AddNotificationArg(args);
+            _c.Data.ForCommander().CurrentSystem?.AddNotificationArg(args);
         }
         #endregion
     }
