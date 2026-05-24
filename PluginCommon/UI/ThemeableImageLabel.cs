@@ -167,6 +167,20 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             ResumeLayout(true);
         }
 
+        public void SetTooltip(Guid id, string ttip)
+        {
+            if (!_imgs.TryGetValue(id, out (ImageSpec Spec, PictureBox PB) img)) return;
+            img.Spec.ToolTip = ttip;
+            SetTooltipInternal(img.PB, ttip);
+        }
+
+        public void SetVisibility(Guid id, bool newIsVisible)
+        {
+            if (!_imgs.TryGetValue(id, out (ImageSpec Spec, PictureBox PB) img)) return;
+            img.Spec.Visible = newIsVisible;
+            img.PB.Visible = newIsVisible;
+        }
+
         private void ColorizeImages(Color value)
         {
             foreach (var (Spec, PB) in _imgs.Values)
@@ -189,20 +203,6 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             pb.Invalidate();
         }
 
-        public void SetVisibility(Guid id, bool newIsVisible)
-        {
-            if (!_imgs.TryGetValue(id, out (ImageSpec Spec, PictureBox PB) img)) return;
-            img.Spec.Visible = newIsVisible;
-            img.PB.Visible = newIsVisible;
-        }
-
-        public void SetTooltip(Guid id, string ttip)
-        {
-            if (!_imgs.TryGetValue(id, out (ImageSpec Spec, PictureBox PB) img)) return;
-            img.Spec.ToolTip = ttip;
-            SetTooltipInternal(img.PB, ttip);
-        }
-
         private void SetTooltipInternal(PictureBox pb, string? ttip)
         {
             ToolTipManager?.SetToolTip(pb, ttip);
@@ -221,6 +221,24 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             var img = matches[0];
 
             ColorAndSizeImageToPB(img.Value.PB, img.Value.Spec, ImageColor == Color.Transparent ? ForeColor : ImageColor);
+        }
+
+        protected override void OnLayout(LayoutEventArgs e)
+        {
+            base.OnLayout(e);
+            // check if something was laid out as "wrapped" such that something isn't visible and add width
+            // to ensure visible.
+            if ((lblText.Top > 0 || _imgs.Any(kv => kv.Value.Spec.Visible && kv.Value.PB.Top > 0)))
+            {
+                int contentWidth = lblText.Width 
+                    + _imgs.Where(kv => kv.Value.Spec.Visible).Sum(kv => kv.Value.PB.Width)
+                    + this.Padding.Horizontal
+                    + 5; // plus some buffer.
+                if (contentWidth > this.Width)
+                {
+                    this.Width = contentWidth;
+                }
+            }
         }
     }
 }

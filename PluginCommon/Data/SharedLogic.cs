@@ -25,6 +25,7 @@ namespace com.github.fredjk_gh.PluginCommon.Data
 
         public static string GetBodyShortName(string bodyName, string baseName)
         {
+            if (string.IsNullOrWhiteSpace(baseName)) return bodyName;
             return bodyName.Replace(baseName, "").Trim();
         }
 
