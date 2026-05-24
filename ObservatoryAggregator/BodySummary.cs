@@ -147,11 +147,11 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 if (IsBarycentre && BarycentreChildren.Count >= 1)
                 {
                     var childIds = BarycentreChildren.Select(bc => bc.BodyID).ToHashSet();
-                    shortName = $"({string.Join("-", _allData.BodyData
+                    shortName = $"{string.Join("-", _allData.BodyData
                         .Where(e => childIds.Contains(e.Key) && e.Value.Scan?.Parents.Count > 0 && (e.Value.Scan?.Parents[0].Null.HasValue ?? false) && e.Value.Scan?.Parents[0].Null.Value == BodyID)
                         .OrderBy(e => e.Key)
                         .Take(2) // TODO: this isn't perfect...
-                        .Select(e => e.Value.BodyShortName))})";
+                        .Select(e => e.Value.BodyShortName))}";
                 }
                 else if (!IsBarycentre)
                 {
