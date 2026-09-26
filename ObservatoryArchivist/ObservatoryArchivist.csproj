@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<VersionPrefix>1.4.0.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
+		<VersionPrefix>1.4.0.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, '0'))</VersionPrefix>
 		<VersionSuffix>beta</VersionSuffix>
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>

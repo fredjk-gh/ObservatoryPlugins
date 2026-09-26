@@ -260,9 +260,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.DB
             _deferredChanges.Clear();
         }
 
+        #region Augmented/Synthesized journals
         public void UpsertAugmentedSystem(VisitedSystem system)
         {
-            if (system.PreambleJournalEntries.Count == 0 || system.SystemJournalEntries.Count == 0)
+            // We just need system journals for augmented/synthesized journals.
+            if (system.SystemJournalEntries.Count == 0)
                 return;
 
             var existing = GetExactMatchAugmentedSystem(system.SystemId64);
@@ -283,5 +285,18 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.DB
                 .Find(sys => sys.SystemId64 == id64)
                 .FirstOrDefault();
         }
+
+        public VisitedSystem? GetSynthesizedVisitedSystems(string systemName)
+        {
+            if (!Connected) throw new DBNotConnectedException(DB_NAME);
+            if (BatchModeProcessing) return null; // Shouldn't be possible, but the database is likely to be empty.
+
+            return AugmentedSystemsTable
+                .Find(sys => sys.SystemName == systemName)
+                .OrderByDescending(sys => sys.SystemJournalEntries.Count)
+                .FirstOrDefault();
+
+        }
+        #endregion
     }
 }

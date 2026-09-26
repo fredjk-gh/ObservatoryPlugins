@@ -976,8 +976,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                         Commander = "Synthetic",
                         SystemName = _c.Search.PositionCacheLookup.SystemName,
                         SystemId64 = _c.Search.PositionCacheLookup.SystemId64,
-                        FirstVisitDateTime = DateTime.MinValue,
-                        LastVisitDateTime = DateTime.MinValue,
+                        FirstVisitDateTime = DateTime.UtcNow,
+                        LastVisitDateTime = DateTime.UtcNow,
                         VisitCount = 0,
                         // No preamble journal entries.
                     };
@@ -989,8 +989,8 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
                         Commander = "Synthetic",
                         SystemName = _c.Search.PositionCache.CommonName,
                         SystemId64 = _c.Search.PositionCache.Id64,
-                        FirstVisitDateTime = DateTime.MinValue,
-                        LastVisitDateTime = DateTime.MinValue,
+                        FirstVisitDateTime = DateTime.UtcNow,
+                        LastVisitDateTime = DateTime.UtcNow,
                         VisitCount = 0,
                         // No preamble journal entries.
                     };
@@ -1104,17 +1104,19 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
 
             if (searchResult == null) return;
 
-            _c.SetResendAll(true);
-            foreach (var item in searchResult.SystemJournalEntries)
+            // Do not run this on the UI thread. It guts performance.
+            Task.Run(() =>
             {
-                string json = item.ToString();
-                Debug.WriteLine($"Sharing journal via Core: {json}");
-                _c.Core.DeserializeEvent(json, true);
-            }
-            _c.SetResendAll(false);
+                _c.SetResendAll(true);
+                foreach (var item in searchResult.SystemJournalEntries)
+                {
+                    string json = item.ToString();
+                    Debug.WriteLine($"[{DateTime.Now:mm:ss.fff}] Archivist: Sharing journal via Core: {json}");
+                    _c.Core.DeserializeEvent(json, true);
+                }
+                _c.SetResendAll(false);
+            });
         }
         #endregion
-
-
     }
 }

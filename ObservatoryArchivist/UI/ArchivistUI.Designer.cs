@@ -475,6 +475,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             // pAddressCache
             // 
+            pAddressCache.AutoSize = true;
             pAddressCache.Controls.Add(lblPosCacheId64Value);
             pAddressCache.Controls.Add(lblId64);
             pAddressCache.Controls.Add(lblPosCacheSystemNameValue);
@@ -523,6 +524,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist.UI
             // 
             // pLookupResult
             // 
+            pLookupResult.AutoSize = true;
             pLookupResult.Controls.Add(lblLookupId64);
             pLookupResult.Controls.Add(label3);
             pLookupResult.Controls.Add(lblLookupSystemName);

@@ -15,8 +15,8 @@
     {
         "PluginName": "ObservatoryArchivist",
         "Beta":{
-            "Version": "1.4.0.26144",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/Archivist-v1.4.0.26144-beta.eop",
+            "Version": "1.4.0.26269",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26269/Archivist-v1.4.0.26269-beta.eop",
             "MinRequiredCoreVersion": "1.5.0"
         }
     },
@@ -96,8 +96,8 @@
     {
         "PluginName": "Archivist",
         "Beta":{
-            "Version": "1.4.0.26144",
-            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/Archivist-v1.4.0.26144-beta.eop",
+            "Version": "1.4.0.26269",
+            "DownloadURL": "https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26269/Archivist-v1.4.0.26269-beta.eop",
             "MinRequiredCoreVersion": "1.5.0"
         }
     },

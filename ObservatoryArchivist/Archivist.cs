@@ -32,7 +32,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
 It also provides a cache of system positions (and other info) for improved distance calculations and recall.
 
-May use data from Spansh, EDGIS and/or EDAstro.",
+May use data from Spansh, EDGIS and/or EDAstro. Thanks to MattG for sharing some ProcGen Sector naming code which is used by this plugin.",
             AuthorName = "fredjk-gh",
             Links =
             [
@@ -46,7 +46,6 @@ May use data from Spansh, EDGIS and/or EDAstro.",
         private ArchivistPanel _archivistPanel;
         private ArchivistSettings settings = new();
         private ArchivistContext _c;
-        private ulong? _lastSharedSystemDataId64 = null;
 
         public static Guid Guid => PLUGIN_GUID;
         public AboutInfo AboutInfo => ABOUT_INFO;
@@ -87,10 +86,26 @@ May use data from Spansh, EDGIS and/or EDAstro.",
 
         private void MaybeFixNewSettings()
         {
+            bool dirty = false;
             if (settings.JsonViewerFontSize < 5 || settings.JsonViewerFontSize > 24)
             {
                 settings.JsonViewerFontSize = (int)_archivistPanel.Font.Size;
+                dirty = true;
             }
+
+            if (string.IsNullOrEmpty(settings.DataShareMethod))
+                if (settings.ShareSystemData)
+                {
+                    settings.DataShareMethod = ArchivistSettings.DEFAULT_SHARE_METHOD;
+                    dirty = true;
+                }
+                else
+                {
+                    settings.DataShareMethod = ArchivistSettings.FALLBACK_SHARE_METHOD;
+                    dirty = true;
+                }
+
+            if (dirty) _c.Core.SaveSettings(this);
         }
 
         public PluginUpdateInfo CheckForPluginUpdate()
@@ -301,7 +316,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                 || newSystemName != sys.SystemName;
 
             if (!isDifferentSystem) return;
-            _lastSharedSystemDataId64 = null;
+            _c.LastSystemId64DataShared = 0;
 
             // Initialize the current system during pre-read in case we find/do more stuff or haven't flushed it yet.
             // Duplicate entries should be filtered out by AddSystemJournalJson.
@@ -317,7 +332,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             {
                 isFirstVisit = true;
                 if (!isCoreSystem)
-                    _lastSharedSystemDataId64 = sys.SystemId64; // Suppress further share attempts
+                    _c.LastSystemId64DataShared = sys.SystemId64; // Suppress further share attempts
                 sys.AddSystemJournalJson(json, timestamp);
             }
 
@@ -379,7 +394,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
         private void MaybeShareSystemDataWithAugmentation(CurrentSystemInfo sysInfo, bool doAutoAugmentation)
         {
             if (sysInfo == null || _c.Core.IsLogMonitorBatchReading) return;
-            if (_lastSharedSystemDataId64.HasValue && _lastSharedSystemDataId64.Value == sysInfo.SystemId64) return; // Already shared.
+            if (_c.LastSystemId64DataShared > 0 && _c.LastSystemId64DataShared == sysInfo.SystemId64) return; // Already shared.
 
             var collectedShareResult = MaybeShareSystemData(sysInfo);
             if (collectedShareResult != DataShared.Nothing) return;
@@ -431,7 +446,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
         {
             // Send existing system data via inter-plugin message bus, in case anyone can use it.
             if (_c.IsReadAll
-                || !settings.ShareSystemData
+                || settings.DataShareMethodEnum == ArchivistSettings.ShareMethod.None
                 || systemInfo == null)
                 return DataShared.Nothing;
             if (_c.LastSystemId64DataShared == systemInfo.SystemId64) return DataShared.AlreadyShared;
@@ -446,25 +461,49 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                 if (dataOrigin == DataOrigin.PlayerJournals) return DataShared.Nothing;
             }
 
-            ArchivistJournalsMessage msg = ArchivistJournalsMessage.New(
-                systemInfo.SystemName,
-                systemInfo.SystemId64,
-                preamble,
-                systemJournals,
-                dataOrigin != DataOrigin.PlayerJournals,
-                systemInfo.Commander,
-                systemInfo.VisitCount);
-
             _c.LastSystemId64DataShared = systemInfo.SystemId64;
-            _c.Dispatcher.SendMessage(msg);
-            _c.Core.ExecuteOnUIThread(() =>
+            if (settings.DataShareMethodEnum == ArchivistSettings.ShareMethod.InteropMessage)
             {
-                _c.UI.SetMessage($"Shared {systemInfo.SystemJournalEntries.Count} events for {systemInfo.SystemName} from {Misc.SplitCamelCase(dataOrigin.ToString())}.");
-            });
+                ArchivistJournalsMessage msg = ArchivistJournalsMessage.New(
+                    systemInfo.SystemName,
+                    systemInfo.SystemId64,
+                    preamble,
+                    systemJournals,
+                    dataOrigin != DataOrigin.PlayerJournals,
+                    systemInfo.Commander,
+                    systemInfo.VisitCount);
 
-            // No boolean response from this. Either we have it or we don't.
-            MaybeAlsoShareNotificationData(systemInfo);
-            _lastSharedSystemDataId64 = systemInfo.SystemId64;
+                _c.Dispatcher.SendMessage(msg);
+                _c.Core.ExecuteOnUIThread(() =>
+                {
+                    _c.UI.SetMessage($"Shared {systemInfo.SystemJournalEntries.Count} events for {systemInfo.SystemName} from {Misc.SplitCamelCase(dataOrigin.ToString())} via plugin interop message.");
+                });
+
+                MaybeAlsoShareNotificationData(systemInfo);
+            }
+            else if (settings.DataShareMethodEnum == ArchivistSettings.ShareMethod.JournalReplay)
+            {
+                // Don't run this on the UI thread! It guts performance.
+                Task.Run(() =>
+                {
+                    _c.SetResendAll(true);
+                    foreach (var item in systemInfo.SystemJournalEntries)
+                    {
+                        string json = item.ToString();
+                        Debug.WriteLine($"[{DateTime.Now:mm:ss.fff}] Archivist: Sharing journal via Core: {json}");
+                        _c.Core.DeserializeEvent(json, true);
+                    }
+                    _c.SetResendAll(false);
+
+                    _c.Core.ExecuteOnUIThread(() =>
+                    {
+                        _c.UI.SetMessage($"Shared {systemInfo.SystemJournalEntries.Count} events for {systemInfo.SystemName} from {Misc.SplitCamelCase(dataOrigin.ToString())} via Journal Replay.");
+                    });
+                    // Skip this -- full replay will re-fire notifications anyway.
+                    // MaybeAlsoShareNotificationData(systemInfo);
+                });
+            }
+
             return !isCompleteScan ? DataShared.Partial :  DataShared.All;
         }
 
@@ -554,9 +593,8 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             }
         }
 
-        class TaskState(int d, string sysName, ulong? sysId64)
+        class TaskState(string sysName, ulong? sysId64)
         {
-            internal int delayMs = d;
             internal string systemName = sysName;
             internal ulong? systemId64 = sysId64;
         }
@@ -566,7 +604,8 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             List<ArchivistPositionCacheItem> results = [];
             List<SystemInfo> newItems = [];
             List<Task<SystemInfo>> externalReqs = [];
-            int extReqDelayMs = 0;
+            DateTime lastTaskStarted = DateTime.MinValue;
+            int extReqDelayMs = 100;
 
             foreach (var req in posReqs)
             {
@@ -590,36 +629,49 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     result = _c.PositionCache.GetSystem(req.SystemId64);
                 }
 
-                TaskState taskState = new(extReqDelayMs, req.SystemName, id64);
 
                 if (result is null && extFallback)
                 {
-                    CancellationTokenSource cts = new(5000);
-                    Task<SystemInfo> extReq = Task.Factory.StartNew(state =>
+                    Task.Run(async () =>
                     {
-                        TaskState myState = (TaskState)state;
-                        Debug.WriteLine($"[Task] Fetching coordinates for {myState.systemName} | {myState.systemId64} after a delay of {myState.delayMs} ms...");
-
-                        Task.Delay(myState.delayMs); // Ratelimit
-                        var coordsResponse = EdGISHelper.LookupCoords(_c.Core.HttpClient, cts.Token, myState.systemName, id64);
-
-                        Id64Details details = Id64Details.FromId64(coordsResponse.SystemId64);
-                        result = new()
+                        // Ratelimit to 1 per ~100 ms. Do this before creating the Cancellation token.
+                        // TODO: use a proper RateLimiting implementation.
+                        int msSinceLastRequest = Convert.ToInt32(DateTime.Now.Subtract(lastTaskStarted).TotalMilliseconds);
+                        if (lastTaskStarted > DateTime.MinValue && msSinceLastRequest < extReqDelayMs)
                         {
-                            CommonName = coordsResponse.SystemName,
-                            ProcGenName = details.ProcGenSystemName,
-                            Id64 = coordsResponse.SystemId64,
-                            x = coordsResponse.Coords.X,
-                            y = coordsResponse.Coords.Y,
-                            z = coordsResponse.Coords.Z,
-                        };
-                        Debug.WriteLine($"[Task] Fetching coordinates for {myState.systemName} | {myState.systemId64} completed");
-                        return result;
+                            await Task.Delay(extReqDelayMs - msSinceLastRequest);
+                            lastTaskStarted = (DateTime.Now > lastTaskStarted ? DateTime.Now : lastTaskStarted);
+                        }
 
-                    }, taskState, cts.Token);
+                        TaskState taskState = new(req.SystemName, id64);
+                        CancellationTokenSource cts = new(5000);
+                        Task<SystemInfo> extReq = Task.Factory.StartNew((state) =>
+                        {
+                            TaskState myState = (TaskState)state;
+                            Debug.WriteLine($"[Task] Fetching coordinates for {myState.systemName} | {myState.systemId64}...");
 
-                    externalReqs.Add(extReq);
-                    extReqDelayMs += 100;
+                            var coordsResponse = EdGISHelper.LookupCoords(_c.Core.HttpClient, cts.Token, myState.systemName, id64);
+
+                            Id64Details details = Id64Details.FromId64(coordsResponse.SystemId64);
+                            result = new()
+                            {
+                                CommonName = coordsResponse.SystemName,
+                                ProcGenName = details.ProcGenSystemName,
+                                Id64 = coordsResponse.SystemId64,
+                                x = coordsResponse.Coords.X,
+                                y = coordsResponse.Coords.Y,
+                                z = coordsResponse.Coords.Z,
+                            };
+                            Debug.WriteLine($"[Task] Fetching coordinates for {myState.systemName} | {myState.systemId64} completed");
+                            return result;
+
+                        }, taskState, cts.Token);
+
+                        lock (externalReqs)
+                        {
+                            externalReqs.Add(extReq);
+                        }
+                    });
                 }
                 else if (result is not null)
                 {

@@ -75,6 +75,18 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
             if (results.Count == 0)
             {
                 _c.UI.SetMessage("No journals found");
+
+                // see if we have augmented data only:
+
+                VisitedSystem synthesized = _c.Journals.GetSynthesizedVisitedSystems(SearchSystemName);
+
+                if (synthesized is not null)
+                {
+                    _c.UI.SetMessage($"Found {synthesized.SystemJournalEntries.Count} synthesized journals from Spansh");
+                    CollectedJournals = null;
+                    AugmentedJournals = synthesized;
+                    return true;
+                }
                 return false;
             }
 
