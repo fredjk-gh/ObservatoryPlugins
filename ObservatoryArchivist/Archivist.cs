@@ -56,7 +56,11 @@ May use data from Spansh, EDGIS and/or EDAstro. Thanks to MattG for sharing some
         public object Settings
         {
             get => settings;
-            set => settings = (ArchivistSettings)value;
+            set
+            {
+                settings = (ArchivistSettings)value;
+                MaybeFixNewSettings();
+            }
         }
 
         public void Load(IObservatoryCore observatoryCore)
@@ -80,8 +84,6 @@ May use data from Spansh, EDGIS and/or EDAstro. Thanks to MattG for sharing some
 
             _archivistPanel = new ArchivistPanel(_c);
             pluginUI = new PluginUI(PluginUI.UIType.Panel, _archivistPanel);
-
-            MaybeFixNewSettings();
         }
 
         private void MaybeFixNewSettings()

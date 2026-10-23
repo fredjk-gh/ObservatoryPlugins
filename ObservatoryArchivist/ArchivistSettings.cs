@@ -1,4 +1,5 @@
 ﻿using Observatory.Framework;
+using System.Text.Json.Serialization;
 
 namespace com.github.fredjk_gh.ObservatoryArchivist
 {
@@ -38,6 +39,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
         [SettingDisplayName("Data Sharing Method")]
         [SettingBackingValue("DataShareMethod")]
+        [JsonIgnore]
         public Dictionary<string, object> DataShareMethodOptions
         {
             get => SHARE_METHOD_VALUES;
@@ -47,6 +49,7 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
         public string DataShareMethod { get; set; }
 
         [SettingIgnore]
+        [JsonIgnore]
         public ShareMethod DataShareMethodEnum
         {
             get => (ArchivistSettings.ShareMethod)DataShareMethodOptions[DataShareMethod];
