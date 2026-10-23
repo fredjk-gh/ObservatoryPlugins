@@ -23,7 +23,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         public CommanderData(CommanderKey key)
         {
             Key = key;
-            Ships = new();
         }
 
         public CommanderKey Key { get; init; }
@@ -101,7 +100,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         public string NeutronPrimarySystemNotified { get; set; }
         public string FuelWarningNotifiedSystem { get; set; }
         public bool IsDockedOnCarrier { get; set; }
-        public ShipsData Ships { get; set; /* for deserialization */ }
+        public TransitModeType ActiveTransitMode { get; set; } = TransitModeType.Unknown;
+        public ShipsData Ships { get; set; /* for deserialization */ } = new();
+        public SRVData SRV { get; set; /* for deserialization */ } = new();
         public SystemNamePosition ReferenceSystem { get; set; }
 
         public void SystemInit()
@@ -113,7 +114,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             _recentSystems[CurrentSystemData.SystemId64] = CurrentSystemData;
         }
 
-        public void SystemReset(UInt64 address, string name, StarPosition starPos)
+        public void SystemReset(UInt64 address, string name, StarPosition starPos, TransitModeType mode = TransitModeType.OwnShip)
         {
             if (!_recentSystems.ContainsKey(address))
             {
@@ -131,12 +132,13 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
                 Debug.Assert(_recentSystems.Count == _recentSystemIds.Count, "Recent system lists are desynced!");
             }
             _currentSystemAddr = address;
-            IsDockedOnCarrier = false;
+            IsDockedOnCarrier = mode == TransitModeType.FleetCarrier;
+            ActiveTransitMode = mode;
         }
 
         public void SystemReset(UInt64 address, string name, StarPosition starPos, double fuelLevel, double jumpDist)
         {
-            SystemReset(address, name, starPos);
+            SystemReset(address, name, starPos, TransitModeType.OwnShip);
 
             if (!HelmContext.Instance.UIMgr.ReplayMode)
                 Ships.CurrentShip.FuelRemaining = fuelLevel;
@@ -150,15 +152,15 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
 
         public void SystemResetDockedOnCarrier(UInt64 address, string name, StarPosition starPos, double distanceTravelled = 0)
         {
-            SystemReset(address, name, starPos);
+            SystemReset(address, name, starPos, TransitModeType.FleetCarrier);
             DockedCarrierJumpsCompleted++;
             DistanceTravelled += distanceTravelled;
-            IsDockedOnCarrier = true;
         }
 
-        public void SessionReset(LoadGame loadGame)
+        public void SessionReset(LoadGame loadGame = null)
         {
-            Ships.InitializeShip(loadGame);
+            if (loadGame is not null)
+                Ships.InitializeShip(loadGame);
             JumpsRemainingInRoute = 0;
             DistanceTravelled = 0;
             JumpsCompleted = 0;

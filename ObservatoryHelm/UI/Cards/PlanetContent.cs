@@ -103,27 +103,38 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             ToolTip = "Ring count",
             Visible = true,
         };
+        private readonly ImageSpec ICON_BODY_MINING_LOCATIONS = new(PluginCommon.Images.PlanetaryMiningSpotImage)
+        {
+            Size = new(16, 16),
+            Tag = "mining-locations",
+            ToolTip = "Planetary Mining Locations",
+            Visible = true,
+        };
 
         private CommanderData _currCommander = null;
         private SystemData _displayedSystem = null;
         private PlanetData _displayedBody = null;
         private UIStateData _state;
 
-        internal PlanetContent(HelmContext context) : base(context)
+        internal PlanetContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
 
             ContentTitle = "Planet";
+            EnablePopout = true;
 
-            tlblBodyAttributes.ToolTipManager = ttManager;
-            tlblGravityValue.ToolTipManager = ttManager;
-            tlblTempValue.ToolTipManager = ttManager;
-            tlblCoordinates.ToolTipManager = ttManager;
-            tlblGeoSignals.ToolTipManager = ttManager;
-            tlblBioSignals.ToolTipManager = ttManager;
-            tlblBodyRings.ToolTipManager = ttManager;
+            _toolTip.SetToolTip(btnBodyCoordsCopy, "Copy coordinates to the system clipboard");
 
-            this.SuspendLayout();
+            tlblBodyAttributes.ToolTipManager = _toolTip;
+            tlblGravityValue.ToolTipManager = _toolTip;
+            tlblTempValue.ToolTipManager = _toolTip;
+            tlblCoordinates.ToolTipManager = _toolTip;
+            tlblGeoSignals.ToolTipManager = _toolTip;
+            tlblBioSignals.ToolTipManager = _toolTip;
+            tlblBodyRings.ToolTipManager = _toolTip;
+            tlblBodyMiningLocations.ToolTipManager = _toolTip;
+
+            SuspendLayout();
             btnBodyCoordsCopy.SetOriginalImage(PluginCommon.Images.CopyImage, new(24, 24));
             tlblBodyAttributes.AddImage(ICON_BODY_VALUABLE);
             tlblBodyAttributes.AddImage(ICON_BODY_MAPPED);
@@ -138,8 +149,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             tlblGeoSignals.AddImage(ICON_BODY_GEOSIGNALS);
             tlblBioSignals.AddImage(ICON_BODY_BIOSIGNALS);
             tlblBodyRings.AddImage(ICON_BODY_RINGS);
+            tlblBodyMiningLocations.AddImage(ICON_BODY_MINING_LOCATIONS);
 
-            this.ResumeLayout();
+            ResumeLayout();
             _suppressEvents = false;
 
             _state = _c.UIMgr.ForMode();
@@ -147,6 +159,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             cboBody.SelectedIndexChanged += CboBody_SelectedIndexChanged;
 
             lblBodyType.FontChanged += TraceFontChanged;
+
             InternalClear();
         }
 
@@ -216,6 +229,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 
             tlblGeoSignals.Text = $"{_displayedBody.SignalCountByType(PlanetData.SignalType.Geological)}";
             tlblBioSignals.Text = $"{_displayedBody.SignalCountByType(PlanetData.SignalType.Biological)}";
+            tlblBodyMiningLocations.Text = $"{_displayedBody.SignalCountByType(PlanetData.SignalType.PlanetaryMining)}";
             tlblBodyRings.Text = $"{_displayedBody.Scan.Rings?.Count ?? 0}";
             tlblBodyRings.SetTooltip(ICON_BODY_RINGS.Guid, UIFormatter.BodyRingsTooltip(_displayedBody.Scan));
 
@@ -325,34 +339,20 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             tlblTempValue.SetVisibility(ICON_WARNING_TEMP_NO_ONFOOT.Guid, false);
             lblBodyPressure.Text = string.Empty;
             lblAtmosphereTypeValue.Text = string.Empty;
-            tlblGeoSignals.Text = string.Empty;
-            tlblBioSignals.Text = string.Empty;
-            tlblBodyRings.Text = string.Empty;
+            tlblGeoSignals.Text = "0";
+            tlblBioSignals.Text = "0";
+            tlblBodyMiningLocations.Text = "0";
+            tlblBodyRings.Text = "0";
             tlblBodyRings.SetTooltip(ICON_BODY_RINGS.Guid, "Ring count");
             lblBodyDistance.Text = string.Empty;
 
             lblBodyAltitude.Text = string.Empty;
-            tlblCoordinates.Text = string.Empty;
+            tlblCoordinates.Text = "-";
 
             SetButtonState(false);
             _currCommander = null;
             _displayedBody = null;
             _displayedSystem = null;
-        }
-
-        internal void SetTitle()
-        {
-            if (_displayedBody == null) return;
-
-            if (_c.UIMgr.Mode == UIStateManager.UIMode.Realtime
-                && _displayedBody?.BodyId != _c.UIMgr.ForMode(UIStateManager.UIMode.Realtime)?.BodyId)
-            {
-                ContentTitle = "Current Planet";
-            }
-            else
-            {
-                ContentTitle = "Selected Planet";
-            }
         }
 
         private void SetButtonState(bool isEnabled)
@@ -419,7 +419,6 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         protected override void OnBoxStateChanged(object sender, CollapsibleGroupBox.BoxStateEventArgs e)
         {
             _isExpanded = e.Expanded;
-            SetTitle();
         }
 
         private void BodySignalsLabelClick(object sender, EventArgs e)
@@ -427,21 +426,25 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             string targetPlugin = "";
             if (sender == tlblGeoSignals)
             {
-                targetPlugin = "GeoPredictor";
+                targetPlugin = "GeoPredictor"; // Doesn't send a ready message.
             }
             else if (sender == tlblBioSignals
                 && _c.PluginTracker.IsActive(PluginType.mattg_BioInsights))
             {
                 targetPlugin = "BioInsights";
             }
-            else if (sender == tlblBioSignals
-                && _c.PluginTracker.IsActive(PluginType.vithigar_Botanist))
+            else if (sender == tlblBioSignals)
             {
-                targetPlugin = "Botanist";
+                targetPlugin = "Botanist"; // Doesn't send a ready message.
             }
-            else if (sender == tlblBodyRings)
+            else if (sender == tlblBodyRings
+                && _c.PluginTracker.IsActive(PluginType.fredjk_Prospector))
             {
                 targetPlugin = "Prospector";
+            }
+            else if (sender == tlblBodyMiningLocations)
+            {
+                targetPlugin = string.Empty; // Nothing... yet? Maybe Prospector?
             }
 
             if (!string.IsNullOrEmpty(targetPlugin))

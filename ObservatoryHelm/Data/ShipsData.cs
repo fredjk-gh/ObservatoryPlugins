@@ -76,38 +76,21 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             CurrentShipID = loadout.ShipID;
         }
 
-
         public void UpdateCargo(CargoFile cargo)
         {
-            UpdateCargoInventory(cargo.Inventory);
+            CargoHelper.UpdateCargo(_cargo, cargo);
         }
 
         public void UpdateCargo(Cargo cargo)
         {
-            if (cargo.Inventory is null)
-            {
-                if (cargo.Count == 0)
-                    _cargo.Clear();
-                return;
-            }
-            UpdateCargoInventory(cargo.Inventory);
+            CargoHelper.UpdateCargo(_cargo, cargo);
         }
 
-        private void UpdateCargoInventory(IEnumerable<CargoType> inventory)
+        public int UpdateCargo(CargoTransferDetail xfer)
         {
-            _cargo.Clear();
-            foreach (var item in inventory)
-            {
-                string key = CargoHelper.GetCargoKey(item.Name, item.Name_Localised);
-                // You may get multiple items with the same key if you're transporting mission-specific cargo.
-                // Therefore, the key may already exist.
-                if (!_cargo.ContainsKey(key))
-                    _cargo.Add(key, item.Count);
-                else
-                    _cargo[key] += item.Count;
-            }
+            return CargoHelper.UpdateCargo(_cargo, xfer);
         }
-        
+
         public void InitializeShip(LoadGame loadGame)
         {
             // Yeah -- if you can believe it, FDev shtuffs suit info into Ship properties if you load the game while on-foot.

@@ -1,9 +1,8 @@
-﻿using com.github.fredjk_gh.ObservatoryHelm.Data;
-using com.github.fredjk_gh.PluginCommon.Data.Journals;
+﻿using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
 using static com.github.fredjk_gh.PluginCommon.PluginInterop.PluginTracker;
 
-namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
+namespace com.github.fredjk_gh.ObservatoryHelm.UI.Forms
 {
     public partial class GetReferenceSystemForm : Form
     {

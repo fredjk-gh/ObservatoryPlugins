@@ -31,39 +31,40 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             label1 = new Label();
             lblMarketId = new Label();
             label3 = new Label();
-            label4 = new Label();
-            label8 = new Label();
-            label9 = new Label();
+            lblStationType = new Label();
+            lblStationLocation = new Label();
+            lblDist = new Label();
             label10 = new Label();
-            label11 = new Label();
+            lblStationGov = new Label();
             label12 = new Label();
-            label13 = new Label();
+            lblStationPowerPlaySummary = new Label();
             label14 = new Label();
-            label15 = new Label();
+            lblStationControlFaction = new Label();
             label16 = new Label();
-            label17 = new Label();
+            lblStationEconomy = new Label();
             label18 = new Label();
-            label19 = new Label();
+            lblStationTechBrokerType = new Label();
             label20 = new Label();
             tlblLandingPads = new ThemeableImageLabel();
-            checkBox1 = new CheckBox();
-            listBox1 = new ListBox();
-            label21 = new Label();
+            chkShowDockingOverlay = new CheckBox();
+            lbStationServices = new ListBox();
+            lblStationMatTraderType = new Label();
             label22 = new Label();
             label23 = new Label();
-            ttManager = new ToolTip(components);
             tlblCoordinates = new ThemeableImageLabel();
             cboStation = new ComboBox();
+            tableLayoutPanel1 = new TableLayoutPanel();
+            tableLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
             // label1
             // 
+            label1.Anchor = AnchorStyles.Left;
             label1.AutoSize = true;
-            label1.Location = new Point(8, 64);
+            label1.Location = new Point(3, 60);
             label1.Name = "label1";
             label1.Size = new Size(61, 15);
             label1.TabIndex = 1;
@@ -71,8 +72,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             // 
             // lblMarketId
             // 
+            lblMarketId.Anchor = AnchorStyles.Left;
             lblMarketId.AutoSize = true;
-            lblMarketId.Location = new Point(96, 64);
+            lblMarketId.Location = new Point(102, 60);
             lblMarketId.Name = "lblMarketId";
             lblMarketId.Size = new Size(67, 15);
             lblMarketId.TabIndex = 2;
@@ -80,135 +82,150 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             // 
             // label3
             // 
+            label3.Anchor = AnchorStyles.Left;
             label3.AutoSize = true;
-            label3.Location = new Point(8, 40);
+            label3.Location = new Point(3, 35);
             label3.Name = "label3";
             label3.Size = new Size(74, 15);
             label3.TabIndex = 3;
             label3.Text = "Station Type:";
             // 
-            // label4
+            // lblStationType
             // 
-            label4.AutoSize = true;
-            label4.Location = new Point(96, 40);
-            label4.Name = "label4";
-            label4.Size = new Size(92, 15);
-            label4.TabIndex = 4;
-            label4.Text = "Coriolis Starport";
+            lblStationType.Anchor = AnchorStyles.Left;
+            lblStationType.AutoSize = true;
+            lblStationType.Location = new Point(102, 35);
+            lblStationType.Name = "lblStationType";
+            lblStationType.Size = new Size(92, 15);
+            lblStationType.TabIndex = 4;
+            lblStationType.Text = "Coriolis Starport";
             // 
-            // label8
+            // lblStationLocation
             // 
-            label8.AutoSize = true;
-            label8.Location = new Point(240, 40);
-            label8.Name = "label8";
-            label8.Size = new Size(43, 15);
-            label8.TabIndex = 8;
-            label8.Text = "Orbital";
+            lblStationLocation.Anchor = AnchorStyles.Left;
+            lblStationLocation.AutoSize = true;
+            lblStationLocation.Location = new Point(246, 35);
+            lblStationLocation.Name = "lblStationLocation";
+            lblStationLocation.Size = new Size(43, 15);
+            lblStationLocation.TabIndex = 8;
+            lblStationLocation.Text = "Orbital";
             // 
-            // label9
+            // lblDist
             // 
-            label9.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            label9.AutoSize = true;
-            label9.Location = new Point(384, 40);
-            label9.Name = "label9";
-            label9.Size = new Size(54, 15);
-            label9.TabIndex = 102;
-            label9.Text = "491.87 Ls";
+            lblDist.Anchor = AnchorStyles.Right;
+            lblDist.AutoSize = true;
+            lblDist.Location = new Point(393, 35);
+            lblDist.Name = "lblDist";
+            lblDist.Size = new Size(54, 15);
+            lblDist.TabIndex = 102;
+            lblDist.Text = "491.87 Ls";
             // 
             // label10
             // 
+            label10.Anchor = AnchorStyles.Left;
             label10.AutoSize = true;
-            label10.Location = new Point(8, 112);
+            label10.Location = new Point(3, 110);
             label10.Name = "label10";
             label10.Size = new Size(76, 15);
             label10.TabIndex = 103;
             label10.Text = "Government:";
             // 
-            // label11
+            // lblStationGov
             // 
-            label11.AutoSize = true;
-            label11.Location = new Point(96, 112);
-            label11.Name = "label11";
-            label11.Size = new Size(67, 15);
-            label11.TabIndex = 104;
-            label11.Text = "Democracy";
+            lblStationGov.Anchor = AnchorStyles.Left;
+            lblStationGov.AutoSize = true;
+            lblStationGov.Location = new Point(102, 110);
+            lblStationGov.Name = "lblStationGov";
+            lblStationGov.Size = new Size(67, 15);
+            lblStationGov.TabIndex = 104;
+            lblStationGov.Text = "Democracy";
             // 
             // label12
             // 
+            label12.Anchor = AnchorStyles.Left;
             label12.AutoSize = true;
-            label12.Location = new Point(8, 88);
+            label12.Location = new Point(3, 85);
             label12.Name = "label12";
             label12.Size = new Size(68, 15);
             label12.TabIndex = 105;
             label12.Text = "Power Play:";
             // 
-            // label13
+            // lblStationPowerPlaySummary
             // 
-            label13.AutoSize = true;
-            label13.Location = new Point(96, 88);
-            label13.Name = "label13";
-            label13.Size = new Size(138, 15);
-            label13.TabIndex = 106;
-            label13.Text = "Li Yong-Rui (Stronghold)";
+            lblStationPowerPlaySummary.Anchor = AnchorStyles.Left;
+            lblStationPowerPlaySummary.AutoSize = true;
+            tableLayoutPanel1.SetColumnSpan(lblStationPowerPlaySummary, 2);
+            lblStationPowerPlaySummary.Location = new Point(102, 85);
+            lblStationPowerPlaySummary.Name = "lblStationPowerPlaySummary";
+            lblStationPowerPlaySummary.Size = new Size(138, 15);
+            lblStationPowerPlaySummary.TabIndex = 106;
+            lblStationPowerPlaySummary.Text = "Li Yong-Rui (Stronghold)";
             // 
             // label14
             // 
+            label14.Anchor = AnchorStyles.Left;
             label14.AutoSize = true;
-            label14.Location = new Point(8, 136);
+            label14.Location = new Point(3, 135);
             label14.Name = "label14";
             label14.Size = new Size(49, 15);
             label14.TabIndex = 107;
             label14.Text = "Faction:";
             // 
-            // label15
+            // lblStationControlFaction
             // 
-            label15.AutoSize = true;
-            label15.Location = new Point(96, 136);
-            label15.Name = "label15";
-            label15.Size = new Size(29, 15);
-            label15.TabIndex = 108;
-            label15.Text = "EXO";
+            lblStationControlFaction.Anchor = AnchorStyles.Left;
+            lblStationControlFaction.AutoSize = true;
+            lblStationControlFaction.Location = new Point(102, 135);
+            lblStationControlFaction.Name = "lblStationControlFaction";
+            lblStationControlFaction.Size = new Size(29, 15);
+            lblStationControlFaction.TabIndex = 108;
+            lblStationControlFaction.Text = "EXO";
             // 
             // label16
             // 
             label16.AutoSize = true;
-            label16.Location = new Point(8, 160);
+            label16.Location = new Point(3, 160);
+            label16.Margin = new Padding(3, 5, 3, 0);
             label16.Name = "label16";
             label16.Size = new Size(60, 15);
             label16.TabIndex = 109;
             label16.Text = "Economy:";
             // 
-            // label17
+            // lblStationEconomy
             // 
-            label17.AutoSize = true;
-            label17.Location = new Point(96, 160);
-            label17.Name = "label17";
-            label17.Size = new Size(93, 30);
-            label17.TabIndex = 110;
-            label17.Text = "High Tech (80%)\r\nRefinery (20%)";
+            lblStationEconomy.AutoSize = true;
+            lblStationEconomy.Location = new Point(102, 160);
+            lblStationEconomy.Margin = new Padding(3, 5, 3, 0);
+            lblStationEconomy.Name = "lblStationEconomy";
+            lblStationEconomy.Size = new Size(93, 30);
+            lblStationEconomy.TabIndex = 110;
+            lblStationEconomy.Text = "High Tech (80%)\r\nRefinery (20%)";
             // 
             // label18
             // 
+            label18.Anchor = AnchorStyles.Left;
             label18.AutoSize = true;
-            label18.Location = new Point(8, 216);
+            label18.Location = new Point(3, 220);
             label18.Name = "label18";
             label18.Size = new Size(71, 15);
             label18.TabIndex = 111;
             label18.Text = "Tech Broker:";
             // 
-            // label19
+            // lblStationTechBrokerType
             // 
-            label19.AutoSize = true;
-            label19.Location = new Point(96, 216);
-            label19.Name = "label19";
-            label19.Size = new Size(55, 15);
-            label19.TabIndex = 112;
-            label19.Text = "Guardian";
+            lblStationTechBrokerType.Anchor = AnchorStyles.Left;
+            lblStationTechBrokerType.AutoSize = true;
+            lblStationTechBrokerType.Location = new Point(102, 220);
+            lblStationTechBrokerType.Name = "lblStationTechBrokerType";
+            lblStationTechBrokerType.Size = new Size(55, 15);
+            lblStationTechBrokerType.TabIndex = 112;
+            lblStationTechBrokerType.Text = "Guardian";
             // 
             // label20
             // 
+            label20.Anchor = AnchorStyles.Left;
             label20.AutoSize = true;
-            label20.Location = new Point(8, 264);
+            label20.Location = new Point(3, 270);
             label20.Name = "label20";
             label20.Size = new Size(81, 15);
             label20.TabIndex = 113;
@@ -216,47 +233,56 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             // 
             // tlblLandingPads
             // 
+            tlblLandingPads.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             tlblLandingPads.AutoSize = true;
             tlblLandingPads.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            tlblLandingPads.BorderStyle = BorderStyle.FixedSingle;
+            tlblLandingPads.ImageColor = Color.Transparent;
             tlblLandingPads.LabelPosition = LabelPositionType.Right;
-            tlblLandingPads.Location = new Point(96, 264);
+            tlblLandingPads.Location = new Point(100, 276);
+            tlblLandingPads.Margin = new Padding(1, 0, 1, 0);
             tlblLandingPads.Name = "tlblLandingPads";
-            tlblLandingPads.Size = new Size(0, 0);
+            tlblLandingPads.Size = new Size(142, 2);
             tlblLandingPads.TabIndex = 114;
             // 
-            // checkBox1
+            // chkShowDockingOverlay
             // 
-            checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(96, 288);
-            checkBox1.Name = "checkBox1";
-            checkBox1.Size = new Size(136, 19);
-            checkBox1.TabIndex = 115;
-            checkBox1.Text = "Show Docking Guide";
-            checkBox1.UseVisualStyleBackColor = false;
+            chkShowDockingOverlay.Anchor = AnchorStyles.Left;
+            chkShowDockingOverlay.AutoSize = true;
+            chkShowDockingOverlay.Location = new Point(102, 297);
+            chkShowDockingOverlay.Name = "chkShowDockingOverlay";
+            chkShowDockingOverlay.Size = new Size(136, 19);
+            chkShowDockingOverlay.TabIndex = 115;
+            chkShowDockingOverlay.Text = "Show Docking Guide";
+            chkShowDockingOverlay.UseVisualStyleBackColor = false;
             // 
-            // listBox1
+            // lbStationServices
             // 
-            listBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            listBox1.FormattingEnabled = true;
-            listBox1.ItemHeight = 15;
-            listBox1.Location = new Point(240, 128);
-            listBox1.Name = "listBox1";
-            listBox1.Size = new Size(200, 184);
-            listBox1.TabIndex = 116;
+            lbStationServices.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel1.SetColumnSpan(lbStationServices, 3);
+            lbStationServices.FormattingEnabled = true;
+            lbStationServices.ItemHeight = 15;
+            lbStationServices.Location = new Point(246, 133);
+            lbStationServices.Name = "lbStationServices";
+            tableLayoutPanel1.SetRowSpan(lbStationServices, 6);
+            lbStationServices.Size = new Size(201, 184);
+            lbStationServices.TabIndex = 116;
             // 
-            // label21
+            // lblStationMatTraderType
             // 
-            label21.AutoSize = true;
-            label21.Location = new Point(96, 240);
-            label21.Name = "label21";
-            label21.Size = new Size(53, 15);
-            label21.TabIndex = 117;
-            label21.Text = "Encoded";
+            lblStationMatTraderType.Anchor = AnchorStyles.Left;
+            lblStationMatTraderType.AutoSize = true;
+            lblStationMatTraderType.Location = new Point(102, 245);
+            lblStationMatTraderType.Name = "lblStationMatTraderType";
+            lblStationMatTraderType.Size = new Size(53, 15);
+            lblStationMatTraderType.TabIndex = 117;
+            lblStationMatTraderType.Text = "Encoded";
             // 
             // label22
             // 
+            label22.Anchor = AnchorStyles.Left;
             label22.AutoSize = true;
-            label22.Location = new Point(8, 240);
+            label22.Location = new Point(3, 245);
             label22.Name = "label22";
             label22.Size = new Size(66, 15);
             label22.TabIndex = 118;
@@ -264,8 +290,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             // 
             // label23
             // 
+            label23.Anchor = AnchorStyles.Left;
             label23.AutoSize = true;
-            label23.Location = new Point(240, 112);
+            label23.Location = new Point(246, 110);
             label23.Name = "label23";
             label23.Size = new Size(52, 15);
             label23.TabIndex = 119;
@@ -273,86 +300,121 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             // 
             // tlblCoordinates
             // 
+            tlblCoordinates.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             tlblCoordinates.AutoSize = true;
             tlblCoordinates.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            tlblCoordinates.BorderStyle = BorderStyle.FixedSingle;
+            tableLayoutPanel1.SetColumnSpan(tlblCoordinates, 3);
+            tlblCoordinates.ImageColor = Color.Transparent;
             tlblCoordinates.LabelPosition = LabelPositionType.Right;
-            tlblCoordinates.Location = new Point(240, 64);
+            tlblCoordinates.Location = new Point(246, 59);
+            tlblCoordinates.Margin = new Padding(3, 0, 3, 0);
             tlblCoordinates.Name = "tlblCoordinates";
-            tlblCoordinates.Size = new Size(151, 15);
+            tlblCoordinates.Size = new Size(201, 17);
             tlblCoordinates.TabIndex = 120;
             tlblCoordinates.Text = "-41.0625, -62.15625, -103.25";
             // 
             // cboStation
             // 
+            cboStation.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel1.SetColumnSpan(cboStation, 3);
             cboStation.FlatStyle = FlatStyle.Flat;
             cboStation.FormattingEnabled = true;
             cboStation.Items.AddRange(new object[] { "Nnadi Agricultural Biome", "Heighton Manufacturing Facility", "Emeagwali's Rest", "Rothman Vista", "Inoue Industrial Site", "Clarke Botanical Habitat", "Yarovy Chemical Depot", "Cohen Cultivation Hub", "Bonfils Nutrition Collection", "Zadzisai Industrial Plant", "Suarez Agricultural Exchange", "Parekh Chemical Holdings", "Koo's Globe", "Garrido's Locus", "Pawlikowski Boarding Zone", "Endo Engineering Facility", "Gokhale Chemical Depot", "Brewer Manufacturing Forge", "Ray Gateway" });
-            cboStation.Location = new Point(8, 8);
+            cboStation.Location = new Point(3, 3);
             cboStation.Name = "cboStation";
-            cboStation.Size = new Size(328, 23);
+            cboStation.Size = new Size(327, 23);
             cboStation.TabIndex = 121;
+            // 
+            // tableLayoutPanel1
+            // 
+            tableLayoutPanel1.ColumnCount = 5;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 6F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            tableLayoutPanel1.Controls.Add(cboStation, 0, 0);
+            tableLayoutPanel1.Controls.Add(lbStationServices, 2, 5);
+            tableLayoutPanel1.Controls.Add(lblStationMatTraderType, 1, 8);
+            tableLayoutPanel1.Controls.Add(chkShowDockingOverlay, 1, 10);
+            tableLayoutPanel1.Controls.Add(label22, 0, 8);
+            tableLayoutPanel1.Controls.Add(tlblLandingPads, 1, 9);
+            tableLayoutPanel1.Controls.Add(label23, 2, 4);
+            tableLayoutPanel1.Controls.Add(label20, 0, 9);
+            tableLayoutPanel1.Controls.Add(tlblCoordinates, 2, 2);
+            tableLayoutPanel1.Controls.Add(label3, 0, 1);
+            tableLayoutPanel1.Controls.Add(label1, 0, 2);
+            tableLayoutPanel1.Controls.Add(label12, 0, 3);
+            tableLayoutPanel1.Controls.Add(label10, 0, 4);
+            tableLayoutPanel1.Controls.Add(lblStationTechBrokerType, 1, 7);
+            tableLayoutPanel1.Controls.Add(lblStationType, 1, 1);
+            tableLayoutPanel1.Controls.Add(label18, 0, 7);
+            tableLayoutPanel1.Controls.Add(lblMarketId, 1, 2);
+            tableLayoutPanel1.Controls.Add(lblStationEconomy, 1, 6);
+            tableLayoutPanel1.Controls.Add(lblStationPowerPlaySummary, 1, 3);
+            tableLayoutPanel1.Controls.Add(label16, 0, 6);
+            tableLayoutPanel1.Controls.Add(lblStationGov, 1, 4);
+            tableLayoutPanel1.Controls.Add(lblStationControlFaction, 1, 5);
+            tableLayoutPanel1.Controls.Add(lblStationLocation, 2, 1);
+            tableLayoutPanel1.Controls.Add(label14, 0, 5);
+            tableLayoutPanel1.Controls.Add(lblDist, 4, 1);
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Location = new Point(0, 0);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            tableLayoutPanel1.RowCount = 11;
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tableLayoutPanel1.Size = new Size(450, 323);
+            tableLayoutPanel1.TabIndex = 122;
             // 
             // StationContent
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            Controls.Add(cboStation);
-            Controls.Add(tlblCoordinates);
-            Controls.Add(label23);
-            Controls.Add(label22);
-            Controls.Add(label21);
-            Controls.Add(listBox1);
-            Controls.Add(checkBox1);
-            Controls.Add(tlblLandingPads);
-            Controls.Add(label20);
-            Controls.Add(label19);
-            Controls.Add(label18);
-            Controls.Add(label17);
-            Controls.Add(label16);
-            Controls.Add(label15);
-            Controls.Add(label14);
-            Controls.Add(label13);
-            Controls.Add(label12);
-            Controls.Add(label11);
-            Controls.Add(label10);
-            Controls.Add(label9);
-            Controls.Add(label8);
-            Controls.Add(label4);
-            Controls.Add(label3);
-            Controls.Add(lblMarketId);
-            Controls.Add(label1);
+            Controls.Add(tableLayoutPanel1);
             Name = "StationContent";
             Size = new Size(450, 323);
+            tableLayoutPanel1.ResumeLayout(false);
+            tableLayoutPanel1.PerformLayout();
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
         private Label label1;
         private Label lblMarketId;
         private Label label3;
-        private Label label4;
-        private Label label8;
-        private Label label9;
+        private Label lblStationType;
+        private Label lblStationLocation;
+        private Label lblDist;
         private Label label10;
-        private Label label11;
+        private Label lblStationGov;
         private Label label12;
-        private Label label13;
+        private Label lblStationPowerPlaySummary;
         private Label label14;
-        private Label label15;
+        private Label lblStationControlFaction;
         private Label label16;
-        private Label label17;
+        private Label lblStationEconomy;
         private Label label18;
-        private Label label19;
+        private Label lblStationTechBrokerType;
         private Label label20;
         private ThemeableImageLabel tlblLandingPads;
-        private CheckBox checkBox1;
-        private ListBox listBox1;
-        private Label label21;
+        private CheckBox chkShowDockingOverlay;
+        private ListBox lbStationServices;
+        private Label lblStationMatTraderType;
         private Label label22;
         private Label label23;
-        private ToolTip ttManager;
         private ThemeableImageLabel tlblCoordinates;
         private ComboBox cboStation;
+        private TableLayoutPanel tableLayoutPanel1;
     }
 }

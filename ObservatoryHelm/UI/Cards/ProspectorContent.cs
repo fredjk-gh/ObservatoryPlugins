@@ -1,8 +1,10 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.Design;
+using com.github.fredjk_gh.ObservatoryHelm.Data;
 using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
+using com.github.fredjk_gh.PluginCommon.UI;
 using com.github.fredjk_gh.PluginCommon.UI.Shared;
-using Observatory.Framework.Files.Journal;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 {
@@ -14,12 +16,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             Color = Color.Orange,
             Size = new(16, 16),
             Tag = "limpet",
-            ToolTip = "Limpet warning",
+            ToolTip = "Don't forget limpets! The current ship has mining modules equipped, but no limpets in Cargo!",
             Visible = false,
         };
 
         // TODO: Auto-hide if no prospectors are alive or ship enters supercruise?
-        internal ProspectorContent(HelmContext context) : base(context)
+        internal ProspectorContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
 
@@ -35,8 +37,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             colMaterials.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
 
             ContentTitle = "Prospectors";
+            EnablePopout = true;
 
-            tlblLimpetStatus.ToolTipManager = ttManager;
+            tlblLimpetStatus.ToolTipManager = _toolTip;
             tlblLimpetStatus.AddImage(ICON_WARNING_SIGN);
 
             // TODO add buttons for statistics.
@@ -50,8 +53,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         protected override void InternalDraw()
         {
             // The list is ordered most recent first.
-            List<ProspectedAsteroid> items = [.. _c.UIMgr.ForMode().ProspectedEvents
-                .OrderByDescending(pa => pa.TimestampDateTime)
+            List<ProspectorDetails> items = [.. _c.UIMgr.ForMode().ProspectedEvents
+                .OrderByDescending(pd => pd.Event.TimestampDateTime)
                 .Take(8)];
 
             dgvProspectorHistory.Rows.Clear();
@@ -59,36 +62,57 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             {
                 DataGridViewRow newRow = new()
                 {
-                    Tag = ProspectorHelper.GetEventFingerprint(item)
+                    Tag = ProspectorHelper.GetEventFingerprint(item.Event)
                 };
                 newRow.Cells.Add(new DataGridViewTextBoxCell()
                 {
-                    Value = item.Timestamp,
+                    Value = item.Event.TimestampDateTime.ToLongTimeString(),
                 });
-                if (item.Remaining == 0)
+                if (item.Event.Remaining == 0)
                 {
-                    newRow.Cells.Add(new DataGridViewTextBoxCell()
-                    {
-                        Value = "Depleted",
-                    });
+                    newRow.Cells.Add(DGVImageLabelCell.New("Depleted"));
                 }
                 else
                 {
-                    newRow.Cells.Add(new DataGridViewTextBoxCell()
-                    {
-                        Value = string.Join(
+                    newRow.Cells.Add(DGVImageLabelCell.New(
+                        string.Join(
                             Environment.NewLine,
-                            item.Materials.Select(m => $"{CargoHelper.CommodityName(m.Name, m.Name_Localised)}: {m.Proportion:#.##}%")),
-                    });
+                            item.Event.Materials.Select(m => $"{CargoHelper.CommodityName(m.Name, m.Name_Localised)}: {m.Proportion:#.##}%")),
+                        item.CommoditiesImage is not null ? [item.CommoditiesImage] : []));
                 }
                 newRow.Cells.Add(new DataGridViewTextBoxCell()
                 {
-                    Value = item.MotherlodeMaterial,
+                    Value = GetMatContentDisplayName(item.Event.Content),
                 });
+                if (!string.IsNullOrEmpty(item.Event.MotherlodeMaterial))
+                {
+                    newRow.Cells.Add(
+                        DGVImageLabelCell.New(CargoHelper.CommodityName(item.Event.MotherlodeMaterial, item.Event.MotherlodeMaterial_Localised),
+                        item.CoreImage is not null ? [item.CoreImage] : []));
+                }
+                else
+                {
+                    newRow.Cells.Add(DGVImageLabelCell.New(string.Empty));
+                }
                 dgvProspectorHistory.Rows.Add(newRow);
             }
 
             UpdateLimpets();
+        }
+
+        private object GetMatContentDisplayName(string content)
+        {
+            switch (content)
+            {
+                case JournalConstants.MATERIAL_CONTENT_LOW:
+                    return "Low";
+                case JournalConstants.MATERIAL_CONTENT_MED:
+                    return "Medium";
+                case JournalConstants.MATERIAL_CONTENT_HIGH:
+                    return "High";
+                default:
+                    return string.Empty;
+            }
         }
 
         protected override void InternalClear()
@@ -99,16 +123,16 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         private void UpdateLimpets()
         {
             var commanderData = _c.Data.For(_c.UIMgr.ForMode().CommanderKey);
+            int limpetsCount = 0;
+            bool enableLimpetsWarning = false;
+            commanderData?.Ships.Cargo.TryGetValue(CargoHelper.LimpetDronesKey, out limpetsCount);
+            var loadout = commanderData?.Ships.CurrentShip?.Loadout;
+            if (loadout is not null && limpetsCount == 0)
+                enableLimpetsWarning = Constants.MiningModuleCount(loadout) > Math.Max(1, _c.Settings.LimpetNotificationMinMiningModules);
 
-            if (commanderData is not null &&
-                commanderData.Ships.Cargo.TryGetValue(CargoHelper.LimpetDronesKey, out var limpetsCount))
-            {
-                tlblLimpetStatus.Text = $"Limpets aboard: {limpetsCount}";
-            }
-            else
-            {
-                tlblLimpetStatus.Text = "Limpets aboard: 0";
-            }
+            tlblLimpetStatus.Text = $"Limpets aboard: {limpetsCount}";
+            tlblLimpetStatus.SetVisibility(ICON_WARNING_SIGN.Guid, enableLimpetsWarning);
+
             _isDirty = true;
         }
 
@@ -136,7 +160,10 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 case UIStateManager.PROP_PROSPECTEDEVENTS:
                     Draw();
                     break;
-                case UIStateManager.PROP_CARGO:
+                case UIStateManager.PROP_SHIP_CARGO:
+                    UpdateLimpets();
+                    break;
+                case UIStateManager.PROP_SHIPID:
                     UpdateLimpets();
                     break;
             }

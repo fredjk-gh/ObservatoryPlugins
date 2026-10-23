@@ -25,8 +25,18 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         public Dictionary<int, List<SAASignalsFound>> InternalBodySignals
         { 
             get => _bodySignals;
-            set => _bodySignals = value;
+            set
+            {
+                _bodySignals = [];
+                
+                foreach (var entry in value)
+                {
+                    // Squash duplicates. 
+                    _bodySignals.Add(entry.Key, [.. entry.Value.DistinctBy(s => s.Event)]);
+                }
+            }
         }
+
         // For deserialization.
         public Dictionary<int, SAAScanComplete> DSSScans
         {
@@ -108,12 +118,22 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             return false;
         }
 
-        public void AddSignals(SAASignalsFound signals)
+        public bool AddSignals(SAASignalsFound signals)
         {
-            if (signals.SystemAddress != SystemId64) return;
+            if (signals.SystemAddress != SystemId64) return false;
 
             _bodySignals.TryAdd(signals.BodyID, []);
-            _bodySignals[signals.BodyID].Add(signals);
+            var bodySignalList = _bodySignals[signals.BodyID];
+
+            // This handles both SAA and FSS signals. They can report different stuff, so we need to keep one of each, but
+            // no need for more (ie repeats received via pre-read or resent by Archivist). This avoids unnecessary
+            // notifications at startup and inflating the cache file).
+            if (bodySignalList.Count(s => s.Event == signals.Event) == 0)
+            {
+                bodySignalList.Add(signals);
+                return true;
+            }
+            return false;
         }
 
         [JsonIgnore]

@@ -1,5 +1,6 @@
 ﻿using com.github.fredjk_gh.ObservatoryHelm.Data;
 using com.github.fredjk_gh.ObservatoryHelm.UI;
+using com.github.fredjk_gh.ObservatoryHelm.UI.Forms;
 using com.github.fredjk_gh.PluginCommon.PluginInterop;
 using com.github.fredjk_gh.PluginCommon.Utilities;
 using Observatory.Framework;
@@ -49,7 +50,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             _d = new(core, worker, PluginTracker.PluginType.fredjk_Helm);
             _l = new(core, worker);
             _errorLogger = core.GetPluginErrorLogger(worker);
-            Settings = settings;
+            Settings = settings; // Always use the setter to trigger fixing unset settings or enabling actions.
             _data = new TrackedData(core.PluginStorageFolder);
             UIMgr = new();
         }
@@ -98,6 +99,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             newValue.CardOrdering ??= [];
             newValue.CollapsedCards ??= [];
 
+            // Setup Actions.
+            newValue.CommoditySelector = OpenCommoditySelector;
             return newValue;
         }
 
@@ -109,6 +112,32 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             {
                 UI.Clear();
             });
+        }
+
+        private CommoditySelectorForm _frmCommoditySelector;
+
+        private void OpenCommoditySelector()
+        {
+            if (_frmCommoditySelector is not null)
+            {
+                _frmCommoditySelector.Activate();
+                return;
+            }
+
+            _frmCommoditySelector = new CommoditySelectorForm(this);
+
+            Core.RegisterControl(_frmCommoditySelector);
+
+            _frmCommoditySelector.FormClosed += CommoditySelector_FormClosed;
+            _frmCommoditySelector.Show();
+        }
+
+        private void CommoditySelector_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (_frmCommoditySelector is null) return;
+
+            Core.UnregisterControl(_frmCommoditySelector);
+            _frmCommoditySelector = null;
         }
     }
 }

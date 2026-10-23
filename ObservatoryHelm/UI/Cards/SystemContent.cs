@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 using com.github.fredjk_gh.ObservatoryHelm.Data;
 using com.github.fredjk_gh.ObservatoryHelm.UI.Forms;
 using com.github.fredjk_gh.PluginCommon;
@@ -71,7 +72,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         private readonly ImageSpec ICON_ZONE_IN_HESUPPRESSION = new(Images.HeSuppressionImage)
         {
             Size = new(20, 20),
-            Tag = "in-he=suppression",
+            Tag = "in-he-suppression",
             ToolTip = "This system may be in a Helium suppression zone.",
             Visible = true,
         };
@@ -80,23 +81,29 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         private CommanderData _displayedCmdr;
         private SystemData _displayedSys;
 
-        internal SystemContent(HelmContext context) : base(context)
+        internal SystemContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
-            imgListForListView24.Images.Add(
+
+            // Set tooltips for controls on the shared ToolTip instance.
+            _toolTip.SetToolTip(btnSystemCoordsCopy, "Copy coordinates to the system clipboard");
+            _toolTip.SetToolTip(btnSystemSetReference, "Select a reference system");
+            _toolTip.SetToolTip(lblRefSystem, "Reference system name. Double-click to copy.");
+            _toolTip.SetToolTip(lblRefDistance, "Distance to the reference system shown to the right.");
+            _toolTip.SetToolTip(btnSystemZoneHelp, "Opens a window showing additional information regarding various zones.");
+
+            imgListForStarsListView.Images.Add(
                 IMGLIST_FUEL,
                 ImageCommon.RecolorAndSizeImage(
-                    Images.FuelImage, ForeColor, imgListForListView24.ImageSize));
+                    Images.FuelImage, ForeColor, imgListForStarsListView.ImageSize));
 
             ContentTitle = "System";
+            EnablePopout = true;
 
             SuspendLayout();
             btnSystemCoordsCopy.SetOriginalImage(Images.CopyImage, new(24, 24));
             btnSystemCoordsCopy.Enabled = false;
-
             btnSystemZoneHelp.SetOriginalImage(Images.HelpImage, new(24, 24));
-            ttManager.SetToolTip(btnSystemZoneHelp, "More info about Zones.");
-
             btnSystemSetReference.SetOriginalImage(Images.EditLocationImage, new(24, 24));
 
             btnViewOnSpansh = new()
@@ -105,7 +112,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Enabled = false,
             };
-            ttManager.SetToolTip(btnViewOnSpansh, "View system on Spansh");
+            _toolTip.SetToolTip(btnViewOnSpansh, "View system on Spansh");
             AddToolButton(btnViewOnSpansh);
 
             btnViewOnInara = new()
@@ -114,7 +121,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Enabled = false,
             };
-            ttManager.SetToolTip(btnViewOnInara, "View system on Inara");
+            _toolTip.SetToolTip(btnViewOnInara, "View system on Inara");
             AddToolButton(btnViewOnInara);
 
             btnSystemBookmarkAdd = new()
@@ -124,7 +131,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 Enabled = false,
                 Visible = false && _c.PluginTracker.IsActive(PluginType.fredjk_Archivist),
             };
-            ttManager.SetToolTip(btnSystemBookmarkAdd, "Bookmark this system with Archivist");
+            _toolTip.SetToolTip(btnSystemBookmarkAdd, "Bookmark this system with Archivist");
             AddToolButton(btnSystemBookmarkAdd);
 
             btnSystemBookmarkView = new()
@@ -134,7 +141,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 Enabled = false,
                 Visible = false && _c.PluginTracker.IsActive(PluginType.fredjk_Archivist),
             };
-            ttManager.SetToolTip(btnSystemBookmarkView, "View bookmark info in Archivist");
+            _toolTip.SetToolTip(btnSystemBookmarkView, "View bookmark info in Archivist");
             AddToolButton(btnSystemBookmarkView);
 
             btnSystemId64 = new()
@@ -143,7 +150,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Enabled = false,
             };
-            ttManager.SetToolTip(btnSystemId64, "View system id64 details");
+            _toolTip.SetToolTip(btnSystemId64, "View system id64 details");
             AddToolButton(btnSystemId64);
 
             btnSystemNameCopy = new()
@@ -152,24 +159,23 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Enabled = false,
             };
-            ttManager.SetToolTip(btnSystemNameCopy, "Copy name of system into system clipboard");
+            _toolTip.SetToolTip(btnSystemNameCopy, "Copy name of system into system clipboard");
             AddToolButton(btnSystemNameCopy);
 
-            tlblSystemAttributes.ToolTipManager = ttManager;
+            tlblSystemAttributes.ToolTipManager = _toolTip;
             tlblSystemAttributes.AddImage(ICON_FIRST_DISCOVERY);
             tlblSystemAttributes.AddImage(ICON_FULLY_SCANNED);
             tlblSystemAttributes.Text = string.Empty;
 
-            tlblCoordinates.ToolTipManager = ttManager;
+            tlblCoordinates.ToolTipManager = _toolTip;
             tlblCoordinates.AddImage(ICON_POSITION);
 
-            tlblZones.ToolTipManager = ttManager;
+            tlblZones.ToolTipManager = _toolTip;
             tlblZones.AddImage(ICON_ZONE_IN_BUBBLE);
             tlblZones.AddImage(ICON_ZONE_IN_SUPPRESSION);
             tlblZones.AddImage(ICON_ZONE_IN_HESUPPRESSION);
 
-            ResumeLayout(false);
-            PerformLayout();
+            ResumeLayout();
 
             // Wire up events...
             _state = _c.UIMgr.ForMode();
@@ -212,7 +218,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             if (this._displayedSys != null && this._displayedSys.SystemId64 != _state.SystemId64) this._displayedSys = null;
 
             bool systemChanged = this._displayedSys == null || _displayedCmdr.CurrentSystemData?.SystemId64 != _state.SystemId64;
-            if (!systemChanged && !cmdrChanged) return;
+            if (!systemChanged && !cmdrChanged && !_isDirty) return;
 
             _displayedSys = cboSystem.SelectedItem as SystemData;
             if (_displayedSys == null && _displayedCmdr.CurrentSystemData != null)
@@ -260,6 +266,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             lblSystemBodyCount.Text = $"{(_displayedSys.BodyCount > 0 ? _displayedSys.BodyCount : "(unknown)")}";
             tlblSystemAttributes.SetVisibility(ICON_FIRST_DISCOVERY.Guid, _displayedSys.IsFirstDiscovery);
             tlblSystemAttributes.SetVisibility(ICON_FULLY_SCANNED.Guid, _displayedSys.IsFullyDiscovered);
+            tlblSystemAttributes.Invalidate();
         }
 
         private void UpdateRefDistance()
@@ -325,7 +332,13 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             _displayedSys = null;
         }
 
-        public void UpdateSystemDropList(bool forDiffCmdr = false)
+        protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
+        {
+            base.ScaleControl(factor, specified);
+            lvStars.ScaleColumns(factor);
+        }
+
+        internal void UpdateSystemDropList(bool forDiffCmdr = false)
         {
             SystemData selectedValue = null;
 
@@ -409,14 +422,18 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 case UIStateManager.PROP_SYSTEMID64:
                     InternalDraw();
                     break;
+                case UIStateManager.PROP_BODYCOUNT:
+                    // Update flags
+                    UpdateFlags();
+                    break;
                 case UIStateManager.PROP_BODYID:
                     // Refresh the star list, update flags
                     UpdateFlags();
                     UpdateStars();
                     break;
                 case UIStateManager.PROP_ALLBODIESFOUND:
-                    // Update flags
-                    UpdateFlags();
+                    // One last paint: (This may also be the only one after arriving for individual stars, etc.)
+                    InternalDraw();
                     break;
                 case UIStateManager.PROP_REFSYSTEM:
                     // Update ref system details
@@ -486,11 +503,11 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 
         protected override void OnForeColorChanged(EventArgs e)
         {
-            imgListForListView24.Images.Clear();
-            imgListForListView24.Images.Add(
+            imgListForStarsListView.Images.Clear();
+            imgListForStarsListView.Images.Add(
                 IMGLIST_FUEL,
                 ImageCommon.RecolorAndSizeImage(
-                    Images.FuelImage, ForeColor, imgListForListView24.ImageSize));
+                    Images.FuelImage, ForeColor, imgListForStarsListView.ImageSize));
         }
 
         private void BtnSystemSetReference_Click(object sender, EventArgs e)

@@ -1,14 +1,12 @@
-﻿namespace com.github.fredjk_gh.ObservatoryHelm
+﻿using Observatory.Framework.Files.Journal;
+
+namespace com.github.fredjk_gh.ObservatoryHelm
 {
     internal class Constants
     {
-        public static readonly int MAX_FUEL = 99;
+        public static readonly int MAX_FUEL = 999;
 
-        public const int COALESCING_ID_HEADER = -2;
-        public const int COALESCING_ID_POST_SYSTEM = 1001;
-        public const int COALESCING_ID_SYSTEM = -1;
         public const double FuelWarningLevelFactor = 1.5;
-        public const double CONV_MperS2_TO_G_DIVISOR = 9.81;
 
         public static readonly Dictionary<string, double> MaxFuelPerJumpByFSDSizeClass = new()
         {
@@ -79,5 +77,100 @@
             { "int_hyperdrive_overcharge_size8_class5", 20.7 },
             { "int_hyperdrive_overcharge_size8_class5_overchargebooster_mkii", 6.8 },
         };
+
+        private static readonly HashSet<string> MINING_MODULES =
+        [
+            "hpt_mininglaser_turret_small",
+            "hpt_mininglaser_turret_medium",
+            "hpt_mininglaser_fixed_small",
+            "hpt_mininglaser_fixed_small_advanced",
+            "hpt_mining_subsurfdispmisle_fixed_small",
+            "hpt_mining_subsurfdispmisle_turret_small",
+            "hpt_mining_subsurfdispmisle_fixed_medium",
+            "hpt_mining_subsurfdispmisle_turret_medium",
+            "hpt_mining_abrblstr_fixed_small",
+            "hpt_mining_abrblstr_turret_small",
+            "hpt_mining_seismchrgwarhd_fixed_medium",
+            "hpt_mining_seismchrgwarhd_turret_medium",
+            "hpt_miningtoolv2_fixed_large",
+            "int_refinery_size1_class1",
+            "int_refinery_size2_class1",
+            "int_refinery_size3_class1",
+            "int_refinery_size4_class1",
+            "int_refinery_size1_class2",
+            "int_refinery_size2_class2",
+            "int_refinery_size3_class2",
+            "int_refinery_size4_class2",
+            "int_refinery_size1_class3",
+            "int_refinery_size2_class3",
+            "int_refinery_size3_class3",
+            "int_refinery_size4_class3",
+            "int_refinery_size1_class4",
+            "int_refinery_size2_class4",
+            "int_refinery_size3_class4",
+            "int_refinery_size4_class4",
+            "int_refinery_size1_class5",
+            "int_refinery_size2_class5",
+            "int_refinery_size3_class5",
+            "int_refinery_size4_class5",
+            "int_dronecontrol_collection_size1_class1",
+            "int_dronecontrol_collection_size1_class2",
+            "int_dronecontrol_collection_size1_class3",
+            "int_dronecontrol_collection_size1_class4",
+            "int_dronecontrol_collection_size1_class5",
+            "int_dronecontrol_collection_size3_class1",
+            "int_dronecontrol_collection_size3_class2",
+            "int_dronecontrol_collection_size3_class3",
+            "int_dronecontrol_collection_size3_class4",
+            "int_dronecontrol_collection_size3_class5",
+            "int_dronecontrol_collection_size5_class1",
+            "int_dronecontrol_collection_size5_class2",
+            "int_dronecontrol_collection_size5_class3",
+            "int_dronecontrol_collection_size5_class4",
+            "int_dronecontrol_collection_size5_class5",
+            "int_dronecontrol_collection_size7_class1",
+            "int_dronecontrol_collection_size7_class2",
+            "int_dronecontrol_collection_size7_class3",
+            "int_dronecontrol_collection_size7_class4",
+            "int_dronecontrol_collection_size7_class5",
+            "int_dronecontrol_prospector_size1_class1",
+            "int_dronecontrol_prospector_size1_class2",
+            "int_dronecontrol_prospector_size1_class3",
+            "int_dronecontrol_prospector_size1_class4",
+            "int_dronecontrol_prospector_size1_class5",
+            "int_dronecontrol_prospector_size3_class1",
+            "int_dronecontrol_prospector_size3_class2",
+            "int_dronecontrol_prospector_size3_class3",
+            "int_dronecontrol_prospector_size3_class4",
+            "int_dronecontrol_prospector_size3_class5",
+            "int_dronecontrol_prospector_size5_class1",
+            "int_dronecontrol_prospector_size5_class2",
+            "int_dronecontrol_prospector_size5_class3",
+            "int_dronecontrol_prospector_size5_class4",
+            "int_dronecontrol_prospector_size5_class5",
+            "int_dronecontrol_prospector_size7_class1",
+            "int_dronecontrol_prospector_size7_class2",
+            "int_dronecontrol_prospector_size7_class3",
+            "int_dronecontrol_prospector_size7_class4",
+            "int_dronecontrol_prospector_size7_class5",
+            "int_multidronecontrol_mining_size3_class1",
+            "int_multidronecontrol_mining_size3_class3",
+            "int_multidronecontrol_miningv2_size5_class5",
+        ];
+
+        public static int? MiningModuleCount(Loadout loadout)
+        {
+            if (loadout == null) return null;
+
+            int count = 0;
+            foreach (var mod in loadout.Modules)
+            {
+                if (MINING_MODULES.Contains(mod.Item.ToLower()))
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
     }
 }

@@ -12,13 +12,14 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
     {
         private UIStateData _state;
 
-        internal CommanderContent(HelmContext context) : base(context)
+        internal CommanderContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
             ContentTitle = "Commander";
+            EnablePopout = true;
 
             tbtnRealtimeLock.ImageSize = new(26, 26);
-            ttManager.SetToolTip(tbtnRealtimeLock, "The Helm UI is in detached \"browse\" mode as a result of changing a selection in a droplist. Click to lock back to realtime.");
+            _toolTip.SetToolTip(tbtnRealtimeLock, "The Helm UI is in detached \"browse\" mode as a result of changing a selection in a droplist. Click to lock back to realtime.");
 
             _state = _c.UIMgr.ForMode();
             tbtnRealtimeLock.Click += TbtnRealtimeLock_Click;
@@ -70,12 +71,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 case UIMode.Realtime:
                     tbtnRealtimeLock.SetOriginalImage(Images.LockImage);
                     tbtnRealtimeLock.Enabled = false;
-                    ttManager.SetToolTip(lblUIMode, "The Helm UI is locked to the current game state.");
+                    _toolTip.SetToolTip(lblUIMode, "The Helm UI is locked to the current game state.");
                     break;
                 case UIMode.Detached:
                     tbtnRealtimeLock.SetOriginalImage(Images.UnlockImage);
                     tbtnRealtimeLock.Enabled = true;
-                    ttManager.SetToolTip(lblUIMode, "The Helm UI is in detached \"browse\" mode as a result of changing a selection in a droplist. Click to lock back to realtime.");
+                    _toolTip.SetToolTip(lblUIMode, "The Helm UI is in detached \"browse\" mode as a result of changing a selection in a droplist. Click to lock back to realtime.");
                     break;
             }
             lblUIMode.Text = $"Mode: {_c.UIMgr.Mode}";

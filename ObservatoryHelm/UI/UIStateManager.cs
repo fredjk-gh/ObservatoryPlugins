@@ -8,14 +8,17 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
     internal class UIStateManager : INotifyPropertyChanged
     {
         public const string PROP_COMMANDERKEY = "CommanderKey";
+        public const string PROP_TRANSITMODE = "TransitMode";
         public const string PROP_REFSYSTEM = "RefSystem";
         public const string PROP_SYSTEMID64 = "SystemId64";
+        public const string PROP_BODYCOUNT = "BodyCount";
         public const string PROP_BODYID = "BodyId";
         public const string PROP_SURFACEPOSITION = "SurfacePosition";
         public const string PROP_SHIPID = "ShipId";
         public const string PROP_FUELREMAINING = "FuelRemaining";
         public const string PROP_JETCONEBOOST = "JetConeBoost";
-        public const string PROP_CARGO = "Cargo";
+        public const string PROP_SHIP_CARGO = "ShipCargo";
+        public const string PROP_SRV_CARGO = "SRVCargo";
         public const string PROP_JUMPSREMAINING = "JumpsRemaining";
         public const string PROP_ALLBODIESFOUND = "AllBodiesFound";
         public const string PROP_PROSPECTEDEVENTS = "ProspectedEvents";

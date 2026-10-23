@@ -1,15 +1,20 @@
 ﻿using System.Diagnostics;
 using com.github.fredjk_gh.ObservatoryHelm.Data;
 using com.github.fredjk_gh.ObservatoryHelm.UI;
+using com.github.fredjk_gh.PluginCommon;
 using com.github.fredjk_gh.PluginCommon.AutoUpdates;
 using com.github.fredjk_gh.PluginCommon.Data;
 using com.github.fredjk_gh.PluginCommon.Data.Id64;
 using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
+using com.github.fredjk_gh.PluginCommon.Data.Prospecting;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
+using com.github.fredjk_gh.PluginCommon.UI;
 using com.github.fredjk_gh.PluginCommon.Utilities;
 using Observatory.Framework;
 using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Files.Journal.Other;
 using Observatory.Framework.Files.ParameterTypes;
 using Observatory.Framework.Interfaces;
 
@@ -17,6 +22,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
 {
     public class Helm : IObservatoryWorker
     {
+
         private static readonly Guid PLUGIN_GUID = new("38425041-6ff2-4b9d-a10c-420839972f79");
 
         private static readonly AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
@@ -26,9 +32,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         {
             FullName = "Helm",
             ShortName = "Helm",
-            Description = @"Provides additional insights about your flight environment, route and some travel statistics.
+            Description = @"Provides additional insights about your flight environment, route and some travel statistics plus prospecting information.
 
-May use data from Spansh, EDGIS and/or EDAstro.",
+May use data from Spansh, EDGIS and/or EDAstro. Thanks to MattG for sharing some ProcGen Sector naming code which is used by this plugin.",
             AuthorName = "fredjk-gh",
             Links =
             [
@@ -37,6 +43,10 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                 DOC_LINK,
             ]
         };
+
+        private const string VESSEL_SHIP = "Ship";
+        private const string VESSEL_SRV = "SRV";
+
 
         private PluginUI pluginUI;
         private HelmSettings _settings = new();
@@ -125,27 +135,18 @@ May use data from Spansh, EDGIS and/or EDAstro.",
         {
             switch (journal)
             {
+                case Commander cmdr:
+                    OnNewCommander(cmdr.Name, cmdr.FID, cmdr.TimestampDateTime);
+                    break;
                 case LoadGame loadGame:
-                    bool commanderChanged = _c.Data.HasCurrentCommander
-                        && loadGame.Commander != _c.Data.CurrentCommander.Name;
-
-                    _c.Data.SessionReset(loadGame);
-                    _c.Data.CommanderData.LastActive = loadGame.TimestampDateTime;
-
-                    if (!_c.Core.IsLogMonitorBatchReading && commanderChanged)
-                    {
-                        MaybeSetDestinationInClipboard(commanderChanged);
-                        _c.UI.ChangeCommander(_c.Data.CurrentCommander);
-
-                        UpdateCache(); // ensure current commander is updated.
-                    }
+                    OnNewCommander(loadGame.Commander, loadGame.FID, loadGame.TimestampDateTime, loadGame);
                     break;
                 case Loadout loadOut:
                     if (!_c.Data.HasCurrentCommander) break;
                     _c.Data.CommanderData.Ships.UpdateLoadout(loadOut);
                     _c.UI.ChangeShip(loadOut.ShipID);
                     _c.Data.CommanderData.LastActive = loadOut.TimestampDateTime;
-
+                    
                     UpdateCache();
                     break;
                 case StoredShips storedShips:
@@ -175,7 +176,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                             Title = "FSD is Supercharged",
                             ExtendedDetails = $"Boost factor: {jetConeBoost.BoostValue}",
                             Sender = AboutInfo.ShortName,
-                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
+                            CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
                         });
                     }
 
@@ -193,7 +194,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                         Sender = AboutInfo.ShortName,
                         ExtendedDetails = $"{_c.Data.CommanderData.JumpsRemainingInRoute} jumps to {_c.Data.CommanderData.Destination}",
                         Rendering = NotificationRendering.PluginNotifier,
-                        CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
+                        CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
                     });
 
                     UpdateCache();
@@ -228,7 +229,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     if (location.SystemAddress == 0) break; // Really old journals do not have SystemAddress. :'( Ignore them.
                     if (!_c.Data.HasCurrentCommander) break;
 
-                    _c.Data.SystemReset(location.SystemAddress, location.StarSystem, location.StarPos);
+                    _c.Data.SystemReset(location.SystemAddress, location.StarSystem, location.StarPos, TransitMode.FromJournal(location).ToEnum());
 
                     _c.UI.ChangeSystem(location.SystemAddress);
 
@@ -293,7 +294,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                             //ExtendedDetails = $"{arrivalStarScoopableStr} {suppressionZoneDetail}",
                             ExtendedDetails = arrivalStarScoopableStr,
                             Rendering = NotificationRendering.PluginNotifier,
-                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
+                            CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
                         });
                         // This check is essential when travelling through areas where scans don't trigger (ie. known space).
                         // TODO: Figure out why this occasionally misfires.
@@ -306,7 +307,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                                 Title = "Warning! Low fuel",
                                 Detail = $"Refuel soon! {arrivalStarScoopableStr}",
                                 Sender = AboutInfo.ShortName,
-                                CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
+                                CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
                             });
                             _c.Data.CommanderData.FuelWarningNotifiedSystem = jump.StarSystem;
                         }
@@ -315,23 +316,92 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                 case Docked docked:
                     if (!_c.Data.HasCurrentCommander) break;
 
-                    if (docked.StationType == "FleetCarrier")
-                    {
-                        _c.Data.CommanderData.IsDockedOnCarrier = true;
-                    }
-                    _c.Data.CommanderData.LastActive = docked.TimestampDateTime;
+                    var commanderData = _c.Data.CommanderData;
+
+                    commanderData.ActiveTransitMode = TransitMode.FromJournal(docked).ToEnum();
+                    commanderData.IsDockedOnCarrier = _c.Data.CommanderData.ActiveTransitMode == TransitModeType.FleetCarrier;
+                    commanderData.LastActive = docked.TimestampDateTime;
+                    
                     break;
                 case Undocked undocked:
                     if (!_c.Data.HasCurrentCommander) break;
 
-                    _c.Data.CommanderData.IsDockedOnCarrier = false;
+                    _c.Data.CommanderData.ActiveTransitMode = TransitMode.FromJournal(undocked).ToEnum();
+                    _c.Data.CommanderData.IsDockedOnCarrier = _c.Data.CommanderData.ActiveTransitMode == TransitModeType.FleetCarrier;
                     _c.Data.CommanderData.LastActive = undocked.TimestampDateTime;
+
+                    if (_settings.LimpetReminderNotifications)
+                    {
+                        int limpetsCount = 0;
+                        _c.Data.CommanderData?.Ships.Cargo.TryGetValue(CargoHelper.LimpetDronesKey, out limpetsCount);
+                        var loadout = _c.Data.CommanderData?.Ships.CurrentShip?.Loadout;
+
+                        if (loadout is not null)
+                        {
+                            var miningModuleCount = Constants.MiningModuleCount(loadout);
+
+                            if (miningModuleCount >= Math.Max(1, _settings.LimpetNotificationMinMiningModules) && limpetsCount == 0)
+                            {
+                                _c.SendNotification(new()
+                                {
+                                    Sender = AboutInfo.ShortName,
+                                    CoalescingId = CoalescingIDs.ALERT_COALESCING_ID,
+                                    Title = "Don't forget limpets!",
+                                    Detail = "You have mining modules equipped but no limpets in your cargo hold.",
+                                    ExtendedDetails = $"Found {miningModuleCount} mining modules equipped.",
+                                    Rendering = NotificationRendering.All,
+                                });
+                            }
+                        }
+                    }
                     break;
                 case DockingCancelled cancelled: // And DockingDenied.
                     if (cancelled is DockingDenied denied && !_c.Core.IsLogMonitorBatchReading)
-                    {
                         _c.AddMessage($"Docking Denied due to: {denied.Reason}");
-                    }
+                    break;
+                case LaunchVessel launchVessel:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.CommanderData.SRV.ActiveSRVType = SRVs.GetSRVDetails(launchVessel.VesselType)?.Type;
+                    _c.Data.CommanderData.ActiveTransitMode = TransitModeType.ShipLaunchedVessel;
+                    _c.Data.CommanderData.LastActive = launchVessel.TimestampDateTime;
+
+                    _c.UI.ChangeTransitMode(TransitModeType.ShipLaunchedVessel);
+                    break;
+                case LaunchSRV launchSrv:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.CommanderData.SRV.ActiveSRVType = SRVs.GetSRVDetails(launchSrv.SRVType)?.Type;
+                    _c.Data.CommanderData.ActiveTransitMode = TransitModeType.ShipLaunchedVessel;
+                    _c.Data.CommanderData.LastActive = launchSrv.TimestampDateTime;
+
+                    _c.UI.ChangeTransitMode(TransitModeType.ShipLaunchedVessel);
+                    break;
+                case DockSRV dockSrv:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.CommanderData.ActiveTransitMode = TransitModeType.OwnShip;
+                    _c.Data.CommanderData.SRV.ActiveSRVType = null;
+                    _c.Data.CommanderData.SRV.ClearCargo(); // Cargo is always transferred to the ship.
+                    _c.Data.CommanderData.LastActive = dockSrv.TimestampDateTime;
+
+                    _c.UI.ChangeTransitMode(TransitModeType.OwnShip);
+                    break;
+                case SRVDestroyed srvGoBoom:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    // Let the next Location event determine new TransitMode.
+                    _c.Data.CommanderData.SRV.ActiveSRVType = null;
+                    _c.Data.CommanderData.SRV.ClearCargo(); // Cargo is always lost.
+                    _c.Data.CommanderData.LastActive = srvGoBoom.TimestampDateTime;
+                    break;
+                case Disembark embarkOrDisembark:
+                    _c.Data.CommanderData.ActiveTransitMode = TransitMode.FromJournal(embarkOrDisembark)
+                        .WithPrevious(_c.Data.CommanderData.ActiveTransitMode)
+                        .ToEnum();
+                    _c.Data.CommanderData.LastActive = embarkOrDisembark.TimestampDateTime;
+
+                    _c.UI.ChangeTransitMode(_c.Data.CommanderData.ActiveTransitMode);
                     break;
                 case FSDTarget target:
                     if (!_c.Data.HasCurrentCommander) break;
@@ -380,14 +450,23 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     if (_c.Data.CommanderData.CurrentSystemData.SystemId64 == honk.SystemAddress)
                         _c.Data.CommanderData.CurrentSystemData.Honk = honk;
 
+                    _c.UI.ChangeSystemBodyCount(honk.BodyCount);
+
                     UpdateCache();
                     break;
                 case FSSAllBodiesFound allFound:
-                    if (!_c.Data.HasCurrentCommander) break;
+                    // By checking .IsFullyDiscovered here we ensure the system is fully scanned, regardless of false AllBodiesFound events.
+                    // Only proceed if we don't actually know the body count-- sometimes the AllBodiesFound fires before the honk so we don't know the body count yet, but this provides it.
+                    // Not much we can do in this situation but proceed -- but it's typically the right thing to do. This often happens in systems with a single star, no other bodies
+                    // resulting in an inaccurate system panel.
+                    // Alternatively, I could also handle the 
+                    if (!_c.Data.HasCurrentCommander ||
+                        ((_c.Data.CommanderData.CurrentSystemData?.BodyCount > 0) && !(_c.Data.CommanderData.CurrentSystemData?.IsFullyDiscovered ?? false)))
+                        break;
 
-                    if (_c.Data.CommanderData.FuelWarningNotifiedSystem == allFound.SystemName) break;
-
-                    if (!_c.UIMgr.ReplayMode && _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining < (_c.Data.CommanderData.Ships.CurrentShip.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
+                    if (_c.Data.CommanderData.FuelWarningNotifiedSystem != allFound.SystemName
+                        && !_c.UIMgr.ReplayMode
+                        && _c.Data.CommanderData.Ships.CurrentShip.FuelRemaining < (_c.Data.CommanderData.Ships.CurrentShip.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
                     {
                         string extendedDetails = $"Warning! Low Fuel and no scoopable star! Be sure to jump to a system with a scoopable star!";
                         _c.SendNotification(new()
@@ -396,43 +475,46 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                             Detail = "There is no scoopable star in this system!",
                             ExtendedDetails = extendedDetails,
                             Sender = AboutInfo.ShortName,
-                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
+                            CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
                         });
                     }
-                    // By checking .IsFullyDiscovered here we ensure the system is fully scanned, regardless of false AllBodiesFound events.
-                    if ((_c.Data.CommanderData.CurrentSystemData?.IsFullyDiscovered ?? false)
-                        && _c.Data.CommanderData.CurrentSystemData?.AllBodiesFound is null
+                    if (_c.Data.CommanderData.CurrentSystemData?.AllBodiesFound is null
                         && !_c.UIMgr.ReplayMode)
                     {
-                        // Two distinct notifications. One has only a title and is vocal only. The other has additional detail and
-                        // is plugin only. Alternatively: One notification, but put "All N bodies found" in Extended details which
-                        // is never spoken anyway?
-                        //
-                        // Make Vocal notification an option?
-                        _c.SendNotification(new()
-                        {
-                            Title = "FSS complete",
-                            Rendering = NotificationRendering.NativeVocal,
-                            Sender = AboutInfo.ShortName,
-                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
-                        });
-                        _c.SendNotification(new()
-                        {
-                            Title = "FSS complete",
-                            Detail = $"All {allFound.Count} bodies found",
-                            Rendering = NotificationRendering.PluginNotifier,
-                            Sender = AboutInfo.ShortName,
-                            CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
-                        });
-
                         _c.Data.CommanderData.CurrentSystemData.AllBodiesFound = allFound;
-                        _c.UI.ChangeAllBodiesFound(true);
 
-                        if (_c.Data.CommanderData.LastStatus?.Destination?.Body > 0
-                            && _c.Data.CommanderData.LastStatus?.Destination?.System == _c.UIMgr.Realtime.SystemId64
-                            && _c.Data.CommanderData.LastStatus?.Destination?.Body != _c.UIMgr.Realtime.BodyId)
+                        // Now that we've set AllBodiesFound, double check IsFullyDiscovered, and proceed IFF that's true.
+                        if (_c.Data.CommanderData.CurrentSystemData?.IsFullyDiscovered ?? false)
                         {
-                            _c.UI.ChangeBody(_c.Data.CommanderData.LastStatus.Destination.Body);
+                            _c.UI.ChangeAllBodiesFound(true);
+
+                            // Two distinct notifications. One has only a title and is vocal only. The other has additional detail and
+                            // is plugin only. Alternatively: One notification, but put "All N bodies found" in Extended details which
+                            // is never spoken anyway?
+                            //
+                            // Make Vocal notification an option?
+                            _c.SendNotification(new()
+                            {
+                                Title = "FSS complete",
+                                Rendering = NotificationRendering.NativeVocal,
+                                Sender = AboutInfo.ShortName,
+                                CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
+                            });
+                            _c.SendNotification(new()
+                            {
+                                Title = "FSS complete",
+                                Detail = $"All {allFound.Count} bodies found",
+                                Rendering = NotificationRendering.PluginNotifier,
+                                Sender = AboutInfo.ShortName,
+                                CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
+                            });
+
+                            if (_c.Data.CommanderData.LastStatus?.Destination?.Body > 0
+                                && _c.Data.CommanderData.LastStatus?.Destination?.System == _c.UIMgr.Realtime.SystemId64
+                                && _c.Data.CommanderData.LastStatus?.Destination?.Body != _c.UIMgr.Realtime.BodyId)
+                            {
+                                _c.UI.ChangeBody(_c.Data.CommanderData.LastStatus.Destination.Body);
+                            }
                         }
                     }
 
@@ -445,7 +527,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     if (!_c.Settings.EnableHighGravityAdvisory) break;
 
                     if (!_c.Data.CommanderData.CurrentSystemData.Planets.TryGetValue(approachBody.BodyID, out p)) break;
-                    var gravityG = p.Scan.SurfaceGravity / Constants.CONV_MperS2_TO_G_DIVISOR;
+                    var gravityG = p.Scan.SurfaceGravity / Conversions.CONV_MperS2_TO_G_DIVISOR;
                     if (gravityG > _c.Settings.GravityAdvisoryThreshold)
                     {
                         _c.SendNotification(new()
@@ -466,13 +548,18 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     _c.Data.CommanderData.CurrentSystemData.AddScan(saaScan);
                     UpdateCache();
                     break;
-                case SAASignalsFound signals:
+                case SAASignalsFound signals: // And FSSBodySignals.
                     if (!_c.Data.HasCurrentCommander) break;
 
-                    _c.Data.CommanderData.CurrentSystemData.AddSignals(signals);
-                    if (_c.Data.CommanderData.CurrentSystemData.Planets.ContainsKey(signals.BodyID))
-                        _c.UI.ChangeBody(signals.BodyID);
-                    UpdateCache();
+                    var sysData = _c.Data.CommanderData.CurrentSystemData;
+                    if (sysData.AddSignals(signals))
+                    {
+                        if (sysData.Planets.ContainsKey(signals.BodyID))
+                            _c.UI.ChangeBody(signals.BodyID);
+
+                        OnRingPing(sysData, signals);
+                        UpdateCache();
+                    }
                     break;
                 case Statistics stats:
                     if (!_c.Data.HasCurrentCommander) break;
@@ -482,26 +569,81 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     break;
                 case Cargo cargo:
                     if (!_c.Data.HasCurrentCommander) break;
+                    // Only use the startup version that has full inventory. If inventory count is also zero, then inventory is irrelevant.
+                    if (cargo.Count > 0 && cargo.Inventory?.Count == 0) break;
 
-                    _c.Data.CommanderData.Ships.UpdateCargo(cargo);
-                    _c.UI.ChangeCargo(cargo.Count);
+                    if (cargo.Vessel == VESSEL_SHIP)
+                    {
+                        _c.Data.CommanderData.Ships.UpdateCargo(cargo);
+                        _c.UI.ChangeShipCargo(cargo.Count);
+                    }
+                    else
+                    {
+                        _c.Data.CommanderData.SRV.UpdateCargo(cargo);
+                        _c.UI.ChangeSRVCargo(cargo.Count);
+                    }
                     UpdateCache();
                     break;
                 case CargoFile cargo:
                     if (!_c.Data.HasCurrentCommander) break;
 
-                    _c.Data.CommanderData.Ships.UpdateCargo(cargo);
-                    _c.UI.ChangeCargo(cargo.Count);
+                    if (cargo.Vessel == VESSEL_SHIP)
+                    {
+                        _c.Data.CommanderData.ActiveTransitMode = TransitModeType.OwnShip;
+                        _c.Data.CommanderData.Ships.UpdateCargo(cargo);
+                        _c.UI.ChangeShipCargo(cargo.Count);
+                    }
+                    else
+                    {
+                        _c.Data.CommanderData.ActiveTransitMode = TransitModeType.ShipLaunchedVessel;
+                        _c.Data.CommanderData.SRV.UpdateCargo(cargo);
+                        _c.UI.ChangeSRVCargo(cargo.Count);
+                    }
                     _c.Data.CommanderData.LastActive = cargo.TimestampDateTime;
                     UpdateCache();
                     break;
+                case CargoTransfer xfer:
+                    if (!_c.Data.HasCurrentCommander) break;
+
+                    _c.Data.CommanderData.LastActive = xfer.TimestampDateTime;
+
+                    foreach (var t in xfer.Transfers)
+                    {
+                        if (_c.Data.CommanderData.SRV.ActiveSRVType is not null)
+                        {
+                            // SRV -> Ship  OR Ship -> SRV.
+                            // Update Ship inventory until we transfer back to the ship and CargoFile events fire for the ship again.
+                            int newCount = _c.Data.CommanderData.Ships.UpdateCargo(t);
+                            _c.UI.ChangeShipCargo(newCount);
+                        }
+                    }
+                    break;
                 case ProspectedAsteroid prospect:
                     if (!_c.Data.HasCurrentCommander) break;
-                    // Move to _c.UI.Change* method?
-                    _c.UIMgr.Realtime.ProspectedEvents.Add(prospect);
                     _c.Data.CommanderData.LastActive = prospect.TimestampDateTime;
+
+                    OnProspectedAsteroid(prospect);
                     break;
             }
+        }
+
+        private void OnNewCommander(string commanderName, string fid, DateTime lastActive, LoadGame loadGame = null)
+        {
+            bool commanderChanged = _c.Data.HasCurrentCommander
+                && commanderName != _c.Data.CurrentCommander.Name;
+
+            _c.Data.SessionReset(commanderName, fid, loadGame);
+            _c.UIMgr.Realtime.ProspectedEvents.Clear();
+            _c.Data.CommanderData.LastActive = lastActive;
+
+            if (!_c.Core.IsLogMonitorBatchReading && commanderChanged)
+            {
+                MaybeSetDestinationInClipboard(commanderChanged);
+                _c.UI.ChangeCommander(_c.Data.CurrentCommander);
+
+                UpdateCache(); // ensure current commander is updated.
+            }
+            return;
         }
 
         private void OnScan(Scan scan)
@@ -512,8 +654,24 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             var sysData = cmdrData.CurrentSystemData;
             var scanAlreadySeen = sysData.ContainsScan(scan);
             var usefulScan = sysData.AddScan(scan);
+
+            if (!usefulScan) return;
+
             // When mapping, a second scan fires; don't re-target the UI.
             if (!scanAlreadySeen && usefulScan) _c.UI.ChangeBody(scan.BodyID);
+
+            OnScanForNeutronHopping(scan, cmdrData, sysData);
+            
+            if (!scanAlreadySeen)
+            {
+                OnScanForRings(scan, sysData);
+                if (sysData.Planets.TryGetValue(scan.BodyID, out PlanetData bodyData))
+                    OnScanForBody(sysData, bodyData);
+            }
+        }
+
+        private void OnScanForNeutronHopping(Scan scan, CommanderData cmdrData, SystemData sysData)
+        {
             if (cmdrData.Ships.CurrentShip.FuelRemaining < (cmdrData.Ships.CurrentShip.MaxFuelPerJump * Constants.FuelWarningLevelFactor)
                 && cmdrData.FuelWarningNotifiedSystem != scan.StarSystem)
             {
@@ -527,7 +685,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                         Detail = $"There is a scoopable star in this system!",
                         ExtendedDetails = extendedDetails,
                         Sender = AboutInfo.ShortName,
-                        CoalescingId = Constants.COALESCING_ID_HEADER,
+                        CoalescingId = CoalescingIDs.SYSTEM_COALESCING_ID,
                     });
                     cmdrData.FuelWarningNotifiedSystem = cmdrData.CurrentSystemName;
                 }
@@ -565,6 +723,265 @@ May use data from Spansh, EDGIS and/or EDAstro.",
             }
         }
 
+        private void OnScanForRings(Scan scan, SystemData sysData)
+        {
+            if (scan.Rings == null || scan.Rings.IsEmpty || _c.Data.AlreadyReportedScansSaaSignals.Contains(scan.BodyName) || !_settings.MentionPotentiallyMineableRings || _settings.MentionableRings == RingType.None)
+                return;
+
+            _c.Data.AlreadyReportedScansSaaSignals.Add(scan.BodyName);
+            List<RingDetails> ringsOfInterest = [];
+            RingType mentionableRings = _settings.MentionableRings;
+            foreach (Ring ring in scan.Rings)
+            {
+                // Ignore belts.
+                if (!ring.Name.Contains("Ring")) continue;
+
+                // Find rings of interest
+                foreach (RingType rt in Enum.GetValues(typeof(RingType)))
+                {
+                    if (rt == RingType.None) continue;
+
+                    if (mentionableRings.HasFlag(rt) && ring.RingClass.Contains(rt.MatchString()))
+                    {
+                        double densityMTperkm3 = ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0)));
+                        if (densityMTperkm3 < _settings.MinimumDensity)
+                        {
+                            Debug.WriteLine(_c.Dlogger.EnableLogging, $"Scan: Ignoring interesting ring with low density: {UIFormatter.Density(densityMTperkm3)}");
+                            break;
+                        }
+                        string desiredCommodities = string.Join(", ", _settings.DesireableCommoditiesByRingType(rt).Select(c => c.ToString()));
+                        var details = new RingDetails()
+                        {
+                            ShortName = SharedLogic.GetBodyShortName(ring.Name, scan.BodyName),
+                            RingType = rt.DisplayString(),
+                            Commodities = $"[{desiredCommodities}]",
+                            Density = $"Density: {UIFormatter.Density(densityMTperkm3)}",
+                        };
+                        if (!ringsOfInterest.Contains(details)) ringsOfInterest.Add(details);
+                        break;
+                    }
+                }
+            }
+            if (ringsOfInterest.Count == 0) return;
+
+            var shortBodyName = SharedLogic.GetBodyShortName(scan.BodyName, sysData.SystemName);
+            var detailsCommaSeparated = string.Join(", ", ringsOfInterest.Select(t => t.ToString()));
+            var bodyDistance = $"distance: {Math.Floor(scan.DistanceFromArrivalLS)} Ls";
+            Debug.WriteLineIf(_c.Dlogger.EnableLogging, $"Scan: Interesting rings at body {shortBodyName}: {detailsCommaSeparated}, {bodyDistance}");
+
+            _c.SendNotification(new NotificationArgs()
+            {
+                Title = SharedLogic.GetBodyDisplayName(shortBodyName),
+                Detail = string.Join(", ", ringsOfInterest.Select(t => $"{t.RingType} Ring")),
+                ExtendedDetails = $"{detailsCommaSeparated}", // Don't include distance here -- it's not consistent over multiple visits and produces dupe notifs in Archivist.
+                Sender = AboutInfo.ShortName,
+                CoalescingId = scan.BodyID,
+            });
+        }
+
+        private void OnScanForBody(SystemData sysData, PlanetData details)
+        {
+            if (details.BodySignals is null || details.Scan is null || !_settings.MentionPotentiallyMineableBodies || _settings.MentionableBodies == BodyType.None)
+                return; // Insufficient information.
+
+            var planetarySignalCount = details.SignalCountByType(PlanetData.SignalType.PlanetaryMining);
+            if (planetarySignalCount == 0)
+                return;
+
+            BodyType bodyTypes = _settings.MentionableBodies;
+
+            foreach (BodyType bt in Enum.GetValues(typeof(BodyType)))
+            {
+                if (bt == BodyType.None) continue;
+
+                if (_settings.MentionableBodies.HasFlag(bt) && details.Scan.PlanetClass.Contains(bt.MatchString()))
+                {
+                    var shortBodyName = SharedLogic.GetBodyShortName(details.Scan.BodyName, sysData.SystemName);
+                    var bodyDistance = $"distance: {Math.Floor(details.Scan.DistanceFromArrivalLS)} Ls";
+                    string desiredCommodities = string.Join(", ", _settings.DesireableCommoditiesByBodyType(bt).Select(c => c.ToString()));
+                    string detailString = $"{planetarySignalCount} locations; [{desiredCommodities}]";
+
+                    _c.SendNotification(new NotificationArgs()
+                    {
+                        Title = SharedLogic.GetBodyDisplayName(shortBodyName),
+                        Detail = $"{bt.DisplayString()} body with planetary mining locations",
+                        ExtendedDetails = $"{detailString}", // Don't include distance here -- it's not consistent over multiple visits and produces dupe notifications in Archivist.
+                        Sender = AboutInfo.ShortName,
+                        CoalescingId = details.BodyId,
+                    });
+                    break;
+                }
+            }
+        }
+
+        private void OnProspectedAsteroid(ProspectedAsteroid prospected)
+        {
+            if (prospected.Remaining < 100)
+            {
+                _c.SendNotification(MakeProspectorNotificationArgs("Depleted", "", NotificationRendering.NativeVisual));
+                _c.UIMgr.Realtime.ProspectedEvents.Add(new()
+                {
+                    Event = prospected,
+                });
+
+                return;
+            }
+
+            ProspectorDetails d = new()
+            {
+                Event = prospected
+            };
+            bool suppressFurtherNotifications = false;
+
+            // Separate grid entry, but combine it with other notifications.
+            string highMaterialContent = "";
+            if (_settings.MentionHighMaterialContent && prospected.Content == JournalConstants.MATERIAL_CONTENT_HIGH)
+            {
+                highMaterialContent = " and has high material content";
+            }
+
+            if (Enum.TryParse<Commodities>(prospected.MotherlodeMaterial, true, out Commodities ml) && _settings.GetFor(ml))
+            {
+                // Found a core of interest!
+                string name = CargoHelper.CommodityName(prospected.MotherlodeMaterial, prospected.MotherlodeMaterial_Localised);
+                string coreDetails = $"Asteroid contains core of {name}{highMaterialContent}";
+
+                NotificationArgs args = MakeProspectorNotificationArgs( "Core found", coreDetails);
+                _c.SendNotification(args);
+                Debug.WriteLineIf(_c.Dlogger.EnableLogging, $"\t--Grid Update: {name}; Core found");
+                suppressFurtherNotifications = true;
+
+                d.CoreImage = new(Images.PlanetaryMiningSpotImage)
+                {
+                    Size = new(30, 30),
+                    ToolTip = coreDetails,
+                    Visible = true,
+                };
+            }
+
+            Dictionary<string, float> desireableCommodities = [];
+            float desireableCommoditiesPercentSum = 0.0f;
+            foreach (var m in prospected.Materials)
+            {
+                if (!Enum.TryParse<Commodities>(m.Name, true, out Commodities c))
+                {
+                    continue;
+                }
+
+                if (_settings.GetFor(c))
+                {
+                    string name = CargoHelper.CommodityName(m.Name, m.Name_Localised);
+                    desireableCommodities.Add(name, m.Proportion);
+                    desireableCommoditiesPercentSum += m.Proportion;
+                }
+            }
+
+            if (desireableCommodities.Count > 0 && desireableCommoditiesPercentSum > _settings.MinimumPercent)
+            {
+                string commodities = String.Join(", ", desireableCommodities.Keys);
+                string percentageString = UIFormatter.Percent(desireableCommoditiesPercentSum, 0);
+                string title;
+                string details;
+
+                if (desireableCommodities.Count > 1)
+                {
+                    // Ooh, multiple things here!
+                    title = "Good multiple commodity rock";
+                    details = $"Asteroid is a combined {UIFormatter.Percent(desireableCommoditiesPercentSum, 0)} {commodities}{highMaterialContent}";
+                }
+                else
+                {
+                    title = "Good rock";
+                    details = $"Asteroid is {UIFormatter.Percent(desireableCommoditiesPercentSum, 0)} {commodities}{highMaterialContent}";
+                }
+
+                if (!suppressFurtherNotifications)
+                {
+                    _c.SendNotification(MakeProspectorNotificationArgs(title, details));
+                    suppressFurtherNotifications = true;
+                }
+                d.CommoditiesImage = new(Images.PlanetaryMiningSpotImage)
+                {
+                    Size = new(30, 30),
+                    ToolTip = details,
+                    Visible = true,
+                };
+                Debug.WriteLineIf(_c.Dlogger.EnableLogging, $"\t--Grid Update: {commodities}; {percentageString}");
+            }
+
+            // If we got here, we didn't find anything interesting.
+            if (!suppressFurtherNotifications && !string.IsNullOrEmpty(highMaterialContent))
+            {
+                string details = "";
+                if (desireableCommodities.Count > 0)
+                {
+                    details = $"Asteroid also contains {UIFormatter.Percent(desireableCommoditiesPercentSum, 0)} of other desireable commodities";
+                }
+                _c.SendNotification(
+                    MakeProspectorNotificationArgs("High raw material content", details));
+            }
+
+            _c.UIMgr.Realtime.ProspectedEvents.Add(d);
+        }
+
+        private void OnRingPing(SystemData sysData, SAASignalsFound saaSignalsFound)
+        {
+            if (String.IsNullOrEmpty(sysData.SystemName)) return;
+            var ringName = SharedLogic.GetBodyShortName(saaSignalsFound.BodyName, sysData.SystemName);
+            if (saaSignalsFound.Signals == null || saaSignalsFound.Signals.Count == 0 || _c.Data.AlreadyReportedScansSaaSignals.Contains(ringName)
+                    || !ringName.Contains(" Ring", StringComparison.InvariantCultureIgnoreCase))
+                return;
+
+            _c.Data.AlreadyReportedScansSaaSignals.Add(ringName);
+            Dictionary<string, int> desireableCommodities = [];
+            List<string> notificationDetail = [];
+
+            foreach (var m in saaSignalsFound.Signals)
+            {
+                if (!Enum.TryParse<Commodities>(m.Type, true, out Commodities c))
+                {
+                    continue;
+                }
+
+                if (_settings.GetFor(c))
+                {
+                    string name = CargoHelper.CommodityName(m.Type, m.Type);
+                    desireableCommodities.Add(name, m.Count);
+
+                    notificationDetail.Add($"{m.Count} {name}");
+                }
+            }
+
+            if (notificationDetail.Count > 0)
+            {
+                Debug.WriteLineIf(_c.Dlogger.EnableLogging, $"SAASignalsFound: Hotspots of interest: {ringName} contains: {string.Join(", ", notificationDetail)}");
+
+                if (_c.Core.IsLogMonitorBatchReading) return;
+
+                _c.SendNotification(new NotificationArgs
+                {
+                    Title = "Hotspots of interest",
+                    Detail = $"{ringName} contains:{Environment.NewLine}{string.Join(Environment.NewLine, notificationDetail)}",
+                    Sender = AboutInfo.ShortName,
+                    CoalescingId = saaSignalsFound.BodyID,
+                });
+            }
+        }
+
+        private NotificationArgs MakeProspectorNotificationArgs(string title, string detail, NotificationRendering rendering = NotificationRendering.NativeVocal | NotificationRendering.NativeVisual)
+        {
+            NotificationArgs args = new()
+            {
+                Title = title,
+                Detail = $"[{DateTime.UtcNow:h:mm:ss}] {detail}",
+                DetailSsml = $"<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"en - US\"><voice name=\"\">{detail}</voice></speak>",
+                Rendering = rendering,
+                Sender = AboutInfo.ShortName,
+                CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
+            };
+            return args;
+        }
+
         public void StatusChange(Status status)
         {
             // Update fuel level with latest, greatest data.
@@ -589,7 +1006,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     Title = "Incomplete system scan!",
                     Detail = $"The undiscovered system you are about to leave is not fully scanned!",
                     Sender = AboutInfo.ShortName,
-                    CoalescingId = Constants.COALESCING_ID_SYSTEM,
+                    CoalescingId = CoalescingIDs.SYSTEM_COALESCING_ID,
                     Rendering = NotificationRendering.NativeVisual | NotificationRendering.NativeVocal,
                 });
             }
@@ -654,9 +1071,9 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                 _cacheWriteQueued = true;
                 try
                 {
-                    Task.Run(() =>
+                    Task.Run(async () =>
                     {
-                        Task.Delay(3000);
+                        await Task.Delay(3000);
                         try
                         {
                             _c.Data.SaveToCache();
@@ -700,7 +1117,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                     Sender = AboutInfo.ShortName,
                     ExtendedDetails = $"Destination: {_c.Data.CommanderData.Destination}",
                     Rendering = NotificationRendering.PluginNotifier,
-                    CoalescingId = Constants.COALESCING_ID_POST_SYSTEM,
+                    CoalescingId = CoalescingIDs.DEFAULT_COALESCING_ID,
                 });
             }
         }

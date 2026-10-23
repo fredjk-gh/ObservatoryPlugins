@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
+using com.github.fredjk_gh.PluginCommon.Data.Prospecting;
 using Observatory.Framework;
 
 [assembly: InternalsVisibleTo("ObservatoryPlugins.Tests")]
@@ -37,36 +39,20 @@ namespace com.github.fredjk_gh.ObservatoryHelm
             EnableWrappedLayout = true;
             EnableAutoUpdates = true;
             UseInGameTime = false;
+            // Migrated from Prospector
+            LimpetReminderNotifications = true;
+            LimpetNotificationMinMiningModules = 2;
+            MinimumPercent = 10;
+            MinimumDensity = 5.0;
+            ProspectingFor.Add(Commodities.Tritium);
+            ProspectingFor.Add(Commodities.Platinum);
+            MentionPotentiallyMineableRings = true;
+            MentionPotentiallyMineableBodies = false;
+            MentionHighMaterialContent = false;
         }
 
-        [SettingNewGroup("Notifications")]
-        [SettingDisplayName("Notify if current undiscovered system is not fully scanned")]
-        public bool WarnIncompleteUndiscoveredSystemScan { get; set; }
-
-        [SettingDisplayName("Notify when FSD is supercharged")]
-        public bool NotifyJetConeBoost { get; set; }
-
-        [SettingDisplayName("Enable high gravity advisory on approach")]
-        public bool EnableHighGravityAdvisory { get; set; }
-
-        [SettingNewGroup("Tuning")]
-
-        [SettingDisplayName("Gravity advisory threshold")]
-        [SettingNumericBounds(0.0, 10.0, 0.1)]
-        public double GravityAdvisoryThreshold { get; set; }
-
-        [SettingDisplayName("Bubble radius (Ly)")]
-        [SettingNumericBounds(100.0, 1500.0, 100.0)]
-        public double BubbleRadiusLy { get; set; }
-
-
-        [SettingNewGroup("Neutron Highway")]
-        [SettingDisplayName("Maximum secondary scoopable star distance (Ls)")]
-        [SettingNumericBounds(500, 50000, 500)]
-        public int MaxNearbyScoopableDistance { get; set; }
-
         // TODO: Put notifiers on these properties and respond to them at run-time to avoid a restart?
-        [SettingNewGroup("Displayed Cards - Requires restart")]
+        [SettingNewGroup("Enabled Cards - Requires restart")]
         [SettingDisplayName("Hide Ship Panel")]
         public bool ShipPanelHidden { get; set; }
 
@@ -92,7 +78,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm
         public bool MessagesPanelHidden { get; set; }
 
         [SettingNewGroup("Display Options")]
-        [SettingDisplayName("Font Size Adjustmnet")]
+        [SettingDisplayName("Font Size Adjustment")]
         [SettingNumericUseSlider]
         [SettingNumericBounds(-5.0, 15.0)]
         public double FontSizeAdjustment
@@ -104,6 +90,16 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 OnPropertyChanged("FontSizeAdjustment");
             }
         }
+
+        [SettingNewGroup("Notifications")]
+        [SettingDisplayName("Notify if current undiscovered system is not fully scanned when starting jump")]
+        public bool WarnIncompleteUndiscoveredSystemScan { get; set; }
+
+        [SettingDisplayName("Notify when FSD is supercharged")]
+        public bool NotifyJetConeBoost { get; set; }
+
+        [SettingDisplayName("Enable high gravity advisory on approach to planet")]
+        public bool EnableHighGravityAdvisory { get; set; }
 
         [SettingDisplayName("Enable card layout wrap-around")]
         public bool EnableWrappedLayout
@@ -125,6 +121,91 @@ namespace com.github.fredjk_gh.ObservatoryHelm
                 _useInGameTime = value;
                 OnPropertyChanged("UseInGameTime");
             }
+        }
+
+        [SettingNewGroup("Tuning")]
+
+        [SettingDisplayName("Gravity advisory threshold")]
+        [SettingNumericBounds(0.0, 10.0, 0.1)]
+        public double GravityAdvisoryThreshold { get; set; }
+
+        [SettingDisplayName("Bubble radius (Ly)")]
+        [SettingNumericBounds(100.0, 1500.0, 100.0)]
+        public double BubbleRadiusLy { get; set; }
+
+        [SettingDisplayName("Maximum secondary scoopable star distance (Ls) when Neutron hopping")]
+        [SettingNumericBounds(500, 50000, 500)]
+        public int MaxNearbyScoopableDistance { get; set; }
+
+
+        [SettingNewGroup("Prospecting / Mining")]
+
+        [SettingDisplayName("Select commodities to watch")]
+        [JsonIgnore]
+        public Action CommoditySelector { get; internal set; }
+
+        [SettingDisplayName("Notify ring types with potential items of interest")]
+        public bool MentionPotentiallyMineableRings { get; set; }
+
+        [SettingDisplayName("Notify body types with potential items of interest")]
+        public bool MentionPotentiallyMineableBodies { get; set; }
+
+        [SettingDisplayName("Notify High material content asteroids")]
+        public bool MentionHighMaterialContent { get; set; }
+
+        [SettingIgnore]
+        [JsonIgnore]
+        public RingType MentionableRings
+        {
+            get => ProspectingFor.Select(kvp => kvp.Details().RingType).Aggregate((c, v) => c |= v);
+        }
+
+        [SettingIgnore]
+        [JsonIgnore]
+        public BodyType MentionableBodies
+        {
+            get => ProspectingFor.Select(kvp => kvp.Details().BodyType).Aggregate((c, v) => c |= v);
+        }
+
+        [SettingDisplayName("Notify if no limpets in cargo when mining modules equipped when undocking")]
+        public bool LimpetReminderNotifications { get; set; }
+
+        [SettingDisplayName("Minimum number of mining modules equipped for limpet notification")]
+        [SettingNumericBounds(1, 15)]
+
+        public int LimpetNotificationMinMiningModules { get; set; }
+
+        [SettingDisplayName("Minimum % content required for an asteroid to be 'good'")]
+        [SettingNumericBounds(0.0, 66.0)]
+        public double MinimumPercent { get; set; }
+
+        [SettingDisplayName("Minimum ring density to trigger notification (MT/km^3)")]
+        [SettingNumericBounds(0.0, 9.0)]
+        public double MinimumDensity { get; set; }
+
+        [SettingIgnore]
+        public HashSet<Commodities> ProspectingFor { get; init; } = [];
+
+        internal bool GetFor(Commodities commodity)
+        {
+            return ProspectingFor.Contains(commodity);
+        }
+        internal void SetFor(Commodities c, bool value)
+        {
+            if (value)
+                ProspectingFor.Add(c);
+            else
+                ProspectingFor.Remove(c);
+        }
+
+        public List<Commodities> DesireableCommoditiesByRingType(RingType ringType)
+        {
+            return [.. ProspectingFor.Where(c => c.Details().RingType.HasFlag(ringType))];
+        }
+
+        public List<Commodities> DesireableCommoditiesByBodyType(BodyType bodyType)
+        {
+            return [.. ProspectingFor.Where(c => c.Details().BodyType.HasFlag(bodyType))];
         }
 
         [SettingNewGroup("Updates")]

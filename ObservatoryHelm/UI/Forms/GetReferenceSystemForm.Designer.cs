@@ -1,4 +1,4 @@
-﻿namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
+﻿namespace com.github.fredjk_gh.ObservatoryHelm.UI.Forms
 {
     partial class GetReferenceSystemForm
     {

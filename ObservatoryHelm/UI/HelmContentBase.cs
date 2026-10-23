@@ -9,7 +9,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
         protected bool _isDirty = true;
 
         [Obsolete("Designer only", true)]
-        private HelmContentBase()
+        private HelmContentBase() : base ()
         {
             // Constructor has to be present to prevent breaking Designer mode, but this is not valid for general
             // use. Throw if not in designer mode.
@@ -19,9 +19,10 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
                 throw new InvalidOperationException($"Default Constructor is only for Designer mode; {System.Diagnostics.Process.GetCurrentProcess().ProcessName}");
         }
 
-        public HelmContentBase(HelmContext context)
+        public HelmContentBase(HelmContext context, ToolTip sharedTtip) : base()
         {
             _c = context;
+            _toolTip = sharedTtip;
             DoubleBuffered = true;
         }
 

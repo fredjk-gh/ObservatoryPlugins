@@ -28,12 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             lvMsgs = new ListView();
             colTimestamp = new ColumnHeader();
             colMessage = new ColumnHeader();
             colSender = new ColumnHeader();
-            ttManager = new ToolTip(components);
             SuspendLayout();
             // 
             // lvMsgs
@@ -80,7 +78,6 @@
         private ListView lvMsgs;
         private ColumnHeader colTimestamp;
         private ColumnHeader colMessage;
-        private ToolTip ttManager;
         private ColumnHeader colSender;
     }
 }

@@ -13,19 +13,20 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         private readonly ThemeableImageButton messagesCopyButton;
         private readonly ThemeableImageButton messagesClearButton;
 
-        internal MessagesContent(HelmContext context) : base(context)
+        internal MessagesContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
 
             ContentTitle = "Messages";
+            EnablePopout = true;
 
             messagesClearButton = new();
             messagesClearButton.SetOriginalImage(PluginCommon.Images.RouteClearImage);
-            ttManager.SetToolTip(messagesClearButton, "Clear messages");
+            _toolTip.SetToolTip(messagesClearButton, "Clear messages");
 
             messagesCopyButton = new();
             messagesCopyButton.SetOriginalImage(PluginCommon.Images.CopyImage);
-            ttManager.SetToolTip(messagesCopyButton, "Copy messages to system clipboard");
+            _toolTip.SetToolTip(messagesCopyButton, "Copy messages to system clipboard");
 
             AddToolButton(messagesClearButton);
             AddToolButton(messagesCopyButton);

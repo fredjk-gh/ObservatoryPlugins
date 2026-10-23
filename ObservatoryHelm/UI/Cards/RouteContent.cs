@@ -4,7 +4,6 @@ using com.github.fredjk_gh.ObservatoryHelm.Data;
 using com.github.fredjk_gh.PluginCommon;
 using com.github.fredjk_gh.PluginCommon.UI;
 using com.github.fredjk_gh.PluginCommon.Utilities;
-using Observatory.Framework.Files;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 {
@@ -18,11 +17,17 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 
         private CommanderData _commanderData = null;
 
-        internal RouteContent(HelmContext context) : base(context)
+        internal RouteContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
 
             ContentTitle = "Route";
+            EnablePopout = true;
+
+            _toolTip.SetToolTip(lblSessionDistance, "This session (estimated)");
+            _toolTip.SetToolTip(lblStatsDistance, "From game Statistics");
+            _toolTip.SetToolTip(pbRouteProgress, "Jumps remaining: 1 / 2");
+            _toolTip.SetToolTip(lblOrigin, "1234 jumps");
 
             SuspendLayout();
 
@@ -38,7 +43,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 Visible = false,
             };
             routeCreateButton.SetOriginalImage(Images.RouteAddImage);
-            ttManager.SetToolTip(routeCreateButton, "Create a new route");
+            _toolTip.SetToolTip(routeCreateButton, "Create a new route");
 
             routeClearButton = new()
             {
@@ -46,7 +51,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(routeClearButton, "Clear current route");
+            _toolTip.SetToolTip(routeClearButton, "Clear current route");
 
             routeViewButton = new()
             {
@@ -54,7 +59,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(routeViewButton, "View current route");
+            _toolTip.SetToolTip(routeViewButton, "View current route");
 
             destinationCopyButton = new()
             {
@@ -62,7 +67,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(destinationCopyButton, "Copy destination to system clipboard");
+            _toolTip.SetToolTip(destinationCopyButton, "Copy destination to system clipboard");
 
             // Add in reverse order as the control is RTL.
             AddToolButton(routeViewButton);
@@ -121,7 +126,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 pbRouteProgress.Minimum,
                 pbRouteProgress.Maximum);
             lblSessionDistance.Text = $"{_commanderData.DistanceTravelled:#,##0} Ly";
-            ttManager.SetToolTip(pbRouteProgress, $"Jumps Remaining: {_commanderData.JumpsRemainingInRoute}");
+            _toolTip.SetToolTip(pbRouteProgress, $"Jumps Remaining: {_commanderData.JumpsRemainingInRoute}");
         }
 
         protected override void InternalClear()
@@ -131,7 +136,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             lblDestination.Text = string.Empty;
             pbRouteProgress.Value = 0;
             pbRouteProgress.Maximum = 1;
-            ttManager.SetToolTip(pbRouteProgress, "");
+            _toolTip.SetToolTip(pbRouteProgress, "");
             lblStatsDistance.Text = string.Empty;
             lblSessionDistance.Text = string.Empty;
 

@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 using com.github.fredjk_gh.ObservatoryHelm.Data;
 using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using com.github.fredjk_gh.PluginCommon.UI;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 {
@@ -10,12 +12,18 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
     {
         private CommanderData _commanderData = null;
 
-        internal CargoContent(HelmContext context) : base(context)
+        internal CargoContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
 
             // Auto-collapse if cargo is empty.
             ContentTitle = "Cargo";
+            EnablePopout = true;
+
+            _toolTip.SetToolTip(lvCargoShip, "Cargo hold contents");
+            _toolTip.SetToolTip(pbCargoGaugeShip, "5 / 20 T used");
+            _toolTip.SetToolTip(lvCargoSRV, "Cargo hold contents");
+            _toolTip.SetToolTip(pbCargoGaugeSRV, "5 / 20 T used");
 
             _c.UIMgr.PropertyChanged += UIState_PropertyChanged;
 
@@ -26,74 +34,106 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         protected override void InternalDraw()
         {
             var uiData = _c.UIMgr.ForMode();
-            pbCargoGauge.Value = Math.Clamp(uiData.Cargo, pbCargoGauge.Minimum, pbCargoGauge.Maximum);
-            ttManager.SetToolTip(pbCargoGauge, $"{uiData.Cargo} T of cargo");
-            ContentTitle = uiData.Cargo > 0 ? $"Cargo - ${uiData.Cargo} T" : "Cargo";
-
-            if (uiData.Cargo == 0)
-            {
-                lvCargo.Items.Clear();
-                return;
-            }
-
             _commanderData ??= _c.Data.For(uiData.CommanderKey);
-            if (_commanderData is null || !uiData.ShipId.HasValue || !_commanderData.Ships.IsKnown(uiData.ShipId.Value))
-                return;
 
-            var shipData = _commanderData.Ships.GetShip(uiData.ShipId);
-
-            string usageString = $"{uiData.Cargo} / {shipData.CargoCapacity} T";
-            ttManager.SetToolTip(pbCargoGauge, $"{usageString} cargo space used");
-            ContentTitle = uiData.Cargo > 0 ? $"Cargo - {usageString}" : "Cargo";
-
-            var cargo = _commanderData.Ships.Cargo;
-
-            HashSet<string> knownItems = [];
-            HashSet<string> removeItems = [];
-            foreach (ListViewItem row in lvCargo.Items)
-            {
-                if (cargo.TryGetValue(row.Name, out var cargoCount))
-                {
-                    row.Text = $"{cargoCount}";
-                    knownItems.Add(row.Name);
-                }
-                else
-                {
-                    removeItems.Add(row.Name);
-                }
-            }
-
-            // Backfill new items.
-            foreach (var item in cargo)
-            {
-                if (knownItems.Contains(item.Key)) continue;
-                var lvItem = lvCargo.Items.Add($"{item.Value}");
-                lvItem.Name = item.Key;
-                lvItem.SubItems.Add($"{CargoHelper.CommodityName(item.Key)}");
-            }
-
-            // Remove items that are no longer present.
-            foreach (var removed in removeItems)
-            {
-                lvCargo.Items.RemoveByKey(removed);
-            }
+            DrawCargoContent(pbCargoGaugeShip, lvCargoShip, uiData.ShipCargo, GetShipCargoCapacity(uiData), _commanderData.Ships.Cargo);
+            DrawCargoContent(pbCargoGaugeSRV, lvCargoSRV, uiData.SRVCargo, GetSRVCargoCapacity(), _commanderData.SRV.Cargo);
+            UpdateForTransitMode();
         }
 
         protected override void InternalClear()
         {
-            lvCargo.Items.Clear();
-            pbCargoGauge.Value = 0;
-            ttManager.SetToolTip(pbCargoGauge, "");
+            ClearCargoContent(pbCargoGaugeShip, lvCargoShip);
+            ClearCargoContent(pbCargoGaugeSRV, lvCargoSRV);
+            tabCargos.SelectedTab = tabCargoShip;
+
+            tabCargoShip.Text = "Ship";
+            tabCargoSRV.Text = "SRV";
 
             _commanderData = null;
+        }
+
+        private void UpdateForTransitMode()
+        {
+            var uiData = _c.UIMgr.ForMode();
+
+            if (_commanderData.Ships.CurrentShipID is not null)
+                tabCargoShip.Text = $"Ship - {_commanderData.Ships.CurrentShip?.ShipName}";
+            else
+                tabCargoShip.Text = "Ship";
+
+            if (_commanderData.SRV.ActiveSRVType is not null)
+                tabCargoSRV.Text = $"SRV - {_commanderData.SRV.ActiveSRVDetails.Name}";
+            else
+                tabCargoSRV.Text = "SRV";
+
+
+            switch (uiData.TransitMode)
+            {
+                case TransitModeType.OwnShip:
+                    tabCargos.SelectedTab = tabCargoShip;
+                    break;
+                case TransitModeType.ShipLaunchedVessel:
+                    tabCargos.SelectedTab = tabCargoSRV;
+                    break;
+            }
+        }
+
+        protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
+        {
+            base.ScaleControl(factor, specified);
+            lvCargoShip.ScaleColumns(factor);
+            lvCargoSRV.ScaleColumns(factor);
+        }
+
+        private void DrawCargoContent(ThemeableProgressBar pb, ListView lv, int cargoCount, int maxCargo, Dictionary<string, int> cargo = null)
+        {
+            if (maxCargo != pb.Maximum) pb.Maximum = maxCargo;
+            pb.Value = Math.Clamp(cargoCount, pb.Minimum, pb.Maximum);
+            _toolTip.SetToolTip(pb, $"{cargoCount} T of cargo");
+
+            Debug.WriteLineIf(
+                (cargo is null && cargoCount > 0)
+                || (cargo is not null && cargo.Values.Sum() != cargoCount),
+                $"In DrawCargoContent, cargoCount ({cargoCount}) does not agree with inventory count: {(cargo is null ? 0 : cargo.Values.Sum())}");
+
+            if (cargoCount == 0 || cargo is null)
+            {
+                lv.Items.Clear();
+                return;
+            }
+
+            string usageString = $"{cargoCount} / {maxCargo} T";
+            _toolTip.SetToolTip(pb, $"{usageString} cargo space used");
+
+            // Experiment: Just clear and re-draw the listview.
+            lv.Items.Clear();
+            foreach (var item in cargo)
+            {
+                var lvItem = lv.Items.Add($"{item.Value}");
+                lvItem.Name = item.Key;
+                lvItem.SubItems.Add($"{CargoHelper.CommodityName(item.Key)}");
+            }
+        }
+
+        private void ClearCargoContent(ThemeableProgressBar pb, ListView lv)
+        {
+            lv.Items.Clear();
+            pb.Value = 0;
+            _toolTip.SetToolTip(pb, "");
         }
 
         private void UIState_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
-                case UIStateManager.PROP_CARGO:
-                    // When the items in the cargo hold change.
+                case UIStateManager.PROP_TRANSITMODE:
+                    UpdateForTransitMode();
+                    break;
+                case UIStateManager.PROP_SHIP_CARGO:
+                    InternalDraw();
+                    break;
+                case UIStateManager.PROP_SRV_CARGO:
                     InternalDraw();
                     break;
                 case UIStateManager.PROP_SHIPID:
@@ -102,9 +142,27 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                     if (_commanderData is not null
                         && _commanderData.Ships.CurrentShipID.HasValue
                         && _commanderData.Ships.CurrentShip.CargoCapacity.HasValue)
-                        pbCargoGauge.Maximum = _commanderData.Ships.CurrentShip.CargoCapacity.Value;
+                        pbCargoGaugeShip.Maximum = _commanderData.Ships.CurrentShip.CargoCapacity.Value;
+                    UpdateForTransitMode();
                     break;
             }
+        }
+
+        private int GetShipCargoCapacity(UIStateData uiData)
+        {
+            if (_commanderData is null || !uiData.ShipId.HasValue || !_commanderData.Ships.IsKnown(uiData.ShipId.Value))
+                return pbCargoGaugeShip.Maximum; // Preserve current value.
+
+            var shipData = _commanderData.Ships.GetShip(uiData.ShipId);
+            return shipData?.CargoCapacity ?? pbCargoGaugeShip.Maximum; // Preserve current value.
+        }
+
+        private int GetSRVCargoCapacity()
+        {
+            if (_commanderData is null || !_commanderData.SRV.ActiveSRVType.HasValue)
+                return pbCargoGaugeSRV.Maximum; // Preserve current value.
+
+            return _commanderData.SRV.ActiveSRVDetails?.MaxCargo ?? pbCargoGaugeSRV.Maximum; // Preserve current value.
         }
     }
 }

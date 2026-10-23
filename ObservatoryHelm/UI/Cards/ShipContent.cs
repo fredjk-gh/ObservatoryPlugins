@@ -6,7 +6,6 @@ using com.github.fredjk_gh.PluginCommon;
 using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
 using com.github.fredjk_gh.PluginCommon.UI;
 using com.github.fredjk_gh.PluginCommon.UI.Shared;
-using static System.Windows.Forms.AxHost;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 {
@@ -38,11 +37,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         private CommanderData _commanderData = null;
         private ShipData _lastShip = null;
 
-        internal ShipContent(HelmContext context) : base(context)
+        internal ShipContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
 
             ContentTitle = "Ship";
+            EnablePopout = true;
 
             SuspendLayout();
 
@@ -52,7 +52,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(viewFleetButton, "View your fleet");
+            _toolTip.SetToolTip(viewFleetButton, "View your fleet");
             AddToolButton(viewFleetButton);
 
             edsyButton = new()
@@ -61,7 +61,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(edsyButton, "View loadout on edsy.org");
+            _toolTip.SetToolTip(edsyButton, "View loadout on edsy.org");
             AddToolButton(edsyButton);
 
             coriolisButton = new()
@@ -70,10 +70,10 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(coriolisButton, "View loadout on coriolis.io");
+            _toolTip.SetToolTip(coriolisButton, "View loadout on coriolis.io");
             AddToolButton(coriolisButton);
 
-            tlblFuel.ToolTipManager = ttManager;
+            tlblFuel.ToolTipManager = _toolTip;
             tlblFuel.AddImage(ICON_FUEL);
             tlblFuel.AddImage(ICON_WARNING_SIGN);
 
@@ -120,7 +120,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         {
             _isDirty = true;
             pbFuel.Value = (int)(fuelRemaining * 10);
-            ttManager.SetToolTip(pbFuel, $"{fuelRemaining} / {_lastShip.FuelCapacity} T");
+            _toolTip.SetToolTip(pbFuel, $"{fuelRemaining} / {_lastShip.FuelCapacity} T");
 
             if (fuelRemaining < (_lastShip.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
             {
@@ -154,7 +154,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             lblJumpRange.Text = string.Empty;
             pbFuel.Value = 0;
             pbFuel.Maximum = 1;
-            ttManager.SetToolTip(pbFuel, string.Empty);
+            _toolTip.SetToolTip(pbFuel, string.Empty);
             ICON_FUEL.Visible = false;
             ICON_WARNING_SIGN.Visible = false;
 

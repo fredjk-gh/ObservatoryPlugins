@@ -10,7 +10,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
     public partial class HelmUI : UserControl
     {
         private HelmContext _c;
-        private Dictionary<HelmContext.Card, CollapsibleGroupBox> _cards = new();
+        private Dictionary<HelmContext.Card, CollapsibleGroupBox> _cards = [];
         private int _cardWidth;
         private readonly float _originalFontSize;
         private bool _isLoading = true;
@@ -30,30 +30,74 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             SuspendLayout(); // Won't be re-triggered until _isLoading is false or manually done.
 
             // TODO: Refactor so individual cards can be created/removed at runtime.
-            List<CollapsibleGroupBoxContent> contentControls = new();
-            contentControls.Add(new CommanderContent(_c) { Name = HelmContext.Card.Commander.ToString() });
+            List<CollapsibleGroupBoxContent> contentControls = [];
+            contentControls.Add(new CommanderContent(_c, ttip)
+            {
+                AutoScaleDimensions = new SizeF(6F, 13F),
+                AutoScaleMode = AutoScaleMode.Font,
+                Name = HelmContext.Card.Commander.ToString(),
+            });
             if (!_c.Settings.ShipPanelHidden)
-                contentControls.Add(new ShipContent(_c) { Name = HelmContext.Card.Ship.ToString() });
+                contentControls.Add(new ShipContent(_c, ttip)
+                {
+                    AutoScaleDimensions = new SizeF(6F, 13F),
+                    AutoScaleMode = AutoScaleMode.Font,
+                    Name = HelmContext.Card.Ship.ToString()
+                });
             if (!_c.Settings.RoutePanelHidden)
-                contentControls.Add(new RouteContent(_c) { Name = HelmContext.Card.Route.ToString() });
+                contentControls.Add(new RouteContent(_c, ttip)
+                {
+                    AutoScaleDimensions = new SizeF(6F, 13F),
+                    AutoScaleMode = AutoScaleMode.Font,
+                    Name = HelmContext.Card.Route.ToString()
+                });
             if (!_c.Settings.SystemPanelHidden)
-                contentControls.Add(new SystemContent(_c) { Name = HelmContext.Card.System.ToString() });
+                contentControls.Add(new SystemContent(_c, ttip)
+                {
+                    AutoScaleDimensions = new SizeF(6F, 13F),
+                    AutoScaleMode = AutoScaleMode.Font,
+                    Name = HelmContext.Card.System.ToString()
+                });
             if (!_c.Settings.BodyPanelHidden)
-                contentControls.Add(new PlanetContent(_c) { Name = HelmContext.Card.Body.ToString() });
+                contentControls.Add(new PlanetContent(_c, ttip)
+                {
+                    AutoScaleDimensions = new SizeF(6F, 13F),
+                    AutoScaleMode = AutoScaleMode.Font,
+                    Name = HelmContext.Card.Body.ToString()
+                });
             //if (!_c.Settings.StationPanelHidden)
-            //    contentControls.Add(new StationContent(_c) { Name = HelmContext.Card.Station.ToString() });
+            //    contentControls.Add(new StationContent(_c) {
+            //        AutoScaleDimensions = new SizeF(6F, 13F),
+            //        AutoScaleMode = AutoScaleMode.Font,
+            //        Name = HelmContext.Card.Station.ToString()
+            //    });
             if (!_c.Settings.CargoPanelHidden)
-                contentControls.Add(new CargoContent(_c) { Name = HelmContext.Card.Cargo.ToString() });
+                contentControls.Add(new CargoContent(_c, ttip)
+                {
+                    AutoScaleDimensions = new SizeF(6F, 13F),
+                    AutoScaleMode = AutoScaleMode.Font,
+                    Name = HelmContext.Card.Cargo.ToString()
+                });
             if (!_c.Settings.ProspectorPanelHidden)
-                contentControls.Add(new ProspectorContent(_c) { Name = HelmContext.Card.Prospector.ToString() });
+                contentControls.Add(new ProspectorContent(_c, ttip)
+                {
+                    AutoScaleDimensions = new SizeF(6F, 13F),
+                    AutoScaleMode = AutoScaleMode.Font,
+                    Name = HelmContext.Card.Prospector.ToString()
+                });
             if (!_c.Settings.MessagesPanelHidden)
-                contentControls.Add(new MessagesContent(_c) { Name = HelmContext.Card.Messages.ToString() });
+                contentControls.Add(new MessagesContent(_c, ttip)
+                {
+                    AutoScaleDimensions = new SizeF(6F, 13F),
+                    AutoScaleMode = AutoScaleMode.Font,
+                    Name = HelmContext.Card.Messages.ToString()
+                });
 
             int maxCardWidth = -1;
             foreach (var c in contentControls)
             {
                 maxCardWidth = Math.Max(maxCardWidth, c.Width);
-                CollapsibleGroupBox card = new()
+                CollapsibleGroupBox card = new(ttip)
                 {
                     ContentControl = c,
                     Expanded = !(c is CommanderContent),
@@ -69,6 +113,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             _c.Settings.PropertyChanged += Settings_PropertyChanged;
             ResumeLayout();
             _isLoading = false;
+
+            flpCardPanel.ControlAdded += FlpCardPanel_ControlAdded;
         }
 
         public void Draw()
@@ -93,6 +139,11 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             _c.UIMgr.Realtime.CommanderKey = key;
         }
 
+        public void ChangeTransitMode(TransitModeType transitMode)
+        {
+            _c.UIMgr.Realtime.TransitMode = transitMode;
+        }
+
         public void ChangeShip(UInt64 shipId)
         {
             _c.UIMgr.Realtime.ShipId= shipId;
@@ -108,14 +159,24 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             _c.UIMgr.Realtime.JetConeBoost = newJetConeBoost;
         }
 
-        public void ChangeCargo(int cargo)
+        public void ChangeShipCargo(int cargo)
         {
-            _c.UIMgr.Realtime.Cargo = cargo;
+            _c.UIMgr.Realtime.ShipCargo = cargo;
+        }
+
+        public void ChangeSRVCargo(int cargo)
+        {
+            _c.UIMgr.Realtime.SRVCargo = cargo;
         }
 
         public void ChangeSystem(ulong systemAddress)
         {
             _c.UIMgr.Realtime.SystemId64 = systemAddress;
+        }
+
+        public void ChangeSystemBodyCount(int bodyCount)
+        {
+            _c.UIMgr.Realtime.BodyCount = bodyCount;
         }
 
         public void ChangeRoute(NavRouteFile route)
@@ -147,13 +208,14 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
 
         public void AddCard(CollapsibleGroupBox card)
         {
-            _c.Core.RegisterControl(card);
             if (!Enum.TryParse(card.ContentControl.Name, out HelmContext.Card cardType)) return;
 
             _cards.Add(cardType, card);
 
             if (!_isLoading) SuspendLayout();
             flpCardPanel.Controls.Add(card);
+
+            _c.Core.RegisterControl(card);
             if (!_isLoading) ResumeLayout();
 
             // Do this after adding the controls to avoid re-entrance when applying settings.
@@ -192,7 +254,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
                 HelmContext.Card type = _c.Settings.CardOrdering[i];
                 if (!_cards.ContainsKey(type)) continue;
                 var card = _cards[type];
-                flpCardPanel.Controls.SetChildIndex(card, i);
+                if (card is not null && flpCardPanel.Controls.Contains(card))
+                    flpCardPanel.Controls.SetChildIndex(card, i);
             }
             flpCardPanel.Invalidate();
         }
@@ -217,10 +280,11 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
         private void AdjustFont()
         {
             float adjustment = (float)_c.Settings.FontSizeAdjustment;
-            if (adjustment == 0.0f) return;
 
             // Always use _originalFontSize otherwise your font size always increases or always decreases.
             float newFontSize = Math.Clamp(_originalFontSize + adjustment, 2.0f, 32.0f);
+            if (newFontSize == this.Font.Size) return;
+
             SuspendLayout();
             this.Font = new Font(this.Font.FontFamily, newFontSize);
             if (_cards.Count > 0 && _cards[0].Width != _cardWidth)
@@ -233,7 +297,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
         private void UpdateWrapping()
         {
             SuspendLayout();
-            flpCardPanel.WrapContents = !flpCardPanel.WrapContents;
+            flpCardPanel.WrapContents = _c.Settings.EnableWrappedLayout;
             flpCardPanel.AutoScroll = false; // force re-layout
             ResumeLayout();
             flpCardPanel.AutoScroll = true;
@@ -257,12 +321,21 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
                 tsbWrap.Image = ImageCommon.RecolorAndSizeImage(PluginCommon.Images.WrapImage, ForeColor);
         }
 
+        private void FlpCardPanel_ControlAdded(object sender, ControlEventArgs e)
+        {
+            // Typically triggered only when popping a panel back in. Force reflow.
+            SuspendLayout();
+            flpCardPanel.AutoScroll = false; // force re-layout
+            ResumeLayout();
+            flpCardPanel.AutoScroll = true;
+        }
+
         private void Card_MouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
                 var card = sender as CollapsibleGroupBox;
-                if (card == null) return;
+                if (card == null || card.Parent != flpCardPanel) return; // Disable in popout.
 
                 var effect = card.DoDragDrop(card, DragDropEffects.Move);
             }
@@ -273,7 +346,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             if (e.Data != null && e.Data.GetDataPresent(typeof(CollapsibleGroupBox)))
             {
                 var card = e.Data.GetData(typeof(CollapsibleGroupBox)) as CollapsibleGroupBox;
-                if (card == null) return;
+                if (card == null || card.Parent != flpCardPanel) return; // Don't allow for popped out cards.
 
                 Point p = flpCardPanel.PointToClient(new Point(e.X, e.Y));
                 var target = flpCardPanel.GetChildAtPoint(p);

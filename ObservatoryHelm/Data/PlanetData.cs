@@ -12,6 +12,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         {
             Biological,
             Geological,
+            PlanetaryMining,
         }
 
         private SystemData _system;
@@ -44,20 +45,21 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
         public int SignalCountByType(SignalType type)
         {
             if (BodySignals == null) return 0;
-            return type switch
+            string typeString = type switch
             {
-                SignalType.Biological => BodySignals
-                                        .SelectMany(l => l.Signals)
-                                        .Where(s => s.Type == "$SAA_SignalType_Biological;")
-                                        .Select(s => s.Count)
-                                        .FirstOrDefault(0),
-                SignalType.Geological => BodySignals
-                                        .SelectMany(l => l.Signals)
-                                        .Where(s => s.Type == "$SAA_SignalType_Geological;")
-                                        .Select(s => s.Count)
-                                        .FirstOrDefault(0),
-                _ => 0,
+                SignalType.Biological => JournalConstants.SIGNAL_BIO,
+                SignalType.Geological => JournalConstants.SIGNAL_GEO,
+                SignalType.PlanetaryMining => JournalConstants.SIGNAL_PLANETARY_MINING,
+                _ => string.Empty,
             };
+
+            return !string.IsNullOrEmpty(typeString)
+                ? BodySignals
+                    .SelectMany(l => l.Signals)
+                    .Where(s => s.Type == typeString && s.Count > 0)
+                    .Select(s => s.Count)
+                    .FirstOrDefault(0)
+                : 0;
         }
 
         [JsonIgnore]

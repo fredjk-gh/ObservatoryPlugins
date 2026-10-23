@@ -1,13 +1,11 @@
-﻿using Observatory.Framework.Files.Journal;
-
-namespace com.github.fredjk_gh.ObservatoryHelm.Data
+﻿namespace com.github.fredjk_gh.ObservatoryHelm.Data
 {
     // Do not rely on FID. It is not present in older journals.
     public class CommanderKey
     {
-        public static CommanderKey FromLoadGame(LoadGame loadGame)
+        public static CommanderKey New(string commanderName, string fid = "")
         {
-            return new(loadGame.Commander, loadGame.FID);
+            return new(commanderName, fid);
         }
 
         public static bool TryParse(string serialized, out CommanderKey key)

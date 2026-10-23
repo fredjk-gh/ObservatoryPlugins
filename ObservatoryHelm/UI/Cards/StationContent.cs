@@ -84,11 +84,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 
         private const string SYSTEM_NAME = "Diaguandri";
 
-        internal StationContent(HelmContext context) : base(context)
+        internal StationContent(HelmContext context, ToolTip sharedTtip) : base(context, sharedTtip)
         {
             InitializeComponent();
 
             ContentTitle = "Station";
+            EnablePopout = true;
 
             // Initialize:
             // Landing pad sizes and fit (TODO: have "too small" versions.)
@@ -130,10 +131,10 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
 
             SuspendLayout();
 
-            listBox1.Items.AddRange([.. StationServicesFilter]);
+            lbStationServices.Items.AddRange([.. StationServicesFilter]);
 
-            tlblCoordinates.ToolTipManager = ttManager;
-            tlblLandingPads.ToolTipManager = ttManager;
+            tlblCoordinates.ToolTipManager = _toolTip;
+            tlblLandingPads.ToolTipManager = _toolTip;
 
             tlblCoordinates.AddImage(ICON_POSITION);
 
@@ -158,7 +159,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(btnOpenCommodityMarket, "View commodity market information");
+            _toolTip.SetToolTip(btnOpenCommodityMarket, "View commodity market information");
             AddToolButton(btnOpenCommodityMarket);
 
             btnViewStoredShips = new()
@@ -167,7 +168,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(btnViewStoredShips, "View ships stored here");
+            _toolTip.SetToolTip(btnViewStoredShips, "View ships stored here");
             AddToolButton(btnViewStoredShips);
 
             btnOpenShipyard = new()
@@ -176,7 +177,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new Size(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(btnOpenShipyard, "View ships available to purchase");
+            _toolTip.SetToolTip(btnOpenShipyard, "View ships available to purchase");
             AddToolButton(btnOpenShipyard);
 
             btnOpenOutfitting = new()
@@ -185,7 +186,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(btnOpenOutfitting, "View available outfitting modules");
+            _toolTip.SetToolTip(btnOpenOutfitting, "View available outfitting modules");
             AddToolButton(btnOpenOutfitting);
 
             btnViewOnSpansh = new()
@@ -195,7 +196,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 Visible = false,
             };
             btnViewOnSpansh.Click += BtnViewOnSpansh_Click;
-            ttManager.SetToolTip(btnViewOnSpansh, "View station on Spansh");
+            _toolTip.SetToolTip(btnViewOnSpansh, "View station on Spansh");
             AddToolButton(btnViewOnSpansh);
 
             btnViewOnInara = new()
@@ -205,7 +206,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 Visible = false,
             };
             btnViewOnInara.Click += BtnViewOnInara_Click;
-            ttManager.SetToolTip(btnViewOnInara, "View station on Inara");
+            _toolTip.SetToolTip(btnViewOnInara, "View station on Inara");
             AddToolButton(btnViewOnInara);
 
             btnStationNameCopy = new()
@@ -214,7 +215,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
                 ImageSize = new(32, 32),
                 Visible = false,
             };
-            ttManager.SetToolTip(btnStationNameCopy, "Copy name of station into system clipboard");
+            _toolTip.SetToolTip(btnStationNameCopy, "Copy name of station into system clipboard");
             AddToolButton(btnStationNameCopy);
 
             cboStation.SelectedIndex = 18;

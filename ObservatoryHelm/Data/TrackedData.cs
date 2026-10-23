@@ -1,17 +1,21 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using com.github.fredjk_gh.PluginCommon.Data;
 using Observatory.Framework.Files.Journal;
 using Observatory.Framework.Files.ParameterTypes;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.Data
 {
-    partial class TrackedData(string dataPath)
+    internal class TrackedData(string dataPath)
     {
         private const string STATE_CACHE_FILENAME = "helm_state_cache_001.json";
         private CommanderKey _currentCommander = null;
         private readonly Dictionary<CommanderKey, CommanderData> _commanders = [];
+
+        [JsonIgnore]
+        public HashSet<string> AlreadyReportedScansSaaSignals { get; } = [];
 
         public bool IsOdyssey { get; set; }
 
@@ -65,14 +69,16 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             _commanders[d.Key] = d;
         }
 
-        public void SystemReset(UInt64 address, string name, StarPosition starPos)
+        public void SystemReset(UInt64 address, string name, StarPosition starPos, TransitModeType mode)
         {
-            CommanderData?.SystemReset(address, name, starPos);
+            CommanderData?.SystemReset(address, name, starPos, mode);
+            AlreadyReportedScansSaaSignals.Clear();
         }
 
         public void SystemReset(UInt64 address, string name, StarPosition starPos, double fuelLevel, double jumpDist)
         {
             CommanderData?.SystemReset(address, name, starPos, fuelLevel, jumpDist);
+            AlreadyReportedScansSaaSignals.Clear();
         }
 
         public void SystemResetDockedOnCarrier(UInt64 address, string name, StarPosition starPos, double distanceTravelled = 0)
@@ -80,11 +86,15 @@ namespace com.github.fredjk_gh.ObservatoryHelm.Data
             CommanderData?.SystemResetDockedOnCarrier(address, name, starPos, distanceTravelled);
         }
 
-        public void SessionReset(LoadGame loadGame)
+        public void SessionReset(string commanderName, string fid = "", LoadGame loadGame = null)
         {
-            IsOdyssey = loadGame.Odyssey;
-            CurrentCommander = CommanderKey.FromLoadGame(loadGame);
-            CommanderData?.SessionReset(loadGame);
+            CurrentCommander = CommanderKey.New(commanderName, fid);
+            AlreadyReportedScansSaaSignals.Clear();
+            if (loadGame is not null)
+            {
+                IsOdyssey = loadGame.Odyssey;
+                CommanderData?.SessionReset(loadGame);
+            }
         }
 
         public void SaveToCache()

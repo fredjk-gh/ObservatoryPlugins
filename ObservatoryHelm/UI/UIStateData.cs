@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using com.github.fredjk_gh.ObservatoryHelm.Data;
 using com.github.fredjk_gh.PluginCommon.Data.Journals;
-using Observatory.Framework.Files.Journal;
 using static com.github.fredjk_gh.ObservatoryHelm.UI.UIStateManager;
 
 namespace com.github.fredjk_gh.ObservatoryHelm.UI
@@ -13,17 +12,20 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
     {
         private readonly UIMode _forMode;
         private CommanderKey _commanderKey = null;
+        private TransitModeType _transitMode;
         private SystemNamePosition _refSystem;
         private UInt64? _id64 = null;
+        private int _bodyCount = 0;
         private int _bodyId = -1;
         private SurfacePosition _surfacePos = null;
         private UInt64? _shipId = null;
         private double _fuelRemaining = 0;
         private double _jetConeBoost = 0;
-        private int _cargo = 0;
+        private int _shipCargo = 0;
+        private int _srvCargo = 0;
         private int _jumpsRemaining = 0;
         private bool _allFound = false;
-        private readonly ObservableCollection<ProspectedAsteroid> _prospectorEvents = [];
+        private readonly ObservableCollection<ProspectorDetails> _prospectorEvents = [];
 
         internal UIStateData(UIMode forMode)
         {
@@ -50,6 +52,16 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             }
         }
 
+        public TransitModeType TransitMode
+        {
+            get => _transitMode;
+            set
+            {
+                _transitMode = value;
+                OnPropertyChanged();
+            }
+        }
+
         public SystemNamePosition RefSystem
         {
             get => _refSystem;
@@ -68,6 +80,19 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
                 if (_id64 != value)
                 {
                     SwitchSystem(value);
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int BodyCount
+        {
+            get => _bodyCount;
+            set
+            {
+                if (_bodyCount != value)
+                {
+                    _bodyCount = value;
                     OnPropertyChanged();
                 }
             }
@@ -130,12 +155,21 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             }
         }
 
-        public int Cargo
+        public int ShipCargo
         {
-            get => _cargo;
+            get => _shipCargo;
             set
             {
-                _cargo = value;
+                _shipCargo = value;
+                OnPropertyChanged();
+            }
+        }
+        public int SRVCargo
+        {
+            get => _srvCargo;
+            set
+            {
+                _srvCargo = value;
                 OnPropertyChanged();
             }
         }
@@ -160,7 +194,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             }
         }
 
-        public ObservableCollection<ProspectedAsteroid> ProspectedEvents
+        public ObservableCollection<ProspectorDetails> ProspectedEvents
         {
             get => _prospectorEvents;
         }
@@ -168,6 +202,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
         internal void Clear()
         {
             _commanderKey = null;
+            _transitMode = TransitModeType.Unknown;
             _refSystem = null;
             _id64 = 0;
             _bodyId = -1;
@@ -175,7 +210,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             _shipId = 0;
             _fuelRemaining = 0;
             _jetConeBoost = 1;
-            _cargo = 0;
+            _shipCargo = 0;
+            _srvCargo = 0;
             _jumpsRemaining = 0;
             _allFound = false;
             _prospectorEvents.Clear(); // don't lose the existing event wiring by creating a new one.
@@ -183,9 +219,9 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
 
         internal UIStateData CopyFrom(UIStateData other)
         {
-            
             // Use backing variables here to avoid notification spam.
             _commanderKey = other.CommanderKey;
+            _transitMode = other.TransitMode;
             _refSystem = other.RefSystem;
             _id64 = other.SystemId64;
             _bodyId = other.BodyId;
@@ -193,7 +229,8 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             _shipId = other.ShipId;
             _fuelRemaining = other.FuelRemaining;
             _jetConeBoost = other.JetConeBoost;
-            _cargo = other.Cargo;
+            _shipCargo = other.ShipCargo;
+            _srvCargo = other.SRVCargo;
             _jumpsRemaining = other.JumpsRemaining;
             _allFound = other.AllBodiesFound;
             _prospectorEvents.Clear(); // Don't copy the prospector info.
@@ -211,6 +248,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
             var cmdrData = HelmContext.Instance.Data.For(key);
             Debug.Assert(cmdrData != null);
 
+            _transitMode = cmdrData.ActiveTransitMode;
             _id64 = cmdrData.CurrentSystemAddress;
             _bodyId = cmdrData.CurrentSystemData?.Planets.Keys.Order().FirstOrDefault() ?? -1;
             _allFound = cmdrData.CurrentSystemData?.IsFullyDiscovered ?? false;
@@ -221,7 +259,12 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
                 _fuelRemaining = cmdrData.Ships.CurrentShip?.FuelRemaining ?? 0;
                 _jetConeBoost = cmdrData.Ships.CurrentShip?.JetConeBoostFactor ?? 1;
             }
-            _cargo = cmdrData.Ships.Cargo?.Select(c => c.Value).Sum() ?? 0;
+            else
+            {
+                _shipId = 0;
+            }
+            _shipCargo = cmdrData.Ships.Cargo?.Select(c => c.Value).Sum() ?? 0;
+            _srvCargo = cmdrData.SRV.Cargo?.Select(c => c.Value).Sum() ?? 0;
             _refSystem = cmdrData.ReferenceSystem;
             _jumpsRemaining = cmdrData.JumpsRemainingInRoute;
             _surfacePos = null;
@@ -243,7 +286,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI
 
         private void ProspectorEvents_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            OnPropertyChanged("ProspectorEvents");
+            OnPropertyChanged(UIStateManager.PROP_PROSPECTEDEVENTS);
         }
 
         private void OnPropertyChanged([CallerMemberName] string name = null)
