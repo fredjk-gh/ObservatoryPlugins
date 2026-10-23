@@ -190,30 +190,12 @@ May use data from Spansh, EDGIS and/or EDAstro. Thanks to MattG for sharing some
                     // This happens before we know who the Commander it. Cache it until needed (LoadGame).
                     _c.Data.LastFileHeader = fileHeader;
                     break;
+                case Commander cmdr:
+                    OnNewCommander(cmdr.Name);
+                    break;
                 case LoadGame loadGame:
-                    bool isNewCommander = false;
-                    bool isDifferentCommander = _c.Data.CurrentCommander != loadGame.Commander;
-                    if (!_c.Data.KnownCommanders.ContainsKey(loadGame.Commander))
-                    {
-                        isNewCommander = true;
-                    }
-
-                    _c.Data.CurrentCommander = loadGame.Commander;
-                    // Keep only latest value to avoid relogging from clogging up the works.
-                    _c.Data.ForCommander().FileHeaderInfo.FileHeader = _c.Data.LastFileHeader;
+                    OnNewCommander(loadGame.Commander);
                     _c.Data.ForCommander().FileHeaderInfo.LoadGame = loadGame;
-
-                    if (isNewCommander || isDifferentCommander)
-                    {
-                        if (!_c.IsReadAll)
-                        {
-                            _c.Core.ExecuteOnUIThread(() =>
-                            {
-                                _c.UI.Draw($"Switched to Cmdr {loadGame.Commander}.{(isNewCommander ? " o7!" : "")}");
-                            });
-                        }
-                        _c.SerializeState();
-                    }
                     break;
                 case Statistics statistics:
                     // Keep only latest value to avoid relogging from clogging up the works.
@@ -285,6 +267,32 @@ May use data from Spansh, EDGIS and/or EDAstro. Thanks to MattG for sharing some
                 case Shutdown shutdown:
                     _c.FlushIfDirty();
                     break;
+            }
+        }
+
+        private void OnNewCommander(string commanderName)
+        {
+            bool isNewCommander = false;
+            bool isDifferentCommander = _c.Data.CurrentCommander != commanderName;
+            if (!_c.Data.KnownCommanders.ContainsKey(commanderName))
+            {
+                isNewCommander = true;
+            }
+
+            _c.Data.CurrentCommander = commanderName;
+            // Keep only latest value to avoid relogging from clogging up the works.
+            _c.Data.ForCommander().FileHeaderInfo.FileHeader = _c.Data.LastFileHeader;
+
+            if (isNewCommander || isDifferentCommander)
+            {
+                if (!_c.IsReadAll)
+                {
+                    _c.Core.ExecuteOnUIThread(() =>
+                    {
+                        _c.UI.Draw($"Switched to Cmdr {commanderName}.{(isNewCommander ? " o7!" : "")}");
+                    });
+                }
+                _c.SerializeState();
             }
         }
 

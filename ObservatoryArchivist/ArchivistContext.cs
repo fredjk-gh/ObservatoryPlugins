@@ -131,11 +131,11 @@ namespace com.github.fredjk_gh.ObservatoryArchivist
 
             foreach (var r in summaryData)
             {
-                int sysCount = r["SystemCount"];
+                int sysCount = r["SystemCount"] ?? 0;
                 if ("Augmented".Equals(r["Cmdr"], StringComparison.OrdinalIgnoreCase))
-                    sb.AppendLine($"{sysCount:#,###} systems augmented with Spansh data");
+                    sb.AppendLine($"{sysCount:#,##0} systems augmented with Spansh data");
                 else
-                    sb.AppendLine($"{sysCount:#,###} known systems for Cmdr {r["Cmdr"]}.");
+                    sb.AppendLine($"{sysCount:#,##0} known systems for Cmdr {r["Cmdr"]}.");
             }
 
             long notificationSystemCount = Notifications.CountSystemsWithNotifications();
