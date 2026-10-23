@@ -4,6 +4,24 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Journals
 {
     public static partial class JournalConstants
     {
+        public const string SIGNAL_BIO = "$SAA_SignalType_Biological;";
+        public const string SIGNAL_GEO = "$SAA_SignalType_Geological;";
+        public const string SIGNAL_PLANETARY_MINING = "$PlanetaryMiningLocation_Name;";
+
+        public const string MATERIAL_CONTENT_LOW = "$AsteroidMaterialContent_Low;";
+        public const string MATERIAL_CONTENT_MED = "$AsteroidMaterialContent_Medium;";
+        public const string MATERIAL_CONTENT_HIGH = "$AsteroidMaterialContent_High;";
+
+        public const string V_CODEX_CATEGORY_BIO_GEO = "regionCodexBiologicalGeological";
+        public const string V_CODEX_CATEGORY_XENO = "regionCodexXenological";
+        public const string V_CODEX_CATEGORY_ASTRO = "regionCodexAstronomicalBodies";
+
+        public static readonly Dictionary<string, string> CodexCategoriesByJournalId = new()
+        {
+            { "$Codex_Category_Biology;", V_CODEX_CATEGORY_BIO_GEO },
+            { "$Codex_Category_Civilisations;", V_CODEX_CATEGORY_XENO },
+            { "$Codex_Category_StellarBodies;", V_CODEX_CATEGORY_ASTRO },
+        };
 
         public const string JOURNAL_ELW = "Earthlike body";
         public const string JOURNAL_AW = "Ammonia world";

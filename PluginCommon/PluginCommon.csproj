@@ -9,7 +9,7 @@
 	</PropertyGroup>
 	
 	<PropertyGroup>
-		<VersionPrefix>1.4.0.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, "0"))</VersionPrefix>
+		<VersionPrefix>1.5.0.$([System.DateTime]::UtcNow.ToString("yy"))$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, '0'))</VersionPrefix>
 		<VersionSuffix></VersionSuffix>
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<RootNamespace>com.github.fredjk_gh.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
@@ -23,6 +23,7 @@
 		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryPluginAutoUpdater\$(OutDir)&quot; /y" />
 		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryProspectorBasic\$(OutDir)&quot; /y" />
 		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\ObservatoryStatScanner\$(OutDir)&quot; /y" />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="xcopy &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\Tinker\$(OutDir)&quot; /y" />
 	</Target>
 
 	<ItemGroup>

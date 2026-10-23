@@ -39,12 +39,14 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             Rectangle rec = new(e.ClipRectangle.X, e.ClipRectangle.Y, e.ClipRectangle.Width, e.ClipRectangle.Height);
 
             // Background
-            e.Graphics.FillRectangle(new SolidBrush(BackColor), e.ClipRectangle);
+            using SolidBrush fillBackBrush = new SolidBrush(BackColor);
+            e.Graphics.FillRectangle(fillBackBrush, e.ClipRectangle);
 
             // Progress bar
             rec.X += borderThickness;
             rec.Width = (int)(rec.Width * (Maximum > 0 ? ((double)Value / Maximum) : 0)) - (2 * borderThickness);
-            e.Graphics.FillRectangle(new SolidBrush(ForeColor), rec);
+            using SolidBrush fillForeBrush = new SolidBrush(ForeColor);
+            e.Graphics.FillRectangle(fillForeBrush, rec);
 
             // Border
             ControlPaint.DrawBorder(e.Graphics, ClientRectangle,
@@ -52,6 +54,8 @@ namespace com.github.fredjk_gh.PluginCommon.UI
                 _borderColor, borderThickness, ButtonBorderStyle.Solid,
                 _borderColor, borderThickness, ButtonBorderStyle.Solid,
                 _borderColor, borderThickness, ButtonBorderStyle.Solid);
+
+            base.OnPaint(e);
         }
 
         [Description("Sets the color of the control's border")]

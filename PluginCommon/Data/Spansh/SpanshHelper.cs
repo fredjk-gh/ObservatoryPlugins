@@ -66,8 +66,8 @@ namespace com.github.fredjk_gh.PluginCommon.Data.Spansh
             FleetCarrierRouteJobResult jobResult = null;
             do
             {
-                Task pause = Task.Delay(1000, ctoken); // Non-blocking wait.
-                await pause;
+                await Task.Delay(1000, ctoken); // Non-blocking wait.
+
                 var fetchResultTask = ctx.Core.HttpClient.GetStringAsync(jobResultUrl, ctoken);
                 try
                 {

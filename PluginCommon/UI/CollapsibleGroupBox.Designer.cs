@@ -28,14 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CollapsibleGroupBox));
             pBackBorder = new Panel();
             pHeaderBox = new Panel();
             flpToolbox = new FlowLayoutPanel();
             btnExpander = new ThemeableImageButton();
             lblBoxTitle = new ScalableLabel();
-            ttManager = new ToolTip(components);
             pBackBorder.SuspendLayout();
             pHeaderBox.SuspendLayout();
             SuspendLayout();
@@ -100,11 +98,12 @@
             // lblBoxTitle
             // 
             lblBoxTitle.AutoSize = true;
+            lblBoxTitle.Font = new Font("Segoe UI", 14F);
             lblBoxTitle.FontSizeAdjustment = 5F;
             lblBoxTitle.Location = new Point(31, 1);
             lblBoxTitle.Margin = new Padding(3);
             lblBoxTitle.Name = "lblBoxTitle";
-            lblBoxTitle.Size = new Size(33, 15);
+            lblBoxTitle.Size = new Size(54, 25);
             lblBoxTitle.TabIndex = 3;
             lblBoxTitle.Text = "title1";
             // 
@@ -131,6 +130,5 @@
         private FlowLayoutPanel flpToolbox;
         private ThemeableImageButton btnExpander;
         private ScalableLabel lblBoxTitle;
-        private ToolTip ttManager;
     }
 }

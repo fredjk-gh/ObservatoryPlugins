@@ -1,4 +1,8 @@
-﻿namespace com.github.fredjk_gh.PluginCommon.Data.Journals
+﻿using Observatory.Framework.Files;
+using Observatory.Framework.Files.Journal;
+using Observatory.Framework.Files.ParameterTypes;
+
+namespace com.github.fredjk_gh.PluginCommon.Data.Journals
 {
     public class CargoHelper
     {
@@ -55,6 +59,50 @@
             }
             if (!string.IsNullOrEmpty(fallbackName) && fallbackName != displayName) DisplayNames[fallbackName] = displayName;
             return displayName;
+        }
+
+
+        public static void UpdateCargo(Dictionary<string, int> existingInventory, CargoFile cargo)
+        {
+            UpdateCargoInventory(existingInventory, cargo.Inventory);
+        }
+
+        public static void UpdateCargo(Dictionary<string, int> existingInventory, Cargo cargo)
+        {
+            if (cargo.Inventory is null)
+            {
+                if (cargo.Count == 0)
+                    existingInventory.Clear();
+                return;
+            }
+            UpdateCargoInventory(existingInventory, cargo.Inventory);
+        }
+
+        public static int UpdateCargo(Dictionary<string, int> existingInventory, CargoTransferDetail xfer)
+        {
+            string key = GetCargoKey(xfer.Type, xfer.Type_Localised);
+
+            if (xfer.Direction == CargoTransferDirection.ToShip)
+                existingInventory[key] = existingInventory.GetValueOrDefault(key) + xfer.Count;
+            else if (xfer.Direction == CargoTransferDirection.ToSRV)
+                existingInventory[key] = existingInventory.GetValueOrDefault(key) +- xfer.Count;
+
+            return existingInventory.Values.Sum();
+        }
+
+        public static void UpdateCargoInventory(Dictionary<string, int> existingInventory, IEnumerable<CargoType> updatedInventory)
+        {
+            existingInventory.Clear();
+            foreach (var item in updatedInventory)
+            {
+                string key = CargoHelper.GetCargoKey(item.Name, item.Name_Localised);
+                // You may get multiple items with the same key if you're transporting mission-specific cargo.
+                // Therefore, the key may already exist.
+                if (!existingInventory.ContainsKey(key))
+                    existingInventory.Add(key, item.Count);
+                else
+                    existingInventory[key] += item.Count;
+            }
         }
     }
 }

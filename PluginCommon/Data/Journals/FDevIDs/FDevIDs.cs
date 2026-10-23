@@ -2,17 +2,6 @@
 {
     public static class FDevIDs
     {
-        public const string V_CODEX_CATEGORY_BIO_GEO = "regionCodexBiologicalGeological";
-        public const string V_CODEX_CATEGORY_XENO = "regionCodexXenological";
-        public const string V_CODEX_CATEGORY_ASTRO = "regionCodexAstronomicalBodies";
-
-        public static readonly Dictionary<string, string> CodexCategoriesByJournalId = new()
-        {
-            { "$Codex_Category_Biology;", V_CODEX_CATEGORY_BIO_GEO },
-            { "$Codex_Category_Civilisations;", V_CODEX_CATEGORY_XENO },
-            { "$Codex_Category_StellarBodies;", V_CODEX_CATEGORY_ASTRO },
-        };
-
         #region Career Ranks
         private static Dictionary<int, Rank> _CQCRankByNumber = null;
         public static Dictionary<int, Rank> CQCRankByNumber

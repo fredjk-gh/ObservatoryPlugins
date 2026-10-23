@@ -6,3 +6,4 @@ $SAA_SignalType_Human;,Human
 $SAA_SignalType_Other;,Other
 $SAA_SignalType_PlanetAnomaly;,Major Anomaly
 $SAA_SignalType_Thargoid;,Thargoid
+$PlanetaryMiningLocation_Name;,Planetary Mining Location

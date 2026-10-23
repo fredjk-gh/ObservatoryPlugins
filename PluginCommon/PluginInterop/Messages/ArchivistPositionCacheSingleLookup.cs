@@ -15,7 +15,6 @@ namespace com.github.fredjk_gh.PluginCommon.PluginInterop.Messages
         {
             return new()
             {
-                // Set required properties here.
                 SystemName = sysName,
                 SystemId64 = sysId64,
                 ExternalFallback = externalFallback,

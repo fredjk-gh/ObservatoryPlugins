@@ -10,8 +10,10 @@ namespace com.github.fredjk_gh.PluginCommon.PluginInterop
         {
             Unknown,
             vithigar_Botanist,
+            vithigar_Communicator,
             vithigar_Explorer,
             vithigar_Herald,
+            vithigar_Photographer,
             fredjk_Archivist,
             fredjk_Aggregator,
             fredjk_AutoUpdater,
@@ -19,6 +21,7 @@ namespace com.github.fredjk_gh.PluginCommon.PluginInterop
             fredjk_Helm,
             fredjk_Prospector,
             fredjk_StatScanner,
+            fredjk_Tinker,
             mattg_AstroAnalytica,
             mattg_BioInsights,
             mattg_BoxelStats,

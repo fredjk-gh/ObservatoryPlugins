@@ -6,6 +6,8 @@ namespace com.github.fredjk_gh.PluginCommon.UI
 {
     public class CollapsibleGroupBoxContent : UserControl, INotifyPropertyChanged
     {
+        protected ToolTip _toolTip; // Should be set by deriving constructor.
+
         public CollapsibleGroupBoxContent() : base()
         {
             DoubleBuffered = true;
@@ -13,6 +15,7 @@ namespace com.github.fredjk_gh.PluginCommon.UI
 
         protected List<Button> _toolboxButtons = [];
         protected string _title = null;
+        protected bool _enablePopout = false;
         protected bool _isExpanded = true;
 
         #region Used By CollapsibleGroupBoxControl
@@ -49,6 +52,12 @@ namespace com.github.fredjk_gh.PluginCommon.UI
                 _isExpanded = value;
                 OnPropertyChanged();
             }
+        }
+
+        public bool EnablePopout
+        {
+            get => _enablePopout;
+            set => _enablePopout = value;
         }
 
         public virtual void Draw() { }

@@ -47,12 +47,18 @@ namespace com.github.fredjk_gh.PluginCommon.PluginInterop
             { "prospector", PluginType.fredjk_Prospector },
             { "stat scanner", PluginType.fredjk_StatScanner },
             { "statscanner", PluginType.fredjk_StatScanner },
+            { "tinker", PluginType.fredjk_Tinker },
             { "observatory botanist", PluginType.vithigar_Botanist },
             { "botanist", PluginType.vithigar_Botanist },
             { "observatory explorer", PluginType.vithigar_Explorer },
             { "explorer", PluginType.vithigar_Explorer },
             { "observatory herald", PluginType.vithigar_Herald },
             { "herald", PluginType.vithigar_Herald },
+            { "communicator", PluginType.vithigar_Communicator },
+            { "observatory communicator", PluginType.vithigar_Communicator },
+            { "photographer", PluginType.vithigar_Photographer },
+            { "observatory photographer", PluginType.vithigar_Photographer },
+            //{ "", PluginType. },
         };
 
         public static readonly Dictionary<Guid, PluginType> PluginTypeByGuid = new()
@@ -72,9 +78,12 @@ namespace com.github.fredjk_gh.PluginCommon.PluginInterop
             { new("a4a03c40-561f-4de9-878a-8ffd0285c17d"), PluginType.fredjk_AutoUpdater },
             { new("7e43a6bd-3ccc-486a-b027-3b9fb8258bcc"), PluginType.fredjk_Prospector },
             { new("398750b9-ffab-4d28-959b-3fc5648853eb"), PluginType.fredjk_StatScanner },
+            { new("398750b9-ffff-0000-1111-000000000000"), PluginType.fredjk_Tinker },
             { new("116D68F6-1C21-49AD-AE33-F0FEF619AF24"), PluginType.vithigar_Botanist },
             { new("B11E8725-3F71-4445-9B09-682F9EAB8B59"), PluginType.vithigar_Explorer },
             { new("AEA9A421-A19C-421F-A47B-5678956EC202"), PluginType.vithigar_Herald },
+            { new("581B2F03-1C16-4F02-9E20-E3BEF5E9518B"), PluginType.vithigar_Communicator },
+            { new("AEA9A421-94FB-40D9-BCFF-AB899B279325"), PluginType.vithigar_Photographer },
         };
 
         public static readonly Dictionary<PluginType, Guid> GuidByPluginType;

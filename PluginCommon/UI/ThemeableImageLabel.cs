@@ -228,12 +228,14 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             base.OnLayout(e);
             // check if something was laid out as "wrapped" such that something isn't visible and add width
             // to ensure visible.
+            // This may still not work -- Using the designer to specify width (anchoring to left/right)
+            // with no vertical margins tends to work. May need to fiddle with "GetPreferredSize()" to fix?
             if ((lblText.Top > 0 || _imgs.Any(kv => kv.Value.Spec.Visible && kv.Value.PB.Top > 0)))
             {
-                int contentWidth = lblText.Width 
-                    + _imgs.Where(kv => kv.Value.Spec.Visible).Sum(kv => kv.Value.PB.Width)
+                int contentWidth = lblText.Width
+                    + _imgs.Sum(kv => kv.Value.PB.Width)  // _imgs.Where(kv => kv.Value.Spec.Visible).Sum(kv => kv.Value.PB.Width)
                     + this.Padding.Horizontal
-                    + 5; // plus some buffer.
+                    + 10; // plus some buffer.
                 if (contentWidth > this.Width)
                 {
                     this.Width = contentWidth;

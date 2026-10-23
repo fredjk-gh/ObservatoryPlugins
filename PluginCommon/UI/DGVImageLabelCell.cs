@@ -13,6 +13,33 @@ namespace com.github.fredjk_gh.PluginCommon.UI
         private FontStyle _fontStyle = FontStyle.Regular;
         private Font _initialDgvFont;
 
+        public static DGVImageLabelCell New(string text, List<ImageSpec> images, LabelPositionType labelPos = LabelPositionType.Right)
+        {
+            ImageLabelSpec il = ImageLabelSpec.New(text, images);
+            il.LabelPosition = labelPos;
+
+            var cell = new DGVImageLabelCell()
+            {
+                ToolTipText = string.Join(Environment.NewLine, [.. images.Where(f => f.Visible).Select(f => f.ToolTip)]),
+                Value = il,
+            };
+            return cell;
+        }
+
+        public static DGVImageLabelCell New(List<ImageSpec> images)
+        {
+            return New("", images);
+        }
+
+        public static DGVImageLabelCell New(string text = "", string tooltip = "")
+        {
+            return new DGVImageLabelCell()
+            {
+                Value = ImageLabelSpec.New(text),
+                ToolTipText = tooltip,
+            };
+        }
+
         public DGVImageLabelCell()
         {
             ValueType = _valueType;

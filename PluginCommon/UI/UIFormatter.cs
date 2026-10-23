@@ -154,9 +154,32 @@ namespace com.github.fredjk_gh.PluginCommon.UI
             return $"{valueTonnage:n0} T";
         }
 
-        public static string Density(double valueDensity)
+        public static string Density(double valueDensity, int precision = 1)
         {
-            return $"{valueDensity:n4} MT/km^3";
+            switch (precision)
+            {
+                case 0: return $"{valueDensity:n0} MT/km^3";
+                case 1: return $"{valueDensity:n1} MT/km^3";
+                case 2: return $"{valueDensity:n2} MT/km^3";
+                case 3: return $"{valueDensity:n3} MT/km^3";
+                default:
+                    if (precision < 0) return $"{valueDensity:n0} MT/km^3";
+                    else return $"{valueDensity:n4} MT/km^3";
+            }
+        }
+
+        public static string Percent(float value, int precision = 1)
+        {
+            switch (precision)
+            {
+                case 0: return $"{value:n0}%";
+                case 1: return $"{value:n1}%";
+                case 2: return $"{value:n2}%";
+                case 3: return $"{value:n3}%";
+                default:
+                    if (precision < 0) return $"{value:n0}%";
+                    else return $"{value:n4}%";
+            }
         }
 
         public static string StarAge(int age_MY)
