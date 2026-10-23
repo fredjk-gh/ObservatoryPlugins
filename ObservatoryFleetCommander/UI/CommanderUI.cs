@@ -10,6 +10,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 
         private readonly TableLayoutPanel _tablePanel;
         private readonly FlowLayoutPanel _flowLayoutPanel;
+        private readonly ToolTip _toolTip;
         private readonly Dictionary<ulong /* carrierId*/, CarrierUI> _uiByCarrierID = [];
 
         private bool _initialized = false;
@@ -17,6 +18,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
         internal CommanderUI(CommanderContext context)
         {
             _c = context;
+            _toolTip = new ToolTip();
 
             AutoScroll = true;
             DoubleBuffered = true;
@@ -151,7 +153,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 
 
             var data = _c.Manager.GetById(carrierID);
-            CarrierUI ui = new(_c, data)
+            CarrierUI ui = new(_c, data, _toolTip)
             {
                 Margin = new(4),
                 BorderStyle = BorderStyle.FixedSingle
@@ -163,7 +165,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
 
             _uiByCarrierID.Add(carrierID, ui);
 
-            CollapsibleGroupBox expander = new()
+            CollapsibleGroupBox expander = new(_toolTip)
             {
                 ContentControl = ui,
                 Padding = new(3),
@@ -179,6 +181,30 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.UI
             ResumeLayout();
 
             return ui;
+        }
+
+        public void Remove(ulong carrierID)
+        {
+            if (IsReadAll) return;
+
+            if (!_initialized || !_uiByCarrierID.ContainsKey(carrierID)) return; // Nothing to remove.
+
+            SuspendLayout();
+
+            CarrierUI ui = _uiByCarrierID[carrierID];
+            _uiByCarrierID.Remove(carrierID);
+
+            CollapsibleGroupBox expander = ui.Parent as CollapsibleGroupBox;
+
+            expander.Visible = false;
+            _c.Core.UnregisterControl(expander);
+            _flowLayoutPanel.Controls.Remove(expander);
+            try
+            {
+                expander.Dispose();
+            }
+            catch { }
+            ResumeLayout();
         }
 
         private void Card_BoxStateChanged(object sender, CollapsibleGroupBox.BoxStateEventArgs e)

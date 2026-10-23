@@ -22,10 +22,18 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         private CountdownTimerForm _timerForm;
         private string _selectedSystemName = "";
 
-        internal CarrierUI(CommanderContext context, CarrierData data)
+        internal CarrierUI(CommanderContext context, CarrierData data, ToolTip sharedTtip)
         {
             InitializeComponent();
             DoubleBuffered = true;
+
+            _toolTip = sharedTtip;
+            _toolTip.SetToolTip(lblCommanderStateTitle, "Only commanders known from available journals are included.");
+            _toolTip.SetToolTip(btnNewRoute, "Create a new route via Spansh");
+            _toolTip.SetToolTip(btnClearRoute, "Clear route");
+            _toolTip.SetToolTip(btnOpenInventory, "Open Inventory viewer");
+            _toolTip.SetToolTip(btnPopOutTimer, "Open Timer in pop-out window");
+
 
             SuspendLayout();
             btnPopOutTimer.SetOriginalImage(Images.OpenInNewImage);
@@ -172,7 +180,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (position == null || string.IsNullOrWhiteSpace(position.SystemName))
             {
                 lblPositionValue.Text = "(unknown)";
-                ttipCarrierUI.SetToolTip(lblPositionValue, "");
+                _toolTip.SetToolTip(lblPositionValue, "");
                 return;
             }
 
@@ -182,7 +190,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 var indexOfCurrent = _data.Route.IndexOf(position.SystemName);
                 if (indexOfCurrent >= 0 && indexOfCurrent < _data.Route.Jumps.Count)
                 {
-                    ttipCarrierUI.SetToolTip(lblPositionValue, $"{_data.Route.Jumps.Count - indexOfCurrent - 1} jumps remaining");
+                    _toolTip.SetToolTip(lblPositionValue, $"{_data.Route.Jumps.Count - indexOfCurrent - 1} jumps remaining");
                 }
             }
         }
@@ -192,7 +200,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             if (IsReadAll) return;
 
             pbFuelLevel.Value = Math.Clamp(_data.CarrierFuel, pbFuelLevel.Minimum, pbFuelLevel.Maximum);
-            ttipCarrierUI.SetToolTip(pbFuelLevel, $"{UIFormatter.Tonnage(_data.CarrierFuel)} / {UIFormatter.Tonnage(pbFuelLevel.Maximum - _data.CarrierFuel)} to refill");
+            _toolTip.SetToolTip(pbFuelLevel, $"{UIFormatter.Tonnage(_data.CarrierFuel)} / {UIFormatter.Tonnage(pbFuelLevel.Maximum - _data.CarrierFuel)} to refill");
 
             SetMessage(msg);
         }
@@ -216,7 +224,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                     msg = msg + Environment.NewLine + "WARNING: Carrier may have low funds remaining! Add funds to the carrier budget to avoid it being decommissioned.";
                 }
                 lblBalanceValue.Text = UIFormatter.Credits(_data.CarrierBalance);
-                ttipCarrierUI.SetToolTip(
+                _toolTip.SetToolTip(
                     lblBalanceValue,
                     $"Balance as of {asOfDate}; upkeep until {UIFormatter.DateMMMyyyy(upkeepUntilDate)}");
             }
@@ -228,18 +236,18 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             else
             {
                 lblUsedCapacityValue.Text = UIFormatter.Tonnage(_data.CarrierCapacity - _data.LastCarrierStats.SpaceUsage.FreeSpace);
-                ttipCarrierUI.SetToolTip(lblUsedCapacityValue, $"Capacity as of {asOfDate}");
+                _toolTip.SetToolTip(lblUsedCapacityValue, $"Capacity as of {asOfDate}");
             }
 
             if (_data.DistanceTravelledLy == 0)
             {
                 lblDistanceTravelledValue.Text = "(unknown)";
-                ttipCarrierUI.SetToolTip(lblDistanceTravelledValue, "");
+                _toolTip.SetToolTip(lblDistanceTravelledValue, "");
             }
             else
             {
                 lblDistanceTravelledValue.Text = UIFormatter.DistanceLy(_data.DistanceTravelledLy);
-                ttipCarrierUI.SetToolTip(lblDistanceTravelledValue, $"{_data.TotalJumps} jumps");
+                _toolTip.SetToolTip(lblDistanceTravelledValue, $"{_data.TotalJumps} jumps");
             }
 
             SetMessage(msg);
@@ -280,7 +288,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             {
                 lblOwningCommander.Text = $"Owner: {_data.Owner}";
             }
-            ttipCarrierUI.SetToolTip(lblOwningCommander, _data.Owner);
+            _toolTip.SetToolTip(lblOwningCommander, _data.Owner);
             DisplayPosition(_data.Position);
             UpdateStats();
             UpdateFuel();
@@ -319,7 +327,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
                 if (_data.LastCarrierJumpRequest != null)
                     lblNextJumpValue.Text = $"(completed)";
                 else
-                    lblNextJumpTitle.Text = $"(cancelled)";
+                    lblNextJumpValue.Text = $"(cancelled)";
                 lblTimerTitle.Text = TIMER_JUMP_COOLDOWN;
                 lblTimerValue.Text = UIFormatter.Timehmmss(_data.CooldownDateTime.Subtract(DateTime.Now));
             }
@@ -595,7 +603,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             _timerForm.Move += TimerFormMove;
             _timerForm.ResizeEnd += TimerFormResized;
             btnPopOutTimer.SetOriginalImage(Images.CloseImage);
-            ttipCarrierUI.SetToolTip(btnPopOutTimer, "Close pop-out timer window for this carrier");
+            _toolTip.SetToolTip(btnPopOutTimer, "Close pop-out timer window for this carrier");
         }
 
         private void TimerFormResized(object sender, EventArgs e)
@@ -613,7 +621,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             _c.Core.UnregisterControl(_timerForm);
             _timerForm = null;
             btnPopOutTimer.SetOriginalImage(Images.OpenInNewImage);
-            ttipCarrierUI.SetToolTip(btnPopOutTimer, "Open Timer in pop-out window");
+            _toolTip.SetToolTip(btnPopOutTimer, "Open Timer in pop-out window");
         }
 
         private void BtnOpenInventory_Click(object sender, EventArgs e)

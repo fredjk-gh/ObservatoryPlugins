@@ -38,10 +38,28 @@ Note that values are based on CarrierStats journal data. However, Cargo usage va
             Size = new(24, 24),
             Visible = true,
             Tag = "help",
-            ToolTip = @"You can edit the quantities of existing inventory below; these inventory values are preserved if you run read-all.
+            ToolTip = @"You can edit the quantities of existing inventory below; these inventory values should be preserved if you run read-all.
 Click the row header button to select a row and press the 'Delete' button to remove it.
 When adding a new row, edit mode is locked until the row content is valid. Press Escape to cancel. Partial changes will be lost."
         };
+
+        private const string INITIAL_HELP_MESSAGE = @"Welcome to the carrier inventory editor and trade order viewer.
+
+Unfortunately, the journal does not provide any information about the inventory of a carrier (unlike what is provided for ships and SRVs). In case you care about your carrier inventory, you can manage it here. Please scroll to see all information here as it is extensive!
+
+To get started, run a read-all or open the Carrier Administration screen to seed it with data. From there use the grid to edit (using the Commodity market screen in Carrier Administration filtered to 'In Stock' items).
+
+- If an item is already listed in the grid, edit the quantity (qty) value in the existing row so it matches the actual quantity. Note that an item can only appear in the list once - do not attempt to add another row with the same item.
+- To add an item using the bottom row of the grid. Provide a quantity and select the commodity and press enter when done. If there's an issue with the value you've entered, a red X icon appears in the cell. Hover that icon for an explanation about why the value is considered invalid. Either correct the problem or press Escape to cancel addition of the new row and reset.
+- To delete an item that doesn't exist in your Carrier, click on the row header cell (the leftmost column) and press the 'Delete' key on your keyboard.
+
+If your cursor is stuck or things aren't responding as you'd expect, press Escape. Keyboard focus is locked to the row being edited until validation errors are fixed.
+
+Note that the inventory will get out of sync -- particularly due to market activity by other players which may occur at any time including when your game is not running. 
+
+Trade orders:
+Trade orders should be accurate, although the Game UI may not show Sell orders once the inventory has sold out, although they still exist. To remove a Sell order when sold out, create a buy order, then cancel the buy order.
+";
 
         internal InventoryForm(CommanderContext ctx, CarrierData carrierData)
         {
@@ -95,6 +113,7 @@ When adding a new row, edit mode is locked until the row content is valid. Press
             colItem.DataPropertyName = "ItemId"; // From InventoryItem
             colQty.DataPropertyName = "Quantity"; // From InventoryItem
 
+            txtMessages.Text = INITIAL_HELP_MESSAGE;
             Draw();
         }
 

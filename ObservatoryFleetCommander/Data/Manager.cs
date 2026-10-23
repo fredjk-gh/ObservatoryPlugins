@@ -19,7 +19,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             foreach (CommanderData cmdrData in cache.KnownCommanders)
             {
                 _commandersByName.Add(cmdrData.Name, cmdrData);
-                if (cmdrData.HasCarrier)
+                if (cmdrData.HasCarrier
+                    && (cmdrData.Carrier.DecommissionedAfterDateTime is null || cmdrData.Carrier.DecommissionedAfterDateTime  >  DateTime.UtcNow))
                 {
                     var junkInventory = cmdrData.Carrier.Inventory.Where(i => i.Value.Quantity <= 0).Select(i => i.Key).ToList();
                     foreach (var j in junkInventory)
@@ -33,7 +34,11 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             foreach (SquadronData squadron in cache.Squadrons)
             {
                 RegisterSquadron(squadron);
-                RegisterCarrier(squadron.Carrier);
+                if (squadron.HasCarrier
+                    && (squadron.Carrier.DecommissionedAfterDateTime is null || squadron.Carrier.DecommissionedAfterDateTime > DateTime.UtcNow))
+                {
+                    RegisterCarrier(squadron.Carrier);
+                }
             }
         }
 
@@ -56,12 +61,57 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                 data.Name = name;
             }
 
+            // Remove membership in all squadrons and re-add to squadron we are registering.
+            // (Note this is also called for SquadronStartup and thus latest event is current membership.)
+            HashSet<SquadronData> memberless = [];
+            foreach(var s in _knownSquadronsByName.Values)
+            {
+                if (!string.IsNullOrEmpty(commanderName))
+                {
+                    s.MemberCommanderNames.Remove(commanderName);
+                    if (s.MemberCommanderNames.Count == 0 && s != data) // don't purge the squadron we're adding -- in case we haven't gotten to the squadron join part yet.
+                    {
+                        memberless.Add(s);
+                    }
+                }
+            }
             if (!string.IsNullOrWhiteSpace(commanderName))
             {
                 data.MemberCommanderNames.Add(commanderName);
             }
 
+            foreach (var s in memberless)
+            {
+                if (s.MemberCommanderNames.Count == 0)
+                {
+                    _knownSquadronsByName.Remove(s.Name);
+                }
+            }
             return data;
+        }
+
+        internal CarrierData? RemoveFromSquadron(ulong id, string squadronName, string commanderName = null, bool isDisband = false)
+        {
+            CarrierData squadronCarrierToRemove = null;
+            SquadronData data = FindSquadron(id, squadronName);
+            if (data is null) return squadronCarrierToRemove; // nothing to do.
+
+            if (isDisband)
+                _knownSquadronsByName.Remove(squadronName);
+            else
+            {
+                if (!string.IsNullOrEmpty(commanderName))
+                    data.MemberCommanderNames.Remove(commanderName);
+            }
+
+            if (data.HasCarrier)
+            {
+                squadronCarrierToRemove = data.Carrier;
+                _carrierOwnerNameByCarrierId.Remove(data.CarrierId);
+                _inventoryByCarrierId.Remove(data.CarrierId);
+            }
+
+            return squadronCarrierToRemove;
         }
 
         internal SquadronData RegisterSquadron(SquadronData deserializedData)
@@ -195,7 +245,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
                 }
                 squadronData.Carrier = carrierData;
                 squadronData.Tag = carrierData.CarrierCallsign;
-                _carrierOwnerNameByCarrierId[squadronData.CarrierId] = squadronData.Name;
+                _carrierOwnerNameByCarrierId[carrierData.CarrierId] = squadronData.Name;
             }
         }
 
@@ -224,6 +274,28 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
 
         public CommanderData AddCommander(string fid, string name)
         {
+            // If a commander was renamed or reset (wiped), there may be an existing commander with this FID; update it instead.
+            if (!string.IsNullOrEmpty(fid) && _commandersByName.Any(c => c.Value.FID == fid))
+            {
+                var existingCmdrData = _commandersByName.Values.Where(c => c.FID == fid).First();
+                _commandersByName.Remove(existingCmdrData.Name);
+                var existingSquadron = GetSquadronForCommander(existingCmdrData.Name);
+                if (existingSquadron is not null)
+                {
+                    existingSquadron.MemberCommanderNames.Remove(existingCmdrData.Name);
+                    existingSquadron.MemberCommanderNames.Add(name);
+                }
+
+                existingCmdrData.Name = name;
+                _commandersByName[name] = existingCmdrData;
+                
+                if (existingCmdrData.HasCarrier)
+                {
+                    _carrierOwnerNameByCarrierId[existingCmdrData.Carrier.CarrierId] = name;
+                }
+                return existingCmdrData;
+            }
+
             _commandersByName[name] = new()
             {
                 FID = fid,
@@ -241,7 +313,12 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         public CarrierData GetById(ulong carrierOrMarketId)
         {
             if (_carrierOwnerNameByCarrierId.TryGetValue(carrierOrMarketId, out string ownerName))
-                return GetByOwner(ownerName);
+            {
+                // Don't rely on this for the moment. It seems Squadron name tracking is not reliable.
+                // Not falling back here caused fredjk-gh/ObservatoryPlugins#10.
+                var cData = GetByOwner(ownerName); 
+                if (cData is not null) return cData;
+            }
 
             // Fallback:
             return Carriers.Where(c => c.CarrierId == carrierOrMarketId).FirstOrDefault();
@@ -348,7 +425,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         {
             if (type == CarrierType.SquadronCarrier)
             {
-                if (squadron != null)
+                if (squadron is not null)
                 {
                     return squadron.DisplayName;
                 }
@@ -374,7 +451,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             // - owners can have at most one carrier.
             // - Journals are processed in date order, oldest to latest.
             CarrierData existing = GetByOwner(owner);
-            if (existing != null)
+            if (existing is not null)
             {
                 _carrierOwnerNameByCarrierId.Remove(existing.CarrierId);
             }

@@ -22,8 +22,8 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         {
             get
             {
-                if (!string.IsNullOrEmpty(Tag)) return Tag;
-                if (!string.IsNullOrEmpty(Name)) return Name;
+                if (!string.IsNullOrEmpty(Tag) && Tag != "(unnamed)") return Tag;
+                if (!string.IsNullOrEmpty(Name) && Name != "(unnamed)") return Name;
                 return $"{ID}";
             }
         }

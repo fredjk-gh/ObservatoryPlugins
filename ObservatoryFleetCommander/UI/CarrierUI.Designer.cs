@@ -50,7 +50,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             tableLayoutPanel1 = new TableLayoutPanel();
             lblTimerValue = new Label();
             btnPopOutTimer = new ThemeableImageButton();
-            ttipCarrierUI = new ToolTip(components);
             tlpCarrierLayout.SuspendLayout();
             flowLayoutPanel1.SuspendLayout();
             ctxRouteMenu.SuspendLayout();
@@ -241,7 +240,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             lblCommanderStateTitle.Size = new Size(122, 15);
             lblCommanderStateTitle.TabIndex = 8;
             lblCommanderStateTitle.Text = "Commanders aboard:";
-            ttipCarrierUI.SetToolTip(lblCommanderStateTitle, "Only commanders known from available journals are included.");
             // 
             // lblCommanderStateValue
             // 
@@ -313,7 +311,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             btnNewRoute.Padding = new Padding(1);
             btnNewRoute.Size = new Size(26, 26);
             btnNewRoute.TabIndex = 3;
-            ttipCarrierUI.SetToolTip(btnNewRoute, "Create a new route via Spansh");
             btnNewRoute.UseVisualStyleBackColor = true;
             btnNewRoute.Click += BtnNewRoute_Click;
             // 
@@ -328,7 +325,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             btnClearRoute.Padding = new Padding(1);
             btnClearRoute.Size = new Size(26, 26);
             btnClearRoute.TabIndex = 5;
-            ttipCarrierUI.SetToolTip(btnClearRoute, "Clear route");
             btnClearRoute.UseVisualStyleBackColor = true;
             btnClearRoute.Click += BtnClearRoute_Click;
             // 
@@ -342,7 +338,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             btnOpenInventory.OriginalImage = null;
             btnOpenInventory.Size = new Size(26, 26);
             btnOpenInventory.TabIndex = 6;
-            ttipCarrierUI.SetToolTip(btnOpenInventory, "Open Inventory viewer");
             btnOpenInventory.UseVisualStyleBackColor = true;
             btnOpenInventory.Click += BtnOpenInventory_Click;
             // 
@@ -455,7 +450,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
             btnPopOutTimer.Padding = new Padding(1);
             btnPopOutTimer.Size = new Size(30, 30);
             btnPopOutTimer.TabIndex = 17;
-            ttipCarrierUI.SetToolTip(btnPopOutTimer, "Open Timer in pop-out window");
             btnPopOutTimer.UseVisualStyleBackColor = true;
             btnPopOutTimer.Click += BtnPopOutTimer_Click;
             // 
@@ -502,7 +496,6 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander
         private TableLayoutPanel tableLayoutPanel1;
         private Label lblTimerValue;
         private ThemeableImageButton btnPopOutTimer;
-        private ToolTip ttipCarrierUI;
         private ThemeableImageButton btnNewRoute;
         private ThemeableImageButton btnClearRoute;
         private Label lblCapacityTitle;

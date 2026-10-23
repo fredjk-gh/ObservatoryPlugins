@@ -1,5 +1,4 @@
 ﻿using com.github.fredjk_gh.ObservatoryFleetCommander.Data;
-using com.github.fredjk_gh.ObservatoryFleetCommander.UI;
 using com.github.fredjk_gh.PluginCommon.AutoUpdates;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
 using com.github.fredjk_gh.PluginCommon.Utilities;
@@ -56,9 +55,9 @@ May use data from Spansh, EDGIS and/or EDAstro.",
 
         public void Load(IObservatoryCore observatoryCore)
         {
-            _c.Initialize(observatoryCore, this, new Manager());
-            _c.UI = new CommanderUI(_c);
-            pluginUI = new PluginUI(PluginUI.UIType.Panel, _c.UI);
+            _c.Initialize(observatoryCore, this, new());
+            _c.UI = new(_c);
+            pluginUI = new(PluginUI.UIType.Panel, _c.UI);
             _c.UI.Init();
         }
 
@@ -110,6 +109,10 @@ May use data from Spansh, EDGIS and/or EDAstro.",
                             /* carrierMoveEvent= */ true);
                         carrierData.ClearJumpState();
                     }
+                    else if (carrierData?.LastCarrierJumpRequest != null && carrierData.DepartureTimeMinutes > 0)
+                    {
+                        MaybeScheduleTimers(carrierData);
+                    }
                     // This plugin prioritizes stuffing the current commander's own carrier's next jump vs. either a non-deterministic approach or a squadron carrier.
                     if (carrierData?.Owner == _c.CurrentCommander)
                         MaybeStuffInitialJumpInClipboard(carrierData);
@@ -121,11 +124,22 @@ May use data from Spansh, EDGIS and/or EDAstro.",
         {
             switch (journal)
             {
-                case LoadGame loadGame:
-                    OnLoadGame(loadGame);
+                case Observatory.Framework.Files.Journal.Commander commander: // Conflicts with This class. :/
+                    OnDetectCommander(commander.Name, commander.FID);
                     break;
-                case SquadronCreated squadronCreated: // Also handles SquadronStartup and JoinedSquadron
-                    _c.Manager.RegisterSquadron(squadronCreated.SquadronID, squadronCreated.SquadronName, _c.CurrentCommander);
+                case LoadGame loadGame: // This is arguably redundant.
+                    OnDetectCommander(loadGame.Commander, loadGame.FID);
+                    break;
+                case SquadronCreated squadronChange: // Also handles SquadronStartup and JoinedSquadron and others.
+                    bool isLeave = squadronChange is LeftSquadron or KickedFromSquadron or DisbandedSquadron;
+                    if (isLeave)
+                    {
+                        CarrierData? carrierToRemove = _c.Manager.RemoveFromSquadron(squadronChange.SquadronID, squadronChange.SquadronName, _c.CurrentCommander, squadronChange is DisbandedSquadron);
+                        if (carrierToRemove is not null)
+                            _c.UI.Remove(carrierToRemove.CarrierId);
+                    }
+                    else
+                        _c.Manager.RegisterSquadron(squadronChange.SquadronID, squadronChange.SquadronName, _c.CurrentCommander);
                     _c.SerializeDataCacheV2();
                     break;
                 case Docked docked:
@@ -204,36 +218,34 @@ May use data from Spansh, EDGIS and/or EDAstro.",
         private void OnFssSignal(FSSSignalDiscovered fssSignal)
         {
             if (!_c.PluginTracker.IsActive(PluginType.fredjk_Archivist))
-                return; // can't do much wtihout the position cache for this.
+                return; // can't do much without the position cache for this.
 
             CarrierData carrierData = _c.Manager.Carriers
                 .Where(c => c.MatchesSignalName(fssSignal.SignalName))
                 .FirstOrDefault();
 
-            if (carrierData is not null)
+            if (carrierData is null || carrierData.Position?.SystemAddress == fssSignal.SystemAddress)
+                return;
+
+            ArchivistPositionCacheSingleLookup req = ArchivistPositionCacheSingleLookup.New("", fssSignal.SystemAddress, true);
+
+            void del(PluginMessageWrapper resp)
             {
-                if (carrierData.Position.SystemAddress == fssSignal.SystemAddress) return; // This isn't new info.
-
-                ArchivistPositionCacheSingleLookup req = ArchivistPositionCacheSingleLookup.New("", fssSignal.SystemAddress, true);
-
-                void del(PluginMessageWrapper resp)
+                ArchivistPositionCacheSingle posCacheResp = resp as ArchivistPositionCacheSingle;
+                if (posCacheResp is not null && posCacheResp.Position is not null)
                 {
-                    ArchivistPositionCacheSingle posCacheResp = resp as ArchivistPositionCacheSingle;
-                    if (posCacheResp is not null)
+                    StarPosition starPos = new()
                     {
-                        StarPosition starPos = new()
-                        {
-                            x = posCacheResp.Position.X,
-                            y = posCacheResp.Position.Y,
-                            z = posCacheResp.Position.Z
-                        };
-                        CarrierPositionData pos = new(posCacheResp.Position.SystemName, posCacheResp.Position.SystemId64, starPos);
-                        MaybeUpdateCarrierLocation(carrierData.CarrierId, pos, false, false);
-                    }
+                        x = posCacheResp.Position.X,
+                        y = posCacheResp.Position.Y,
+                        z = posCacheResp.Position.Z
+                    };
+                    CarrierPositionData pos = new(posCacheResp.Position.SystemName, posCacheResp.Position.SystemId64, starPos);
+                    MaybeUpdateCarrierLocation(carrierData.CarrierId, pos, false, false);
                 }
-                _c.Dispatcher.SendMessageAndAwaitResponse(req, (Action<PluginMessageWrapper>)del, PluginType.fredjk_Archivist);
-
             }
+            _c.Dispatcher.SendMessageAndAwaitResponse(
+                req, (Action<PluginMessageWrapper>)del, PluginType.fredjk_Archivist);
         }
 
         private void OnMarketSell(MarketSell sell)
@@ -272,12 +284,54 @@ May use data from Spansh, EDGIS and/or EDAstro.",
 
         private void OnCarrierDecommissionCancel(CarrierCancelDecommission canceldecom)
         {
-            //TODO: Handle carrier decommissions.
+            CarrierData carrierData = _c.Manager.GetById(canceldecom.CarrierID);
+            if (carrierData is null) return; // We already don't know about it.
+
+            carrierData.DecommissionedAfterDateTime = null;
+
+            _c.DoUIAction(() =>
+            {
+                CarrierUI ui = _c.UI.Get(canceldecom.CarrierID);
+                ui.SetMessage($"Carrier {carrierData.CarrierName} is no longer decommissioned.");
+            });
         }
 
         private void OnCarrierDecommission(CarrierDecommission decomCarrier)
         {
-            //TODO: Handle carrier decommissions.
+            CarrierData carrierData = _c.Manager.GetById(decomCarrier.CarrierID);
+            if (carrierData is null) return; // We already don't know about it?
+
+            if (decomCarrier.ScrapTimeUTC < DateTime.UtcNow)
+            {
+                // Just remove the carrier.
+                string owner = carrierData.Owner;
+                if (carrierData.IsSquadronCarrier)
+                {
+                    SquadronData squadron = _c.Manager.GetSquadronByName(owner);
+                    squadron.Carrier = null;
+                }
+                else
+                {
+                    CommanderData cmdr = _c.Manager.GetCommander(owner);
+                    cmdr.Carrier = null;
+                }
+
+                if (!_c.IsReadAll)
+                {
+                    _c.DoUIAction(() =>
+                    {
+                        _c.UI.Remove(decomCarrier.CarrierID);
+                    });
+                }
+                return;
+            }
+            carrierData.DecommissionedAfterDateTime = decomCarrier.ScrapTimeUTC;
+
+            _c.DoUIAction(() =>
+            {
+                CarrierUI ui = _c.UI.Get(decomCarrier.CarrierID);
+                ui.SetMessage($"Carrier {carrierData.CarrierName} is scheduled to be decommissioned after {decomCarrier.ScrapTimeUTC.ToString()}.");
+            });
         }
 
         private void OnDockSRV()
@@ -421,7 +475,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
 
         private void OnStats(Statistics stats)
         {
-            if (!string.IsNullOrWhiteSpace(_c.CurrentCommander))
+            if (!string.IsNullOrWhiteSpace(_c.CurrentCommander) && stats.FleetCarrier is not null)
             {
                 _c.Manager.GetCommander(_c.CurrentCommander).LastStatisticsEvent = stats;
 
@@ -635,22 +689,22 @@ May use data from Spansh, EDGIS and/or EDAstro.",
 
         }
 
-        private void OnLoadGame(LoadGame loadGame)
+        private void OnDetectCommander(string commanderName, string fid = "")
         {
-            if (_c.CurrentCommander != loadGame.Commander)
+            if (_c.CurrentCommander != commanderName)
             {
                 _initialRouteStuffingDone = false;
                 _initialLocation = null;
             }
-            _c.CurrentCommander = loadGame.Commander;
+            _c.CurrentCommander = commanderName;
             CommanderData commanderData;
-            if (!_c.Manager.IsCommanderKnown(loadGame.Commander))
+            if (!_c.Manager.IsCommanderKnown(commanderName))
             {
-                commanderData = _c.Manager.AddCommander(loadGame.FID, loadGame.Commander);
+                commanderData = _c.Manager.AddCommander(fid, commanderName);
                 _c.SerializeDataCacheV2();
             }
             else
-                commanderData = _c.Manager.GetCommander(loadGame.Commander);
+                commanderData = _c.Manager.GetCommander(commanderName);
 
             if (commanderData.Carrier is not null) MaybeStuffInitialJumpInClipboard(commanderData.Carrier);
         }
@@ -832,7 +886,7 @@ May use data from Spansh, EDGIS and/or EDAstro.",
         {
             // We have potentially new info about this carrier.
             var data = _c.Manager.GetById(carrierId);
-            if (!data.IsSquadronCarrier) return;
+            if (data is null || !data.IsSquadronCarrier) return;
 
             data.CarrierName = name;
             data.CarrierCallsign = callsign;

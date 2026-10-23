@@ -30,6 +30,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
         private DateTime _lastCooldownDateTime = DateTime.MinValue;
         private int _carrierFuel;
         private string _signalName = null;
+        private DateTime? _decommissionedAfter = null;
 
         // Only to be used for JSON Deserialization.
         public CarrierData()
@@ -251,10 +252,17 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             get => _lastJumpCancelledRequest;
             set
             {
-                _lastJumpRequest = null;
+                if (value is not null && _lastJumpRequest is not null && value.TimestampDateTime > _lastJumpRequest.TimestampDateTime)
+                    _lastJumpRequest = null; // Only clear last jump if cancellation is newer.
                 _lastCooldownDateTime = DateTime.MinValue;
                 _lastJumpCancelledRequest = value;
             }
+        }
+
+        public DateTime? DecommissionedAfterDateTime
+        {
+            get => _decommissionedAfter;
+            set => _decommissionedAfter = value;
         }
 
         [JsonIgnore]
@@ -414,7 +422,7 @@ namespace com.github.fredjk_gh.ObservatoryFleetCommander.Data
             {
                 double distanceLy = Id64CoordHelper.Distance(pos1, pos2);
                 long capacityUsage = LastCarrierStats.SpaceUsage.TotalCapacity - LastCarrierStats.SpaceUsage.FreeSpace;
-                double fuelCost = 5 + (distanceLy / 8.0) * (1.0 + ((capacityUsage + CarrierFuel) / CarrierCapacity));
+                double fuelCost = 5 + (distanceLy / 8.0) * (1.0 + ((capacityUsage + CarrierFuel) / (float)CarrierCapacity));
 
                 estFuelUsage = Convert.ToInt32(Math.Round(fuelCost, 0));
             }
