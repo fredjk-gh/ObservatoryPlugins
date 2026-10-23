@@ -1,6 +1,8 @@
 ﻿using com.github.fredjk_gh.ObservatoryAggregator.UI;
 using com.github.fredjk_gh.PluginCommon;
 using com.github.fredjk_gh.PluginCommon.Data;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
 using com.github.fredjk_gh.PluginCommon.UI;
 using com.github.fredjk_gh.PluginCommon.UI.Shared;
 using static com.github.fredjk_gh.ObservatoryAggregator.BodySummary;
@@ -243,7 +245,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     {
                         switch (signal.Type)
                         {
-                            case "$SAA_SignalType_Biological;":
+                            case JournalConstants.SIGNAL_BIO:
                                 if (signal.Count > 0)
                                     images.Add(new(Images.BodyBioSignalsImage)
                                     {
@@ -252,12 +254,21 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                                         Visible = signal.Count > 0
                                     });
                                 break;
-                            case "$SAA_SignalType_Geological;":
+                            case JournalConstants.SIGNAL_GEO:
                                 if (signal.Count > 0)
                                     images.Add(new(Images.BodyGeoSignalsImage)
                                     {
                                         Size = new(32, 32),
                                         ToolTip = $"Body has {signal.Count} geological signals",
+                                        Visible = signal.Count > 0,
+                                    });
+                                break;
+                            case JournalConstants.SIGNAL_PLANETARY_MINING:
+                                if (signal.Count > 0)
+                                    images.Add(new(Images.PlanetaryMiningSpotImage)
+                                    {
+                                        Size = new(32, 32),
+                                        ToolTip = $"Body has {signal.Count} planetary mining locations",
                                         Visible = signal.Count > 0,
                                     });
                                 break;
@@ -402,26 +413,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         }
 
+        // Wrappers around the static factories to apply font changes.
         private DGVImageLabelCell NewImageLabelCell(string text = "", string tooltip = "")
         {
-            return ApplyFontOverrides(new DGVImageLabelCell()
-            {
-                Value = ImageLabelSpec.New(text),
-                ToolTipText = tooltip,
-            });
+            return ApplyFontOverrides(DGVImageLabelCell.New(text, tooltip));
         }
 
         private DGVImageLabelCell NewImageLabelCell(string text, List<ImageSpec> images, LabelPositionType labelPos = LabelPositionType.Right)
         {
-            ImageLabelSpec il = ImageLabelSpec.New(text, images);
-            il.LabelPosition = labelPos;
-
-            var cell = new DGVImageLabelCell()
-            {
-                ToolTipText = string.Join(Environment.NewLine, [.. images.Where(f => f.Visible).Select(f => f.ToolTip)]),
-                Value = il,
-            };
-            return ApplyFontOverrides(cell);
+            return ApplyFontOverrides(DGVImageLabelCell.New(text, images, labelPos));
         }
 
         private DGVImageLabelCell NewImageLabelCell(List<ImageSpec> images)

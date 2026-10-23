@@ -227,10 +227,16 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
             return _notifications[coalescingID];
         }
 
-        public void AddScan(Scan scan)
+        /// <summary>
+        /// Adds a scan to the data structure.
+        /// </summary>
+        /// <param name="scan">The scan to add.</param>
+        /// <returns>True if this is a new scan AND there's already an existing notification.</returns>
+        public bool AddScan(Scan scan)
         {
-            GetBody(scan.BodyID)
-                .Scan = scan;
+            BodySummary body = GetBody(scan.BodyID);
+            bool newScan = body.Scan is null;
+            body.Scan = scan;
 
             if (scan.Rings != null && scan.Rings.Count > 0)
             {
@@ -267,6 +273,8 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     childScan = parentBodySummary.ScanBarycentre; // may be null. Not much we can do.
                 }
             }
+
+            return newScan && _notifications.ContainsKey(scan.BodyID);
         }
 
         public void AddBodySignals(FSSBodySignals bodySignals)
@@ -295,6 +303,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public void MarkForVisit(int bodyId)
         {
+            if (_c.IsLogMonitorBatchReading) return;
             if (!_notifications.ContainsKey(bodyId)) return;
 
             GetNotifications(bodyId)
@@ -310,6 +319,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public void ResetMark(int bodyId)
         {
+            if (_c.IsLogMonitorBatchReading) return;
             if (!_notifications.ContainsKey(bodyId)) return;
 
             GetNotifications(bodyId)
@@ -324,6 +334,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
 
         public void MarkVisited(int bodyId)
         {
+            if (_c.IsLogMonitorBatchReading) return;
             if (!_notifications.ContainsKey(bodyId)) return;
 
             GetNotifications(bodyId)

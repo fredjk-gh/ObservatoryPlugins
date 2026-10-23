@@ -127,6 +127,13 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
         {
             switch (journal)
             {
+                case Commander cmdr:
+                    _c.CurrentCommander = cmdr.Name;
+                    break;
+                case LoadGame loadGame:
+                    _c.CurrentCommander = loadGame.Commander;
+                    _c.ChangeShip(loadGame.ShipID, loadGame.ShipName);
+                    break;
                 case FSDJump fsdJump: // and CarrierJump
                     if (fsdJump is CarrierJump carrierJump)
                     {
@@ -142,10 +149,6 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                     break;
                 case Location location:
                     MaybeChangeSystem(location.StarSystem, location.SystemAddress);
-                    break;
-                case LoadGame loadGame:
-                    _c.CurrentCommander = loadGame.Commander;
-                    _c.ChangeShip(loadGame.ShipID, loadGame.ShipName);
                     break;
                 case Loadout loadout:
                     _c.ChangeShip(loadout.ShipID, loadout.ShipName);
@@ -180,7 +183,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                 case Scan scan:
                     if (!scan.BodyName.Contains("belt", StringComparison.OrdinalIgnoreCase))
                     {
-                        _c.AddScan(scan);
+                        bool forceRedraw = _c.AddScan(scan);
                         if (_c.CurrentSystem != null
                             && scan.DistanceFromArrivalLS == 0
                             && scan.ScanType != "NavBeaconDetail"
@@ -188,16 +191,20 @@ namespace com.github.fredjk_gh.ObservatoryAggregator
                             && !scan.WasDiscovered)
                         {
                             _c.CurrentSystem.IsUndiscovered = true;
+                            forceRedraw = true;
                         }
 
-                        // This generates a ton of flicker. Maybe this can be handled by Core (suppressing re-paints?)
-                        // Make this somewhat conditional or only if data is "dirty"?
-                        RedrawGrid();
+                        // This has potential to cause some flicker. Only draw if we're showing all
+                        // body summaries. Prefer to have notifications trigger redraws.
+                        // Given we have we have paint throttling, this should be pretty effective.
+                        if (forceRedraw || settings.ShowAllBodySummaries)
+                            RedrawGrid();
                     }
                     break;
                 case ScanBaryCentre scanBarycentre:
                     _c.AddScanBarycentre(scanBarycentre);
-                    RedrawGrid();
+                    if (settings.ShowAllBodySummaries)
+                        RedrawGrid();
                     break;
                 case SAAScanComplete scanComplete:
                     _c.AddScanComplete(scanComplete);

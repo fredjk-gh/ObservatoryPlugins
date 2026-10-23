@@ -318,18 +318,21 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
         {
             // The property changed event takes care of enacting the change.
             _data.Settings.FontSizeAdjustment++;
+            _data.Core.SaveSettings(_data.Worker);
         }
 
         private void TsbTextSizeSmaller_Click(object sender, EventArgs e)
         {
             // The property changed event takes care of enacting the change.
             _data.Settings.FontSizeAdjustment--;
+            _data.Core.SaveSettings(_data.Worker);
         }
 
         private void TsbVisbility_Click(object sender, EventArgs e)
         {
             // The property changed event takes care of enacting the change.
             _data.Settings.ShowAllBodySummaries = !_data.Settings.ShowAllBodySummaries;
+            _data.Core.SaveSettings(_data.Worker);
             UpdateVisibilityImage();
         }
 
@@ -393,11 +396,15 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
         }
 
         private bool _repaintQueued = false;
+        private long _repaintsDirect = 0;
+        private long _repaintsQueued = 0;
+        private long _repaintsAvoided = 0;
+
 
         public void SetGridItems(List<AggregatorGrid> items, bool directPaint = false)
         {
             // Naive add everything as a row, stateless.
-            // Don't re-assign to avoid changing the object a waiting thread references.
+            // Don't re-assign to avoid changing the object which may be referenced by other threads as a lock.
             lock(gridItems)
             {
                 gridItems.Clear();
@@ -406,29 +413,42 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
 
             if (directPaint) // Use sparingly -- this impacts performance
             {
+                _repaintsDirect++;
+                Debug.WriteLine($"[{DateTime.Now:mm:ss.fff}] Aggregator: Non-queued repaint started.");
                 RepaintAll();
                 return;
             }
+
             // Throttle redraws. Option: Throw this in a task for greater reliability?
             if (!_repaintQueued)
             {
+                _repaintsQueued++;
                 _repaintQueued = true; // Do this immediately to prevent multiple starts.
-                try
+
+                Task.Run(async () =>
                 {
-                    Task.Run(() =>
+                    try
                     {
-                        Task.Delay(300);
+                        Debug.WriteLine($"[{DateTime.Now:mm:ss.fff}] Aggregator: Repaint task queued; waiting");
+                        await Task.Delay(300);
+
+                        Debug.WriteLine($"[{DateTime.Now:mm:ss.fff}] Aggregator: Repaint task queued; running");
                         RepaintAll();
-                    });
-                }
-                catch
-                {
-                    _repaintQueued = false;
-                }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Aggregator: Exception while repainting: {ex.ToString()}");
+                    }
+                    finally
+                    {
+                        _repaintQueued = false;
+                    }
+                });
             }
             else
             {
-                Debug.WriteLine("Repaint skipped due to queued task.");
+                _repaintsAvoided++;
+                Debug.WriteLine($"[{DateTime.Now:mm:ss.fff}] Aggregator: Repaint skipped due to queued task.");
             }
         }
 
@@ -448,6 +468,7 @@ namespace com.github.fredjk_gh.ObservatoryAggregator.UI
                 }
 
                 _repaintQueued = false;
+                Debug.WriteLine($"[{DateTime.Now:mm:ss.fff}] Aggregator: Repaint done; _repaintsDirect: {_repaintsDirect}, _repaintsQueued: {_repaintsQueued}, _repaintsAvoided: {_repaintsAvoided}");
             });
         }
 
