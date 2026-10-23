@@ -16,27 +16,13 @@ After checking and adjusting settings, I recommend running `Read All`.
 
 # Plugins
 
-## AutoUpdater - Deprecated (NEW)
-
-**After v1.4.0, this plugin will no longer be necessary. You can use the existing version of AutoUpdater to install new versions of the other plugins (as it won't detect they are installed), restart to activate them and then delete the AutoUpdater plugin from your installation. Auto-update functionality is built into every plugin now.**
-
-This plugin keeps all plugins listed here (including itself) up-to-date after installation. After a release of an installed plugin is posted to GitHub, it will download the updated versions so it can be used after ObservatoryCore is restarted. You can also install other plugins using the new UI (Beta).
-
-After installation, be sure to look at the plugin's options and adjust as you like.
-
-NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need to enable the "Use beta versions" option.
-
-*  Status: Deprecated
-*  Download Beta (requires Observatory Core >= 1.5.0): [PluginAutoUpdater-v1.4.0.26144.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/PluginAutoUpdater-v1.4.0.26144.eop) (May 24, 2026)
-*  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater)
-
 ## Aggregator
 
 The Aggregator plugin is a notification log -- collecting notifications from all other plugins into one place to reduce the number of times you need to switch between plugins.
 
-*  Status: Released + Beta
+*  Status: Stable + Beta
 *  Download latest stable (requires Observatory Core >= 1.2.7): [ObservatoryAggregator-v1.0.4.25046.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25046/ObservatoryAggregator-v1.0.4.25046.eop) (Feb 15, 2025)
-*  Download Beta (requires Observatory Core >= 1.5.0): [Aggregator-v1.4.0.26144.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/Aggregator-v1.4.0.26144.eop) (May 24, 2026)
+*  Download Beta (requires Observatory Core >= 1.5.2): [Aggregator-v1.5.0.26296.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.5.0.26296/Aggregator-v1.5.0.26296.eop) (Oct. 23, 2026)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator)
 
 ## Archivist
@@ -44,35 +30,65 @@ The Aggregator plugin is a notification log -- collecting notifications from all
 The Archivist plugin captures exploration related journals and stores them in a database for later re-use either by re-sending journal entries to other plugins or by allowing you to search/browse the journal entries yourself (pretty printed) and copy them out for other uses.
 
 *  Status: Beta
-*  Download Beta (requires Observatory Core >= 1.5.0): [Archivist-v1.4.0.26144-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/Archivist-v1.4.0.26144-beta.eop) (May 24, 2026)
+*  Download Beta (requires Observatory Core >= 1.5.2): [Archivist-v1.5.0.26296.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.5.0.26296/Archivist-v1.5.0.26296.eop) (Oct. 23, 2026)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Archivist)
 
 ## Fleet Commander
 
 A companion for fleet carrier owners. My favourite feature is the jump cooldown timer. Beta includes Spansh carrier routing integration.
 
-*  Status: Released + Beta
+*  Status: Stable + Beta
 *  Download latest stable (requires Observatory Core >= 1.2.x): [ObservatoryFleetCommander-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryFleetCommander-v1.0.3.32704-beta.eop) (Nov 22, 2024)
-*  Download Beta (requires Observatory Core >= 1.5.0): [FleetCommander-v1.4.0.26144.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/FleetCommander-v1.4.0.26144.eop) (May 24, 2026)
+*  Download Beta (requires Observatory Core >= 1.5.2): [FleetCommander-v1.5.0.26296.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.5.0.26296/FleetCommander-v1.5.0.26296.eop) (Oct. 23, 2026)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Fleet-Commander)
 
 ## Helm
 
+A flight dashboard featuring at-a-glance displays of lots of in-game data for many activities.
+
 Currently testing the following features:
 
-- Complete UI Overhaul
+- Complete UI Overhaul with configurable, re-orderable, collapsible and pop-out-able cards.
 - Low fuel warnings and advising of scoopable stars (or lack thereof) along the neutron highway.
 - High gravity heads-up when approaching a relatively high gravity planet.
 - Tracks your route progress and provides session stats.
 - Injects the last plotted route for the current commander at game startup. (Useful when the game forgets the destination after switching commanders.)
+- Most features from Prospector have been moved here including prospector and cargo information, including configurable limpet reminders.
 
 Suggestions welcomed!
 
 *  Status: Beta
-*  Download Beta (requires Observatory Core >= 1.5.0): [Helm-v1.4.0.26144-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/Helm-v1.4.0.26144-beta.eop) (May 24, 2026)
+*  Download Beta (requires Observatory Core >= 1.5.2): [Helm-v1.5.0.26296.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.5.0.26296/Helm-v1.5.0.26296.eop) (Oct. 23, 2026)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Helm)
 
-## Prospector
+## Stat Scanner
+
+This plugin monitors your discoveries to see if your discovery is near, tied with or better than a known record. It can also track personal bests!
+
+*  Status: Stable + Beta
+*  Download latest stable (requires Observatory Core >= 1.4.x): [ObservatoryStatScanner-v1.0.4.25357.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25357/ObservatoryStatScanner-v1.0.4.25357.eop) (Dec 23, 2025)
+*  Download Beta (requires Observatory Core >= 1.5.2): [StatScanner-v1.5.0.26296.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.5.0.26296/StatScanner-v1.5.0.26296.eop) (Oct. 23, 2026)
+*  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner)
+
+# Deprecated plugins
+
+## AutoUpdater - Deprecated
+
+**After v1.4.0, this plugin is no longer necessary. You can use the existing version of AutoUpdater to install new versions of the other plugins (as it won't detect they are installed), restart to activate them and then delete the AutoUpdater plugin from your installation. Auto-update functionality is built into every plugin now.**
+
+This plugin keeps all plugins listed here (including itself) up-to-date after installation. After a release of an installed plugin is posted to GitHub, it will download the updated versions so it can be used after ObservatoryCore is restarted. You can also install other plugins using the new UI (Beta).
+
+After installation, be sure to look at the plugin's options and adjust as you like.
+
+NOTE: To enable auto-updating any plugin listed as "Beta", below, you will need to enable the "Use beta versions" option.
+
+*  Status: Deprecated, please remove this plugin from your installation.
+*  Download Beta (requires Observatory Core >= 1.5.0): [PluginAutoUpdater-v1.4.0.26144.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/PluginAutoUpdater-v1.4.0.26144.eop) (May 24, 2026)
+*  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-AutoUpdater)
+
+## Prospector - Deprecated
+
+**v1.4.0.26144 is the last version of Prospector. Most functionality has been moved into [Helm](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Helm).**
 
 Prospector is a miner's must-have tool, assisting you through the entire prospecting and mining workflow.
 
@@ -81,16 +97,7 @@ Prospector is a miner's must-have tool, assisting you through the entire prospec
 -  When you launch a prospector, it will tell you either there's nothing of interest or tell you it's a good rock (based on a configurable threshold for laser mining or if a core of interest is found).
 -  It also provides a static display of the content of your cargo hold (limpets vs. paydirt).
 
-*  Status: Released + Beta
+*  Status: Deprecated, please remove this plugin from your installation.
 *  Download latest stable (requires Observatory Core >= 1.2.x): [ObservatoryProspectorBasic-v1.0.3.32704-beta.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.3.32704-beta/ObservatoryProspectorBasic-v1.0.3.32704-beta.eop) (Nov 22, 2024)
 *  Download Beta (requires Observatory Core >= 1.5.0): [ProspectorBasic-v1.4.0.26144.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/ProspectorBasic-v1.4.0.26144.eop) (May 24, 2026)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector)
-
-## Stat Scanner
-
-This plugin monitors your discoveries to see if your discovery is near, tied with or better than a known record. It can also track personal bests!
-
-*  Status: Released + Beta
-*  Download latest stable (requires Observatory Core >= 1.4.x): [ObservatoryStatScanner-v1.0.4.25357.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.0.4.25357/ObservatoryStatScanner-v1.0.4.25357.eop) (Dec 23, 2025)
-*  Download Beta (requires Observatory Core >= 1.5.0): [StatScanner-v1.4.0.26144.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.4.0.26144/StatScanner-v1.4.0.26144.eop) (May 24, 2026)
-*  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Stat-Scanner)
