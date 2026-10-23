@@ -1,5 +1,4 @@
-﻿using Accessibility;
-using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
 using com.github.fredjk_gh.ObservatoryStatScanner.StateManagement;
 using com.github.fredjk_gh.PluginCommon.AutoUpdates;
 using com.github.fredjk_gh.PluginCommon.Data;
@@ -42,7 +41,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         private bool HasHeaderRows = false;
         private StatScannerContext _c = null;
         private readonly List<Result> _batchResults = [];
-        ObservableCollection<object> gridCollection = [];
+        private ObservableCollection<object> gridCollection = [];
 
 
         public static Guid Guid => PLUGIN_GUID;
@@ -144,7 +143,29 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 case FileHeader fileHeader:
                     _c.IsOdyssey = fileHeader.Odyssey;
                     break;
+                case Commander cmdr:
+                    var previousCmdr = _c.CommanderName;
+                    _c.UpdateCommander(cmdr.Name, cmdr.FID);
+                    if (previousCmdr != _c.CommanderName)
+                    {
+                        Debug.WriteLine($"[{cmdr.Timestamp}] Switching commanders: {_c.CommanderName}");
+                        AddResultsToGrid(
+                        [
+                            new(NotificationClass.None,
+                                new StatScannerGrid
+                                {
+                                    ObjectClass = "Plugin message",
+                                    Variable = "Commander",
+                                    Function = "Changed to",
+                                    BodyOrItem = _c.CommanderName,
+                                },
+                                CoalescingIDs.HEADER_COALESCING_ID)
+                        ]);
+                    }
+                    break;
                 case LoadGame loadGame:
+                    string commanderName = loadGame.Commander;
+
                     var previousCommanderName = _c.CommanderName;
                     _c.LastLoadGame = loadGame;
                     if (previousCommanderName != _c.CommanderName)
@@ -162,7 +183,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                                 },
                                 CoalescingIDs.HEADER_COALESCING_ID)
                         ]);
-
                     }
                     break;
                 case Statistics statistics:

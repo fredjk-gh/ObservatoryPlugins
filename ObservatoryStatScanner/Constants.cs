@@ -1,7 +1,7 @@
 ﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Data;
 using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
-using System.Text.RegularExpressions;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
 {
@@ -105,8 +105,6 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
         public const string SCAN_BARYCENTRE = "Barycentre";
 
         public const string SCAN_TYPE_NAV_BEACON = "NavBeaconDetail";
-
-        public const string FSS_BODY_SIGNAL_BIOLOGICAL = "$SAA_SignalType_Biological;";
 
         // Key: EDAstro body type => Value: Journal body type.
         public static Dictionary<string, string> JournalTypeMap = new()
@@ -223,7 +221,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             // Generate Codex Category per region records:
             foreach (var r in FDevIDs.RegionById.Values)
             {
-                foreach (var codexCategory in FDevIDs.CodexCategoriesByJournalId.Values)
+                foreach (var codexCategory in JournalConstants.CodexCategoriesByJournalId.Values)
                 {
                     records.Add(new(RecordTable.Codex, r.Name, codexCategory));
                 }

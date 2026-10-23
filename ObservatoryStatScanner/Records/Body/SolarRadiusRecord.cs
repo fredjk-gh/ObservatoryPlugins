@@ -10,6 +10,8 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
         public override bool Enabled => Settings.EnableSolarRadiusRecord;
 
         // Black holes are *really* small in terms of solar radius. So add extra digits to the display format.
+        // So are Neutrons. Maybe consider smaller units (like km or Mm)? (Make units conditional on actual value, not star type!)
+        // https://discord.com/channels/681560594586927171/1242485193273774210/1509243286152548443
         public override string ValueFormat { get => EDAstroObjectName == Constants.EDASTRO_STAR_BLACK_HOLE ? "{0:n8}" : "{0:n4}"; }
         public override string Units { get => "SR"; }
 

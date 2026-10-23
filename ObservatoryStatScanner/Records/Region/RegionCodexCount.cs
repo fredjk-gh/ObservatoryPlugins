@@ -1,4 +1,5 @@
 ﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
 using Observatory.Framework;
 using Observatory.Framework.Files.Journal;
@@ -9,9 +10,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Region
     {
         static readonly Dictionary<string, string> CodexCategoriesDisplayNames = new()
         {
-            { FDevIDs.V_CODEX_CATEGORY_ASTRO, "Codex: Astronomical Bodies" },
-            { FDevIDs.V_CODEX_CATEGORY_BIO_GEO, "Codex: Biological and Geological" },
-            { FDevIDs.V_CODEX_CATEGORY_XENO, "Codex: Xenological" },
+            { JournalConstants.V_CODEX_CATEGORY_ASTRO, "Codex: Astronomical Bodies" },
+            { JournalConstants.V_CODEX_CATEGORY_BIO_GEO, "Codex: Biological and Geological" },
+            { JournalConstants.V_CODEX_CATEGORY_XENO, "Codex: Xenological" },
         };
 
         public RegionCodexCount(StatScannerSettings settings, RecordKind recordKind, IRecordData data)
@@ -28,7 +29,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Region
         {
             if (!Enabled || !codexEntry.IsNewEntry
                 || !FDevIDs.RegionById.TryGetValue(codexEntry.Region, out PluginCommon.Data.Journals.FDevIDs.Region region)
-                || !FDevIDs.CodexCategoriesByJournalId.TryGetValue(codexEntry.Category, out string categoryName)) return [];
+                || !JournalConstants.CodexCategoriesByJournalId.TryGetValue(codexEntry.Category, out string categoryName)) return [];
 
             var regionName = region.Name;
             if (regionName != EDAstroObjectName || categoryName != Data.Variable) return [];

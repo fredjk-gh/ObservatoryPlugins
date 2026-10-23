@@ -67,7 +67,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.DB
             }
             catch (Exception ex)
             {
-                ErrorLogger(ex, $"While connecting to {DB_NAME} database (hasOpened? {hasOpened}). If 'hasOpened' is true, this could be a corrupt database or bad index and it may be deleted automatically. Please run restart Observatory and run Read-all!");
+                ErrorLogger(ex, $"While connecting to {DB_NAME} database (hasOpened? {hasOpened}). If 'hasOpened' is true, this could be a corrupt database or bad index and it may be deleted automatically. Please restart Observatory and run Read-all!");
                 Debug.WriteLine($"Failed to connect to {DB_NAME} database (hasOpened? {hasOpened})! {ex.Message}");
 
                 // Make sure we appear NOT connected later on.

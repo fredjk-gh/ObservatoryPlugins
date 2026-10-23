@@ -20,7 +20,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
             MinNearRecordThreshold = 0;
             MaxPersonalBestsPerBody = 3;
             HighCardinalityTieSuppression = 10000;
-            ProcGenHandling = StatScannerSettings.DEFAULT_PROCGEN_HANDLING;
+            ProcGenHandling = DEFAULT_PROCGEN_HANDLING;
             FirstDiscoveriesOnly = false;
             EnablePersonalBests = true;
             EnableGridOutputAfterReadAll = false;

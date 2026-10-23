@@ -158,6 +158,11 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
             get => _stateCache.LastSeenCommanderName;
         }
 
+        public void UpdateCommander(string name, string fid)
+        {
+            _stateCache.UpdateCommanderInfo(name, fid, _lastSeenIsOdyssey, (Core.CurrentLogMonitorState & LogMonitorState.Batch) != 0);
+        }
+
         public RecordBook GetRecordBook()
         {
             if (!IsCommanderKnown)

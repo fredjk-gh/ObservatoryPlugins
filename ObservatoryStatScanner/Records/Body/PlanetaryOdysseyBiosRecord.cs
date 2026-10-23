@@ -1,4 +1,6 @@
 ﻿using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
 using Observatory.Framework.Files.Journal;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
@@ -34,7 +36,7 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.Records.Body
         {
             if (!Enabled || !isOdyssey) return [];
 
-            var bioSignals = bodySignals.Signals.Where(s => s.Type == Constants.FSS_BODY_SIGNAL_BIOLOGICAL).ToList();
+            var bioSignals = bodySignals.Signals.Where(s => s.Type == JournalConstants.SIGNAL_BIO).ToList();
             if (bioSignals.Count == 1)
             {
                 var bioSignal = bioSignals.First();

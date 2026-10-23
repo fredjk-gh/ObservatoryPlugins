@@ -83,16 +83,23 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner.StateManagement
             if (!hasReadAll) SetReadAllRequired("New commander detected");
         }
 
+        public CommanderCache UpdateCommanderInfo(string name, string fid, bool isOdyssey = false, bool hasReadAll = false)
+        {
+            if (!IsCommanderKnown(name))
+            {
+                AddCommander(name, isOdyssey, hasReadAll);
+            }
+            var cached = _commanderCache[name];
+            cached.Name = name;
+            cached.IsOdyssey = isOdyssey;
+            LastSeenCommanderName = name;
+            return cached;
+        }
+
         public void UpdateCommanderInfo(LoadGame loadGame, bool isOdyssey = false, bool hasReadAll = false)
         {
-            if (!IsCommanderKnown(loadGame.Commander)) {
-                AddCommander(loadGame.Commander, isOdyssey, hasReadAll);
-            }
-            var cached = _commanderCache[loadGame.Commander];
-            cached.Name = loadGame.Commander;
+            var cached = UpdateCommanderInfo(loadGame.Commander, loadGame.FID, isOdyssey, hasReadAll);
             cached.LastLoadGame = loadGame;
-            cached.IsOdyssey = isOdyssey;
-            LastSeenCommanderName = loadGame.Commander;
         }
 
         public void UpdateCommanderStats(Statistics stats)

@@ -3,6 +3,7 @@ using com.github.fredjk_gh.ObservatoryStatScanner.Records.Data;
 using com.github.fredjk_gh.ObservatoryStatScanner.Records.Interfaces_BaseClasses;
 using com.github.fredjk_gh.ObservatoryStatScanner.Records.Region;
 using com.github.fredjk_gh.ObservatoryStatScanner.Records.System;
+using com.github.fredjk_gh.PluginCommon.Data.Journals;
 using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
 
 namespace com.github.fredjk_gh.ObservatoryStatScanner
@@ -147,9 +148,9 @@ namespace com.github.fredjk_gh.ObservatoryStatScanner
                 case Constants.V_VISITED_REGIONS_COUNT:
                     typeToCreate = typeof(RegionsVisitedTally);
                     break;
-                case FDevIDs.V_CODEX_CATEGORY_BIO_GEO:
-                case FDevIDs.V_CODEX_CATEGORY_XENO:
-                case FDevIDs.V_CODEX_CATEGORY_ASTRO:
+                case JournalConstants.V_CODEX_CATEGORY_BIO_GEO:
+                case JournalConstants.V_CODEX_CATEGORY_XENO:
+                case JournalConstants.V_CODEX_CATEGORY_ASTRO:
                     typeToCreate = typeof(RegionCodexCount);
                     break;
             }
