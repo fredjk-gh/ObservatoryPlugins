@@ -1,8 +1,10 @@
-﻿using com.github.fredjk_gh.PluginCommon.AutoUpdates;
+﻿using com.github.fredjk_gh.ObservatoryProspectorBasic.UI;
+using com.github.fredjk_gh.PluginCommon.AutoUpdates;
 using com.github.fredjk_gh.PluginCommon.Data;
 using com.github.fredjk_gh.PluginCommon.Data.Journals;
+using com.github.fredjk_gh.PluginCommon.Data.Journals.FDevIDs;
+using com.github.fredjk_gh.PluginCommon.Data.Prospecting;
 using com.github.fredjk_gh.PluginCommon.PluginInterop.Messages;
-using Microsoft.VisualBasic;
 using Observatory.Framework;
 using Observatory.Framework.Files;
 using Observatory.Framework.Files.Journal;
@@ -11,18 +13,13 @@ using Observatory.Framework.Interfaces;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using static com.github.fredjk_gh.ObservatoryProspectorBasic.SynthRecipes;
+using static com.github.fredjk_gh.ObservatoryProspectorBasic.TrackedData;
 
 namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
     public class ProspectorBasic : IObservatoryWorker
     {
         private static readonly Guid PLUGIN_GUID = new("7e43a6bd-3ccc-486a-b027-3b9fb8258bcc");
-        private const int ALERT_COALESCING_ID = -2;
-        private const int DEFAULT_COALESCING_ID = 1001;
-        private const string LimpetDronesKey = "drones";
-        private const string LimpetDronesName = "Limpets";
-        private const string TritiumKey = "tritium";
-        private const string TritiumName = "Tritium";
         private static readonly AboutLink GH_LINK = new("github", "https://github.com/fredjk-gh/ObservatoryPlugins");
         private static readonly AboutLink GH_RELEASE_NOTES_LINK = new("github release notes", "https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Prospector");
         private static readonly AboutLink DOC_LINK = new("Documentation", "https://observatory.xjph.net/usage/plugins/thirdparty/fredjk-gh/prospector");
@@ -30,7 +27,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         {
             FullName = "Prospector Basic",
             ShortName = "Prospector",
-            Description = "Prospector is a miner's must-have tool, assisting you through the entire prospecting and mining workflow.",
+            Description = $"Deprecated. Most functionality has been moved to Helm.{Environment.NewLine}{Environment.NewLine}Prospector is a miner's must-have tool, assisting you through the entire prospecting and mining workflow.",
             AuthorName = "fredjk-gh",
             Links =
             [
@@ -39,6 +36,12 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 DOC_LINK,
             ]
         };
+        private const int ALERT_COALESCING_ID = -2;
+        private const int DEFAULT_COALESCING_ID = 1001;
+        private const string LimpetDronesKey = "drones";
+        private const string LimpetDronesName = "Limpets";
+        private const string TritiumKey = "tritium";
+        private const string TritiumName = "Tritium";
 
         // TODO: Use PluginCommon version instead.
         // This cache is updated by CommodityName. Keys should be lower-case for maximum matchy-ness.
@@ -59,7 +62,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         private readonly Guid?[] _prospectorNotifications = new Guid?[2];
         private Guid? _cargoNotification = null;
         private readonly List<ProspectorGrid> _deferredGridItems = [];
-        ObservableCollection<object> GridCollection = [];
+        private ObservableCollection<object> GridCollection = [];
 
         public static Guid Guid => PLUGIN_GUID;
         public AboutInfo AboutInfo => ABOUT_INFO;
@@ -89,12 +92,24 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         {
             switch (journal)
             {
+                case LoadGame loadGame:
+                    AddGridItem(new()
+                    {
+                        Location = AboutInfo.ShortName,
+                        Details = "This plugin is now deprecated. Core functionality has been moved into the Helm plugin.",
+                    });
+                    break;
                 case ProspectedAsteroid prospected:
                     OnProspectedAsteroid(prospected);
                     break;
+                case FSSBodySignals signals:
+                    _data.OnFSSBodySignals(signals);
+                    break;
                 case Scan scan:
-                    OnScan(scan);
+                    BodyDetails details = _data.OnScan(scan);
                     _data.AddScanRawMats(scan);
+                    OnScanForRings(scan);
+                    OnScanForBody(details);
                     break;
                 case SAASignalsFound saaSignalsFound:
                     OnRingPing(saaSignalsFound);
@@ -125,65 +140,14 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     Reset("Location");
                     _data.SystemChanged(location.StarSystem);
                     break;
-                case MiningRefined miningRefined:
-                    string miningKey = CargoKey(miningRefined.Type, miningRefined.Type_Localised);
-                    _data.CargoAdd(miningKey, 1);
-                    Debug.WriteLineIf(enableDebug, $"MiningRefined: {miningKey} += 1");
-                    UpdateCargoNotification();
-                    break;
-                case BuyDrones buyDrones:
-                    _data.CargoAdd(LimpetDronesKey, buyDrones.Count);
-                    Debug.WriteLineIf(enableDebug, $"BuyDrones: Limpets += {buyDrones.Count}");
-                    UpdateCargoNotification(false /* newNotification */);
-                    break;
-                case CollectCargo collectCargo:
-                    string collectedKey = CargoKey(collectCargo.Type, collectCargo.Type_Localised);
-                    _data.CargoAdd(collectedKey, 1);
-                    Debug.WriteLineIf(enableDebug, $"CollectCargo: {collectedKey} += 1");
-                    UpdateCargoNotification(false /* newNotification */);
-                    break;
+
                 case Synthesis synth:
-                    if (CargoKey(synth.Name) == LimpetDronesKey)
-                    {
-                        // Not always 4 limpets synthed -- depends on available cargo space.
-                        var limpetsSynthedGuess = Math.Min(4, (_data.CargoMax ?? 4) - (_data.CargoCur ?? 0));
-                        _stats.LimpetsSynthed += limpetsSynthedGuess;
-                        _data.CargoAdd(LimpetDronesKey, limpetsSynthedGuess);
-                        Debug.WriteLineIf(enableDebug, $"Synthesis: Limpets += {limpetsSynthedGuess}");
-                        UpdateCargoNotification(false /* newNotification */);
-                    }
                     foreach (var mat in synth.Materials)
                     {
                         if (MaterialData.IsRawMat(mat.Name)) {
                             _data.RawMatInventorySubtract(mat.Name, mat.Count);
                         }
                     }
-                    break;
-                case SellDrones sellDrones:
-                    if (_data.CargoGet(LimpetDronesKey) > 0)
-                    {
-                        Debug.WriteLineIf(enableDebug, $"SellDrones: Limpets -= {sellDrones.Count}");
-                        _data.CargoRemove(LimpetDronesKey, sellDrones.Count);
-                        UpdateCargoNotification(false /* newNotification */);
-                    }
-                    break;
-                case EjectCargo eject:
-                    string ejectedKey = CargoKey(eject.Type, eject.Type_Localised);
-                    if (_data.CargoGet(ejectedKey) > 0)
-                    {
-                        Debug.WriteLineIf(enableDebug, $"EjectCargo: {ejectedKey} -= {eject.Count}");
-                        _data.CargoRemove(ejectedKey, eject.Count);
-                    }
-                    if (ejectedKey == LimpetDronesKey) // Ditching limpets:
-                        _stats.LimpetsAbandoned += eject.Count;
-                    UpdateCargoNotification(false /* newNotification */);
-                    break;
-                case LaunchDrone:
-                    // Ignore if unset (we can't subtract from a value we don't know).
-                    Debug.WriteLineIf(enableDebug, "LaunchDrone: Limpets -= 1");
-                    _data.CargoRemove(LimpetDronesKey, 1);
-                    _stats.LimpetsUsed++;
-                    UpdateCargoNotification(false /* newNotification */);
                     break;
                 case Loadout loadout:
                     _data.LoadoutChanged(loadout);
@@ -195,46 +159,6 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     break;
                 case CargoFile cargoFile:
                     OnCargoEvent(cargoFile.Count, cargoFile.Inventory);
-                    break;
-                case MarketSell marketSell:
-                    string sellKey = CargoKey(marketSell.Type, marketSell.Type_Localised);
-                    if (_data.CargoGet(sellKey) > 0)
-                    {
-                        Debug.WriteLineIf(enableDebug, $"MarketSell: {sellKey} -= {marketSell.Count}");
-                        _data.CargoRemove(sellKey, marketSell.Count);
-                    }
-                    UpdateCargoNotification(false /* newNotification */);
-                    break;
-                case MarketBuy marketBuy:
-                    string buyKey = CargoKey(marketBuy.Type, marketBuy.Type_Localised);
-                    _data.CargoAdd(buyKey, marketBuy.Count);
-                    Debug.WriteLineIf(enableDebug, $"MarketBuy: {buyKey} += {marketBuy.Count}");
-                    UpdateCargoNotification(false /* newNotification */);
-                    break;
-                case CargoTransfer transfer:
-                    foreach (CargoTransferDetail transferred in transfer.Transfers)
-                    {
-                        string transferKey = CargoKey(transferred.Type, transferred.Type_Localised);
-                        if (transferred.Direction == CargoTransferDirection.ToShip)
-                        {
-                            Debug.WriteLineIf(enableDebug, $"CargoTransfer (to Ship): {transferKey} += {transferred.Count}");
-                            _data.CargoAdd(transferKey, transferred.Count);
-                        }
-                        else if (_data.CargoGet(transferKey) > 0) // tocarrier and tosrv; either way, off the ship
-                        {
-                            Debug.WriteLineIf(enableDebug, $"CargoTransfer (off Ship): {transferKey} -= {transferred.Count}");
-                            _data.CargoRemove(transferKey, transferred.Count);
-                        }
-                    }
-                    UpdateCargoNotification(false /* newNotification */);
-                    break;
-                case CarrierDepositFuel tritiumDonation:
-                    if (_data.CargoGet(TritiumKey) > 0)
-                    {
-                        Debug.WriteLineIf(enableDebug, $"CarrierDepositFuel: Tritium -= {tritiumDonation.Amount}");
-                        _data.CargoRemove(TritiumKey, tritiumDonation.Amount);
-                        UpdateCargoNotification(false /* newNotification */);
-                    }
                     break;
                 case Materials mats:
                     _data.RawMatInventoryUpdate(mats);
@@ -255,31 +179,34 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 
                     break;
                 case Undocked:
-                    int? miningModules = _data.MiningModuleCount();
-                    if ((miningModules ?? 0) > 0 && !_data.Cargo.ContainsKey(LimpetDronesKey))
+                    int miningModules = _data.MiningModuleCount() ?? 0;
+                    if (miningModules >= Math.Max(_settings.LimpetNotificationMinMiningModules, 1)
+                        && !_data.Cargo.ContainsKey(LimpetDronesKey))
                     {
                         Debug.WriteLineIf(enableDebug, $"Undocked with {miningModules} mining modules and no limpets on board!");
-                        Core.SendNotification(new()
-                        {
-                            Sender = AboutInfo.ShortName,
-                            CoalescingId = ALERT_COALESCING_ID,
-                            Title = "Don't forget limpets!",
-                            Detail = "You have mining gear equipped but no limpets in your hold.",
-                            ExtendedDetails = $"Found {miningModules} mining modules on-board.",
-                            Rendering = NotificationRendering.All,
-                        });
+                        if (_settings.LimpetReminderNotifications)
+                            Core.SendNotification(new()
+                            {
+                                Sender = AboutInfo.ShortName,
+                                CoalescingId = ALERT_COALESCING_ID,
+                                Title = "Don't forget limpets!",
+                                Detail = "You have mining modules equipped but no limpets in your hold.",
+                                ExtendedDetails = $"Found {miningModules} mining modules on-board.",
+                                Rendering = NotificationRendering.All,
+                            });
+
                         AddGridItem(new ProspectorGrid()
                         {
                             Location = "",
                             Commodity = "Limpets",
                             Percentage = "",
-                            Details = $"Going mining (found {miningModules} mining modules)? Don't forget limpets!",
+                            Details = $"Going mining (found {miningModules} mining modules)? Don't forget limpets! There are none in cargo!",
                         });
                     }
                     break;
                 // Maybe todo: Handle other events which could affect mat inventory:
                 // - Mission rewards
-                // - Techbroker unlocks
+                // - Techbroker unlocks/purchases
                 // - Engineer contributions
                 // - Engineer crafting
                 // - Scientific Research - is this even used?
@@ -516,13 +443,14 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             return false;
         }
 
-        private void OnScan(Scan scan)
+        private void OnScanForRings(Scan scan)
         {
-            if (scan.Rings == null || scan.Rings.IsEmpty || _data.AlreadyReportedScansSaaSignals.Contains(scan.BodyName) || !_settings.MentionPotentiallyMineableRings || !_settings.MentionableRings.HasValue) return;
+            if (scan.Rings == null || scan.Rings.IsEmpty || _data.AlreadyReportedScansSaaSignals.Contains(scan.BodyName) || !_settings.MentionPotentiallyMineableRings || _settings.MentionableRings == RingType.None)
+                return;
 
             _data.AlreadyReportedScansSaaSignals.Add(scan.BodyName);
             List<RingDetails> ringsOfInterest = [];
-            RingType mentionableRings = _settings.MentionableRings.Value;
+            RingType mentionableRings = _settings.MentionableRings;
             foreach (Ring ring in scan.Rings)
             {
                 // Ignore belts.
@@ -531,6 +459,8 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 // Find rings of interest
                 foreach (RingType rt in Enum.GetValues(typeof(RingType)))
                 {
+                    if (rt == RingType.None) continue;
+
                     if (mentionableRings.HasFlag(rt) && ring.RingClass.Contains(rt.MatchString()))
                     {
                         double densityMTperkm3 = ring.MassMT / ((Math.PI * Math.Pow(ring.OuterRad / 1000, 2)) - (Math.PI * Math.Pow(ring.InnerRad / 1000, 2.0)));
@@ -539,7 +469,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                             Debug.WriteLineIf(enableDebug, $"Scan: Ignoring interesting ring with low density: {densityMTperkm3:n1}");
                             break;
                         }
-                        string desiredCommodities = string.Join(", ", _settings.DesirableCommonditiesByRingType(rt).Select(c => c.ToString()));
+                        string desiredCommodities = string.Join(", ", _settings.DesireableCommoditiesByRingType(rt).Select(c => c.ToString()));
                         var details = new RingDetails()
                         {
                             ShortName = SharedLogic.GetBodyShortName(ring.Name, scan.BodyName),
@@ -572,6 +502,46 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                 Sender = AboutInfo.ShortName,
                 CoalescingId = scan.BodyID,
             });
+        }
+
+        private void OnScanForBody(BodyDetails details)
+        {
+            if (details.BodySignals is null || details.Scan is null || !_settings.MentionPotentiallyMineableBodies || _settings.MentionableBodies == BodyType.None)
+                return; // Insufficient information.
+
+            var planetarySignals = details.BodySignals.Signals?.Where(s => s.Type == FDevIDs.SIGNAL_PLANETARY_MINING).ToList();
+            if (planetarySignals.Count == 0)
+                return;
+
+            BodyType bodyTypes =_settings.MentionableBodies;
+
+            foreach (BodyType bt in Enum.GetValues(typeof(BodyType)))
+            {
+                if (bt == BodyType.None) continue;
+
+                if (_settings.MentionableBodies.HasFlag(bt) && details.Scan.PlanetClass.Contains(bt.MatchString()))
+                {
+                    var shortBodyName = SharedLogic.GetBodyShortName(details.Scan.BodyName, _data.SystemName);
+                    var bodyDistance = $"distance: {Math.Floor(details.Scan.DistanceFromArrivalLS)} Ls";
+                    string desiredCommodities = string.Join(", ", _settings.DesireableCommoditiesByBodyType(bt).Select(c => c.ToString()));
+                    string detailString = $"{planetarySignals[0].Count} locations; [{desiredCommodities}]";
+
+                    AddGridItem(new ProspectorGrid()
+                    {
+                        Location = details.BodyName,
+                        Details = $"{detailString}, {bodyDistance}",
+                    });
+                    Core.SendNotification(new NotificationArgs()
+                    {
+                        Title = SharedLogic.GetBodyDisplayName(shortBodyName),
+                        Detail = $"{bt.DisplayString()} body with planetary mining locations",
+                        ExtendedDetails = $"{detailString}", // Don't include distance here -- it's not consistent over multiple distances and produces dupe notifs in Archivist.
+                        Sender = AboutInfo.ShortName,
+                        CoalescingId = details.BodyID,
+                    });
+                    break;
+                }
+            }
         }
 
         private void OnProspectedAsteroid(ProspectedAsteroid prospected)
@@ -666,7 +636,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
                     title = "Good rock";
                     details = $"Asteroid is {desireableCommoditiesPercentSum:N0} percent {commodities}{highMaterialContent}";
                 }
-                AddOrUpdateProspectorNotification(prospectorId, MakeProspectorNotificationArgs(title, details, prospectorId, NotificationRendering.All));
+                //AddOrUpdateProspectorNotification(prospectorId, MakeProspectorNotificationArgs(title, details, prospectorId, NotificationRendering.All));
                 Debug.WriteLineIf(enableDebug, $"\t--Grid Update: {commodities}; {percentageString}, {cumulativeStats}");
                 return;
             }
@@ -845,6 +815,39 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             pluginUI = new PluginUI(GridCollection);
 
             Core = observatoryCore;
+
+            PrepSettings();
+        }
+
+        internal void PrepSettings()
+        {
+            _settings.CommoditySelector = OpenCommoditySelector;
+        }
+
+        private CommoditySelectorForm _frmCommoditySelector;
+
+        private void OpenCommoditySelector()
+        {
+            if (_frmCommoditySelector is not null)
+            {
+                _frmCommoditySelector.Activate();
+                return;
+            }
+
+            _frmCommoditySelector = new CommoditySelectorForm(Core, this, _settings);
+
+            Core.RegisterControl(_frmCommoditySelector);
+
+            _frmCommoditySelector.FormClosed += CommoditySelector_FormClosed;
+            _frmCommoditySelector.Show();
+        }
+
+        private void CommoditySelector_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (_frmCommoditySelector is null) return;
+
+            Core.UnregisterControl(_frmCommoditySelector);
+            _frmCommoditySelector = null;
         }
     }
 

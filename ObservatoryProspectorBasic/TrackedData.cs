@@ -6,7 +6,16 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
 {
     internal class TrackedData
     {
-        public class BodyMaterialContent(string bodyName, int bodyID, string mat, float percent)
+        internal class BodyDetails(int bodyID, string bodyName)
+        {
+            public int BodyID { get; } = bodyID;
+            public string BodyName { get; } = bodyName;
+
+            public FSSBodySignals BodySignals { get; set; }
+            public Scan Scan { get; set; }
+        }
+
+        internal class BodyMaterialContent(string bodyName, int bodyID, string mat, float percent)
         {
             public string BodyName { get; } = bodyName;
             public int BodyID { get; } = bodyID;
@@ -18,6 +27,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         private readonly Dictionary<string, List<BodyMaterialContent>> _matContentByMat = [];
         private readonly HashSet<string> _alreadyReportedScansSaaSignals = [];
         private readonly Dictionary<string, int> _cargo = [];
+        private readonly Dictionary<int, BodyDetails> _bodiesById = [];
         private Loadout _lastLoadout = null;
 
         public string SystemName { get; private set; }
@@ -40,11 +50,36 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
             _matContentByMat.Clear();
             CurrentLocationShown = false;
             _alreadyReportedScansSaaSignals.Clear();
+            _bodiesById.Clear();
             AllBodiesFound = false;
 
             return true;
         }
+
+        public BodyDetails GetBody(int bodyId, string bodyName)
+        {
+            if (_bodiesById.TryGetValue(bodyId, out BodyDetails result))
+                return result;
+
+            BodyDetails newBody = new(bodyId, bodyName);
+            _bodiesById[bodyId] = newBody;
+            return newBody;
+        }
+
+        public BodyDetails OnScan(Scan scan)
+        {
+            BodyDetails details = GetBody(scan.BodyID, scan.BodyName);
+            details.Scan = scan;
+            return details;
+        }
         
+        public BodyDetails OnFSSBodySignals(FSSBodySignals signals)
+        {
+            BodyDetails details = GetBody(signals.BodyID, signals.BodyName);
+            details.BodySignals = signals;
+            return details;
+        }
+
         public bool LocationChanged(string newLocation)
         {
             if (string.IsNullOrEmpty(newLocation) || newLocation == LocationName) return false;
@@ -179,6 +214,7 @@ namespace com.github.fredjk_gh.ObservatoryProspectorBasic
         [
             "hpt_mininglaser_turret_small",
             "hpt_mininglaser_turret_medium",
+            "hpt_mininglaser_fixed_small",
             "hpt_mininglaser_fixed_small_advanced",
             "hpt_mining_subsurfdispmisle_fixed_small",
             "hpt_mining_subsurfdispmisle_turret_small",
