@@ -120,7 +120,7 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
         {
             _isDirty = true;
             pbFuel.Value = (int)(fuelRemaining * 10);
-            _toolTip.SetToolTip(pbFuel, $"{fuelRemaining} / {_lastShip.FuelCapacity} T");
+            _toolTip.SetToolTip(pbFuel, $"{fuelRemaining:n1} / {_lastShip.FuelCapacity} T");
 
             if (fuelRemaining < (_lastShip.MaxFuelPerJump * Constants.FuelWarningLevelFactor))
             {

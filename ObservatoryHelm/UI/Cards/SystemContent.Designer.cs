@@ -151,17 +151,17 @@ namespace com.github.fredjk_gh.ObservatoryHelm.UI.Cards
             // colFuelAndType
             // 
             colFuelAndType.Text = "Type";
-            colFuelAndType.Width = 250;
+            colFuelAndType.Width = 150;
             // 
             // colName
             // 
             colName.Text = "Name";
-            colName.Width = 150;
+            colName.Width = 100;
             // 
             // colDistance
             // 
             colDistance.Text = "Dist (Ls)";
-            colDistance.Width = 150;
+            colDistance.Width = 100;
             // 
             // colStarAge
             // 

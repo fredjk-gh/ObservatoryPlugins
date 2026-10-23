@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.Design;
-using System.Diagnostics;
 using com.github.fredjk_gh.ObservatoryHelm.Data;
 using com.github.fredjk_gh.ObservatoryHelm.UI.Forms;
 using com.github.fredjk_gh.PluginCommon;
