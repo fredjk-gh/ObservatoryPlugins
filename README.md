@@ -22,7 +22,7 @@ The Aggregator plugin is a notification log -- collecting notifications from all
 
 *  Status: Stable + Beta
 *  Download latest Stable (requires Observatory Core >= 1.5.2): [Aggregator-v1.5.0.26296.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.5.0.26296/Aggregator-v1.5.0.26296.eop) (Oct. 26, 2026)
-*  Download lates Beta (requires Observatory Core >= 1.5.2): [Aggregator-v1.5.0.26296.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.5.0.26296/Aggregator-v1.5.0.26296.eop) (Oct. 23, 2026)
+*  Download latest Beta (requires Observatory Core >= 1.5.2): [Aggregator-v1.5.0.26296.eop](https://github.com/fredjk-gh/ObservatoryPlugins/releases/download/v1.5.0.26296/Aggregator-v1.5.0.26296.eop) (Oct. 23, 2026)
 *  [Details / Changelog](https://github.com/fredjk-gh/ObservatoryPlugins/wiki/Plugin:-Aggregator)
 
 ## Archivist
